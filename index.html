@@ -876,24 +876,20 @@
                         <textarea id="excelData" rows="2" placeholder="1  홍길동"
                             style="width:140px;resize:none"></textarea>
                         <button class="btn btn-green" onclick="applyExcelData()">적용</button>
+                        <button class="btn btn-gray" onclick="openModal()">❓ 사용 설명서</button>
+                        <button class="btn btn-blue" onclick="saveAsPdf()">📄 PDF 저장</button>
+                        <button class="btn btn-blue" onclick="window.print()">🖨️ 일반 인쇄</button>
                     </div>
                 </div>
             </div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:.4rem; align-items:flex-end;">
-            <div class="btn-group">
-                <button class="btn btn-green" onclick="saveToJson()">💾 저장</button>
-                <button class="btn btn-green" onclick="document.getElementById('fileInput').click()">📂 불러오기</button>
-                <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="loadFromJson(event)">
-                <button class="btn btn-gray" onclick="openModal()">❓ 사용 설명서</button>
-                <button class="btn btn-purple" onclick="openSpecialRulesModal()">✨ 특수 배치</button>
-                <button class="btn btn-purple" onclick="shuffleSeats()">🔀 섞기 (자물쇠 제외)</button>
-                <button class="btn btn-red" onclick="clearSeats()">초기화</button>
-            </div>
-            <div class="btn-group">
-                <button class="btn btn-blue" onclick="saveAsPdf()">📄 PDF 저장</button>
-                <button class="btn btn-blue" onclick="window.print()">🖨️ 일반 인쇄</button>
-            </div>
+        <div class="btn-group">
+            <button class="btn btn-green" onclick="saveToJson()">💾 저장</button>
+            <button class="btn btn-green" onclick="document.getElementById('fileInput').click()">📂 불러오기</button>
+            <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="loadFromJson(event)">
+            <button class="btn btn-purple" onclick="openSpecialRulesModal()">✨ 특수 배치</button>
+            <button class="btn btn-purple" onclick="shuffleSeats()">🔀 섞기 (자물쇠 제외)</button>
+            <button class="btn btn-red" onclick="clearSeats()">초기화</button>
         </div>
     </div>
 
@@ -968,6 +964,66 @@
                     <!-- 규칙 항목들이 추가될 공간 -->
                 </div>
                 <button class="btn btn-blue" onclick="addSpecialRule()">+ 규칙 추가</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 비밀 관리자 패널 (Ctrl+Shift+K) -->
+    <div id="secretAdminModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 비밀 배치 규칙 관리</h2>
+                <span class="close-btn" onclick="closeSecretAdmin()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:1rem; font-size:0.9rem; color:#6b7280; line-height:1.5;">
+                    이 설정은 이 브라우저의 <strong>localStorage</strong>에 저장됩니다.<br>
+                    학생 번호를 쉼표(,) 또는 공백으로 구분하여 입력하세요. 비워두면 해당 규칙이 적용되지 않습니다.
+                </p>
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                    <div>
+                        <label style="font-weight:600; font-size:0.9rem;">서로 2칸 이상 떨어뜨릴 학생</label>
+                        <input type="text" id="adminDistanceTargets" placeholder="예: 19, 21, 32, 35, 36" style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:4px;">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">1번 줄 (맨 앞줄)</label>
+                            <input type="text" id="adminRow1" placeholder="예: 5, 12" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">2번 줄</label>
+                            <input type="text" id="adminRow2" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">3번 줄</label>
+                            <input type="text" id="adminRow3" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">4번 줄</label>
+                            <input type="text" id="adminRow4" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">5번 줄</label>
+                            <input type="text" id="adminRow5" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">가장 뒷줄</label>
+                            <input type="text" id="adminLastRow" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">1번 열 (맨 왼쪽)</label>
+                            <input type="text" id="adminCol1" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600; font-size:0.85rem;">마지막 열 (맨 오른쪽)</label>
+                            <input type="text" id="adminLastCol" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:0.5rem; margin-top:1.2rem; justify-content:flex-end;">
+                    <button class="btn btn-red" onclick="clearSecretAdmin()">초기화 (기본값 복원)</button>
+                    <button class="btn btn-green" onclick="saveSecretAdmin()">💾 저장</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1537,8 +1593,10 @@
         window.onclick = function (event) {
             const modal = document.getElementById('guideModal');
             const pModal = document.getElementById('specialRulesModal');
+            const sModal = document.getElementById('secretAdminModal');
             if (event.target == modal) modal.style.display = "none";
             if (event.target == pModal) pModal.style.display = "none";
+            if (event.target == sModal) sModal.style.display = "none";
         }
 
         /* 특수 배치 모달 로직 */
@@ -1640,7 +1698,86 @@
             reader.readAsText(file);
         }
 
-        window.onload = () => { updateTitle(); updateDoors(); updateTheme(); scalePages(); };
+        /* 비밀 관리자 패널 (Ctrl+Shift+K) */
+        function parseNumList(str) {
+            return str.split(/[\s,]+/).map(s => s.trim()).filter(s => s).map(Number).filter(n => !isNaN(n));
+        }
+        function numListToStr(arr) {
+            return Array.isArray(arr) ? arr.join(', ') : '';
+        }
+
+        function openSecretAdmin() {
+            // 현재 활성 값을 입력란에 표시
+            document.getElementById('adminDistanceTargets').value = numListToStr(typeof secretDistanceTargets !== 'undefined' ? secretDistanceTargets : []);
+            document.getElementById('adminRow1').value = numListToStr(typeof secretRow1 !== 'undefined' ? secretRow1 : []);
+            document.getElementById('adminRow2').value = numListToStr(typeof secretRow2 !== 'undefined' ? secretRow2 : []);
+            document.getElementById('adminRow3').value = numListToStr(typeof secretRow3 !== 'undefined' ? secretRow3 : []);
+            document.getElementById('adminRow4').value = numListToStr(typeof secretRow4 !== 'undefined' ? secretRow4 : []);
+            document.getElementById('adminRow5').value = numListToStr(typeof secretRow5 !== 'undefined' ? secretRow5 : []);
+            document.getElementById('adminLastRow').value = numListToStr(typeof secretLastRow !== 'undefined' ? secretLastRow : []);
+            document.getElementById('adminCol1').value = numListToStr(typeof secretCol1 !== 'undefined' ? secretCol1 : []);
+            document.getElementById('adminLastCol').value = numListToStr(typeof secretLastCol !== 'undefined' ? secretLastCol : []);
+            document.getElementById('secretAdminModal').style.display = 'block';
+        }
+        function closeSecretAdmin() {
+            document.getElementById('secretAdminModal').style.display = 'none';
+        }
+        function saveSecretAdmin() {
+            const data = {
+                secretDistanceTargets: parseNumList(document.getElementById('adminDistanceTargets').value),
+                secretRow1: parseNumList(document.getElementById('adminRow1').value),
+                secretRow2: parseNumList(document.getElementById('adminRow2').value),
+                secretRow3: parseNumList(document.getElementById('adminRow3').value),
+                secretRow4: parseNumList(document.getElementById('adminRow4').value),
+                secretRow5: parseNumList(document.getElementById('adminRow5').value),
+                secretLastRow: parseNumList(document.getElementById('adminLastRow').value),
+                secretCol1: parseNumList(document.getElementById('adminCol1').value),
+                secretLastCol: parseNumList(document.getElementById('adminLastCol').value)
+            };
+            localStorage.setItem('seatSecretRules', JSON.stringify(data));
+            applySecretRules(data);
+            closeSecretAdmin();
+            alert('비밀 규칙이 저장되었습니다. 다음 섞기부터 적용됩니다.');
+        }
+        function clearSecretAdmin() {
+            localStorage.removeItem('seatSecretRules');
+            // config-loader(빌드)에서 주입된 원본 값은 이미 덮어씌워졌으므로 빈 배열로 초기화
+            applySecretRules({
+                secretDistanceTargets: [], secretRow1: [], secretRow2: [], secretRow3: [],
+                secretRow4: [], secretRow5: [], secretLastRow: [], secretCol1: [], secretLastCol: []
+            });
+            closeSecretAdmin();
+            alert('비밀 규칙이 초기화되었습니다. 페이지를 새로고침하면 기본값이 복원됩니다.');
+        }
+        function applySecretRules(data) {
+            window.secretDistanceTargets = data.secretDistanceTargets || [];
+            window.secretRow1 = data.secretRow1 || [];
+            window.secretRow2 = data.secretRow2 || [];
+            window.secretRow3 = data.secretRow3 || [];
+            window.secretRow4 = data.secretRow4 || [];
+            window.secretRow5 = data.secretRow5 || [];
+            window.secretLastRow = data.secretLastRow || [];
+            window.secretCol1 = data.secretCol1 || [];
+            window.secretLastCol = data.secretLastCol || [];
+        }
+        function loadSecretRulesFromStorage() {
+            const saved = localStorage.getItem('seatSecretRules');
+            if (saved) {
+                try {
+                    applySecretRules(JSON.parse(saved));
+                } catch (e) { /* 파싱 실패 시 기본값 유지 */ }
+            }
+        }
+
+        // Ctrl+Shift+K 단축키
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'K') {
+                e.preventDefault();
+                openSecretAdmin();
+            }
+        });
+
+        window.onload = () => { loadSecretRulesFromStorage(); updateTitle(); updateDoors(); updateTheme(); scalePages(); };
     </script>
 </body>
 
