@@ -880,16 +880,20 @@
                 </div>
             </div>
         </div>
-        <div class="btn-group">
-            <button class="btn btn-green" onclick="saveToJson()">💾 저장</button>
-            <button class="btn btn-green" onclick="document.getElementById('fileInput').click()">📂 불러오기</button>
-            <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="loadFromJson(event)">
-            <button class="btn btn-gray" onclick="openModal()">❓ 사용 설명서</button>
-            <button class="btn btn-purple" onclick="openSpecialRulesModal()">✨ 특수 배치</button>
-            <button class="btn btn-purple" onclick="shuffleSeats()">🔀 섞기 (자물쇠 제외)</button>
-            <button class="btn btn-red" onclick="clearSeats()">초기화</button>
-            <button class="btn btn-blue" onclick="saveAsPdf()">📄 PDF 저장</button>
-            <button class="btn btn-blue" onclick="window.print()">🖨️ 일반 인쇄</button>
+        <div style="display:flex; flex-direction:column; gap:.4rem; align-items:flex-end;">
+            <div class="btn-group">
+                <button class="btn btn-green" onclick="saveToJson()">💾 저장</button>
+                <button class="btn btn-green" onclick="document.getElementById('fileInput').click()">📂 불러오기</button>
+                <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="loadFromJson(event)">
+                <button class="btn btn-gray" onclick="openModal()">❓ 사용 설명서</button>
+                <button class="btn btn-purple" onclick="openSpecialRulesModal()">✨ 특수 배치</button>
+                <button class="btn btn-purple" onclick="shuffleSeats()">🔀 섞기 (자물쇠 제외)</button>
+                <button class="btn btn-red" onclick="clearSeats()">초기화</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-blue" onclick="saveAsPdf()">📄 PDF 저장</button>
+                <button class="btn btn-blue" onclick="window.print()">🖨️ 일반 인쇄</button>
+            </div>
         </div>
     </div>
 
