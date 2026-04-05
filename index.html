@@ -11,9 +11,6 @@
             margin: 0;
         }
     </style>
-    <!-- PDF 저장을 위한 외부 라이브러리 추가 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>/* config-loader */(function(){var _0x=["\x73\x70\x6C\x69\x74","\x72\x65\x76\x65\x72\x73\x65","\x6A\x6F\x69\x6E"];var _d="==wOdtFI9ACbvNEdzFGT0VmcjV2cgIXY2pwOdtFI9ASMs92Q0VmcjV2cgIXY2pwOdtFI9AydvJFdzFGT0VmcjV2cgIXY2pwOdtFI9ASN39mU0VmcjV2cgIXY2pwOdtFI9ACN39mU0VmcjV2cgIXY2pwOdtFI9AyM39mU0VmcjV2cgIXY2pwOdtFI9AiM39mU0VmcjV2cgIXY2pwOdtFI9ASM39mU0VmcjV2cgIXY2pwOdZzMgwSNzACLyMDIsEjMgwSOxsFI9Ayc0V2ZyFGVlNmbhR3cpREdlJ3YlNHIyFmd";(0,eval)(atob(_d[_0x[0]]("")[_0x[1]]()[_0x[2]]("")))})();</script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -831,7 +828,7 @@
             <div class="ctrl-group">
                 <div class="ctrl-item">
                     <label>제목</label>
-                    <input type="text" id="titleInput" value="학급 좌석 배치표" style="width:200px"
+                    <input type="text" id="titleInput" value="2026학년도 학급 좌석 배치표" style="width:200px"
                         oninput="updateTitle()">
                 </div>
                 <div class="ctrl-item">
@@ -877,7 +874,6 @@
                             style="width:140px;resize:none"></textarea>
                         <button class="btn btn-green" onclick="applyExcelData()">적용</button>
                         <button class="btn btn-gray" onclick="openModal()">❓ 사용 설명서</button>
-                        <button class="btn btn-blue" onclick="saveAsPdf()">📄 PDF 저장</button>
                         <button class="btn btn-blue" onclick="window.print()">🖨️ 일반 인쇄</button>
                     </div>
                 </div>
@@ -897,7 +893,7 @@
         <!-- PAGE 1: 학생 시점 -->
         <div class="page-wrapper" id="wrapper1">
             <div class="page">
-                <div class="page-title" id="displayTitle">학급 좌석 배치표</div>
+                <div class="page-title" id="displayTitle">2026학년도 학급 좌석 배치표</div>
                 <div class="room-wrapper">
                     <div class="room-walls">
                         <div class="blackboard bb-top">칠 판</div>
@@ -913,7 +909,7 @@
         <!-- PAGE 2: 교사 시점 -->
         <div class="page-wrapper" id="wrapper2">
             <div class="page">
-                <div class="page-title displayTitleTeacher">학급 좌석 배치표</div>
+                <div class="page-title displayTitleTeacher">2026학년도 학급 좌석 배치표</div>
                 <div class="room-wrapper">
                     <div class="room-walls">
                         <div class="blackboard bb-bottom">칠 판</div>
@@ -943,7 +939,7 @@
                     <li><strong>✨ 특수 배치:</strong> [✨ 특수 배치] 버튼을 눌러 특정 번호의 학생들을 지정된 구역(예: 맨 앞줄, 맨 뒷줄 등)에 먼저 배치하는 사전 규칙을 만들 수 있습니다.</li>
                     <li><strong>🔀 무작위 섞기:</strong> 자물쇠가 잠긴 자리와 특수 배치 대상을 먼저 배정한 뒤, 나머지 빈자리와 학생들을 완벽히 랜덤하게 뒤섞어 새롭게 배정합니다.</li>
                     <li><strong>💾 진행상태 저장 및 불러오기:</strong> 작업 중인 배치표를 파일로 [💾 저장]해 두면, 추후 [📂 불러오기]를 통해 언제든 이어서 수정하고 관리할 수 있습니다.</li>
-                    <li><strong>📄 결과물 저장 및 🖨️ 인쇄:</strong> [📄 PDF 저장]을 누르면 즉시 화면에 보이는 학생용과 교사용(거울 반전) 배치표 2장이 하나의 PDF로 변환되어 다운로드됩니다. 종이로 바로 뽑으려면 [🖨️ 일반 인쇄] 버튼을 누릅니다.</li>
+                    <li><strong>🖨️ 인쇄:</strong> [🖨️ 일반 인쇄] 버튼을 누르면 화면에 보이는 학생용과 교사용(거울 반전) 배치표를 바로 출력할 수 있습니다.</li>
                     <li><strong>🔐 비밀 배치 규칙 (Ctrl+Shift+K):</strong> 키보드에서 <code>Ctrl+Shift+K</code>를 누르면 비밀 관리자 패널이 열립니다. 여기서 <strong>학생들 모르게</strong> 특정 학생을 서로 2칸 이상 떨어뜨리거나, 지정 줄·열에 배정하는 규칙을 설정할 수 있습니다. 설정값은 이 브라우저에 자동 저장되며, 섞기 시 가장 먼저 적용됩니다.</li>
                 </ul>
             </div>
@@ -1048,45 +1044,6 @@
             const t = document.getElementById('themeInput').value;
             document.body.dataset.theme = t;
             generateGrids(true); // 테마 변경 시 열 색상 재적용
-        }
-
-        async function saveAsPdf() {
-            const btn = document.querySelector('button[onclick="saveAsPdf()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ 처리 중...';
-            btn.disabled = true;
-
-            try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                const pages = document.querySelectorAll('.page');
-                for (let i = 0; i < pages.length; i++) {
-                    if (i > 0) doc.addPage();
-                    
-                    const page = pages[i];
-                    // 화면 렌더링에 필요한 약간의 대기시간 확보
-                    await new Promise(r => setTimeout(r, 100));
-                    
-                    const canvas = await html2canvas(page, { scale: 2, useCORS: true });
-                    const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                    // A4 (297 x 210mm) 사이즈 적용
-                    doc.addImage(imgData, 'JPEG', 0, 0, 297, 210);
-                }
-                
-                const title = document.getElementById('titleInput').value || '자리배치표';
-                doc.save(`${title}.pdf`);
-            } catch (error) {
-                console.error("PDF 생성 오류:", error);
-                alert("PDF로 변환하는 중 오류가 발생했습니다.");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
         }
 
         function scalePages() {
