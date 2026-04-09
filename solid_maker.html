@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>기술 도면 제작 및 연습 도구</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f1f5f9;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .pointer-auto {
+            pointer-events: auto;
+        }
+
+        .btn-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .shape-btn {
+            padding: 5px 3px;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            background-color: #f1f5f9;
+            transition: all 0.2s;
+            color: #475569;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .shape-btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .shape-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .mode-badge {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ui-overlay p-4 flex flex-col justify-between">
+        <div class="flex justify-between items-start">
+            <div class="bg-white/90 p-3 rounded-2xl shadow-xl border border-slate-200 pointer-auto">
+                <div class="flex items-center gap-3 mb-1">
+                    <h1 class="text-xl font-black text-slate-800">도면 메이커</h1>
+                    <span id="modeBadge" class="mode-badge bg-blue-100 text-blue-700">제작 모드</span>
+                </div>
+                <p class="text-slate-500 text-xs">도형 선택 → 클릭 배치 | [R] 회전 | 우클릭 삭제 | Ctrl+Z 되돌리기</p>
+            </div>
+
+            <!-- 제작 도구함 -->
+            <div id="buildTools"
+                class="bg-white/95 p-3 rounded-2xl shadow-2xl border border-slate-200 pointer-auto w-[260px] max-h-[85vh] overflow-y-auto">
+                <div class="flex gap-2 mb-2">
+                    <button onclick="setTool('add')" id="toolAdd"
+                        class="flex-1 py-2 rounded-xl text-sm font-bold border-2 border-transparent transition-all bg-slate-100 hover:bg-blue-50 btn-active">
+                        ➕ 짓기
+                    </button>
+                    <button onclick="setTool('delete')" id="toolDelete"
+                        class="flex-1 py-2 rounded-xl text-sm font-bold border-2 border-transparent transition-all bg-slate-100 hover:bg-red-50 text-slate-600">
+                        🧹 지우기
+                    </button>
+                </div>
+
+                <div id="shapePalette" class="space-y-1.5">
+                    <p class="text-[10px] font-bold text-slate-400 px-1 uppercase tracking-wider">기본 도형</p>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button onclick="setShape('cube')" id="shape-cube"
+                            class="shape-btn shape-active">🧊<br>큐브</button>
+                        <button onclick="setShape('cylinder')" id="shape-cylinder"
+                            class="shape-btn">🛢️<br>원기둥</button>
+                        <button onclick="setShape('wedge')" id="shape-wedge"
+                            class="shape-btn">📐<br>빗면 1:1</button>
+                    </div>
+
+                    <p class="text-[10px] font-bold text-slate-400 px-1 uppercase tracking-wider mt-1">빗면 변형</p>
+                    <div class="grid grid-cols-4 gap-1">
+                        <button onclick="setShape('wedge12')" id="shape-wedge12"
+                            class="shape-btn">📐<br>1:2</button>
+                        <button onclick="setShape('wedge13')" id="shape-wedge13"
+                            class="shape-btn">📐<br>1:3</button>
+                        <button onclick="setShape('wedge21')" id="shape-wedge21"
+                            class="shape-btn">📐<br>2:1</button>
+                        <button onclick="setShape('wedge31')" id="shape-wedge31"
+                            class="shape-btn">📐<br>3:1</button>
+                    </div>
+
+                    <p class="text-[10px] font-bold text-slate-400 px-1 uppercase tracking-wider mt-1">구멍 도형</p>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button onclick="setShape('holeZ')" id="shape-holeZ"
+                            class="shape-btn">🕳️<br>앞뒤</button>
+                        <button onclick="setShape('holeX')" id="shape-holeX"
+                            class="shape-btn">🕳️<br>좌우</button>
+                        <button onclick="setShape('holeY')" id="shape-holeY"
+                            class="shape-btn">🕳️<br>상하</button>
+                    </div>
+
+                    <button onclick="rotateShape()"
+                        class="w-full mt-1 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-colors">
+                        🔄 방향 회전 (R 키)
+                    </button>
+                </div>
+
+                <hr class="border-slate-200 my-2">
+
+                <!-- 저장/불러오기/스크린샷/Undo -->
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button onclick="saveData()"
+                        class="action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200">💾
+                        저장</button>
+                    <button onclick="loadData()"
+                        class="action-btn bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200">📂
+                        불러오기</button>
+                    <button onclick="takeScreenshot()"
+                        class="action-btn bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200">📸
+                        캡처</button>
+                    <button onclick="undoAction()"
+                        class="action-btn bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200">↩️
+                        되돌리기</button>
+                </div>
+
+                <hr class="border-slate-200 my-2">
+                <button onclick="clearAll()"
+                    class="w-full py-1.5 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">🗑️
+                    전체 삭제</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-3 pointer-auto">
+            <!-- 뷰 컨트롤 (항상 표시) -->
+            <div class="bg-white/95 p-2 rounded-2xl shadow-xl border border-slate-200 flex justify-center gap-2">
+                <button onclick="setView('iso')" id="btn-view-iso"
+                    class="bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-bold ring-2 ring-slate-400">입체도</button>
+                <button onclick="setView('front')" id="btn-view-front"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">정면도</button>
+                <button onclick="setView('top')" id="btn-view-top"
+                    class="bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">평면도</button>
+                <button onclick="setView('side')" id="btn-view-side"
+                    class="bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">우측면도</button>
+            </div>
+
+            <!-- 실습 모드 전용 컨트롤 -->
+            <div id="viewControls"
+                class="hidden bg-white/95 p-4 rounded-3xl shadow-2xl border border-slate-200 flex flex-col gap-3 min-w-[300px]">
+                <div class="px-2">
+                    <label class="text-[10px] font-bold text-slate-400 mb-1 block">투명도 (숨은선 확인)</label>
+                    <input type="range" id="opacityRange" min="10" max="100" value="100"
+                        class="w-full accent-blue-600">
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="switchMode('build')" id="modeBuildBtn"
+                    class="px-8 py-3 rounded-2xl font-black text-sm shadow-lg transition-all bg-blue-600 text-white ring-4 ring-blue-100">도형
+                    만들기</button>
+                <button onclick="switchMode('view')" id="modeViewBtn"
+                    class="px-8 py-3 rounded-2xl font-black text-sm shadow-lg transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">연습하기</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        let camera, perspectiveCamera, orthoCamera;
+        let renderer, scene, raycaster, mouse;
+        let voxels = [];
+        let currentTool = 'add';
+        let currentMode = 'build';
+        let currentShape = 'cube';
+        let currentRotation = 0;
+        let floorPlane;
+        let ghostGroup;
+
+        // Undo/Redo
+        let undoStack = [];
+        let redoStack = [];
+
+        let highlightMesh = null;
+        let mergedViewGroup = null; // 연습 모드 병합 메쉬
+        let highlightedNormals = []; // 여러 방향 다중 선택을 위한 배열
+        const highlightMat = new THREE.MeshBasicMaterial({
+            color: 0xffd700, // 진한 노란색
+            side: THREE.DoubleSide,
+            polygonOffset: true,
+            polygonOffsetFactor: -2,
+            polygonOffsetUnits: -2
+        });
+
+        function clearHighlight() {
+            if (highlightMesh) {
+                scene.remove(highlightMesh);
+                highlightMesh.geometry.dispose();
+                highlightMesh = null;
+            }
+            highlightedNormals = [];
+        }
+
+        function highlightDirectionalFaces(hit) {
+            const hitMesh = hit.object;
+            if (!hitMesh.userData.isVoxelMesh) return;
+            const geom = hitMesh.geometry;
+            if (!geom || !geom.attributes.position) return;
+            const localNormal = hit.face.normal.clone();
+            const hitMatrix = hitMesh.matrixWorld;
+            const normalMatrix = new THREE.Matrix3().getNormalMatrix(hitMatrix);
+            const worldNormal = localNormal.clone().applyMatrix3(normalMatrix).normalize();
+
+            // 똑같은 방향을 클릭했을 경우 배열에서 제거 (토글)
+            let foundIdx = -1;
+            for (let i = 0; i < highlightedNormals.length; i++) {
+                if (Math.abs(highlightedNormals[i].dot(worldNormal) - 1.0) < 0.01) {
+                    foundIdx = i; break;
+                }
+            }
+            if (foundIdx > -1) {
+                highlightedNormals.splice(foundIdx, 1);
+            } else {
+                highlightedNormals.push(worldNormal.clone());
+            }
+
+            // 기존 하이라이트 메쉬 삭제
+            if (highlightMesh) {
+                scene.remove(highlightMesh);
+                highlightMesh.geometry.dispose();
+                highlightMesh = null;
+            }
+
+            if (highlightedNormals.length === 0) return;
+
+            const highlightVerts = [];
+
+            function checkAndAddTriangle(a, b, c, pos, mat, normMat) {
+                const va = new THREE.Vector3().fromBufferAttribute(pos, a);
+                const vb = new THREE.Vector3().fromBufferAttribute(pos, b);
+                const vc = new THREE.Vector3().fromBufferAttribute(pos, c);
+                const cb = new THREE.Vector3().subVectors(vc, vb);
+                const ab = new THREE.Vector3().subVectors(va, vb);
+                const lNorm = cb.cross(ab).normalize();
+                if (lNorm.lengthSq() < 0.0001) return; // 퇴화 삼각형 무시
+                const wNorm = lNorm.applyMatrix3(normMat).normalize();
+                
+                for (let n of highlightedNormals) {
+                    if (wNorm.dot(n) > 0.99) { // 배열 중 하나라도 일치하면
+                        const wa = va.clone().applyMatrix4(mat);
+                        const wb = vb.clone().applyMatrix4(mat);
+                        const wc = vc.clone().applyMatrix4(mat);
+                        highlightVerts.push(wa.x, wa.y, wa.z, wb.x, wb.y, wb.z, wc.x, wc.y, wc.z);
+                        break;
+                    }
+                }
+            }
+
+            for (let v of voxels) {
+                const vm = v.mesh;
+                const vGeom = vm.geometry;
+                const vPos = vGeom.attributes.position;
+                if (!vPos) continue;
+                const vMat = vm.matrixWorld;
+                const vNormMat = new THREE.Matrix3().getNormalMatrix(vMat);
+                const index = vGeom.index;
+                if (index) {
+                    for (let i = 0; i < index.count; i += 3) {
+                        checkAndAddTriangle(index.getX(i), index.getX(i+1), index.getX(i+2), vPos, vMat, vNormMat);
+                    }
+                } else {
+                    for (let i = 0; i < vPos.count; i += 3) {
+                        checkAndAddTriangle(i, i+1, i+2, vPos, vMat, vNormMat);
+                    }
+                }
+            }
+            if (highlightVerts.length > 0) {
+                const hGeom = new THREE.BufferGeometry();
+                hGeom.setAttribute('position', new THREE.Float32BufferAttribute(highlightVerts, 3));
+                hGeom.computeVertexNormals();
+                highlightMesh = new THREE.Mesh(hGeom, highlightMat);
+                scene.add(highlightMesh);
+            }
+        }
+
+        // 드래그 회전용
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let prevDrag = { x: 0, y: 0 };
+        let sceneGroup; // 모든 voxel을 감싸는 그룹 (회전용)
+
+        const UNIT = 1;
+        const GRID_SIZE = 24;
+
+        const BASE_MAT = new THREE.MeshPhongMaterial({ color: 0x3b82f6, transparent: true, opacity: 1, shininess: 30 });
+        const HOLE_MAT = new THREE.MeshPhongMaterial({ color: 0x0f172a, side: THREE.BackSide, transparent: true, opacity: 1 });
+        const EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+
+        const GHOST_MAT = new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.5 });
+        const GHOST_HOLE_MAT = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.5 });
+        const GHOST_EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x1d4ed8, linewidth: 2, transparent: true, opacity: 0.5 });
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xe2e8f0);
+
+            const aspect = window.innerWidth / window.innerHeight;
+
+            // 투시 투영 카메라 (원근감 O)
+            perspectiveCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+            perspectiveCamera.position.set(20, 16, 20);
+            perspectiveCamera.lookAt(0, 0, 0);
+
+            // 평행 투영 카메라 (원근감 X, 정투상도용)
+            const frustumSize = 28;
+            orthoCamera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+            
+            camera = perspectiveCamera;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const dLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dLight.position.set(10, 20, 15);
+            scene.add(dLight);
+
+            const gridHelper = new THREE.GridHelper(GRID_SIZE, GRID_SIZE, 0x475569, 0x94a3b8);
+            scene.add(gridHelper);
+
+            // ── 정면 방향 바닥 텍스트 ────────────────────────────────────────
+            // "정면" 텍스트를 바닥에 평평하게 (PlaneGeometry + 캔버스 텍스처)
+            (function addFloorLabel() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 512, 256);
+                ctx.fillStyle = '#e53e3e';
+                ctx.font = 'bold 90px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('↑ 정면', 256, 128);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false, side: THREE.DoubleSide });
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(5, 2.5), mat);
+                plane.rotation.x = -Math.PI / 2; // 바닥면에 눕히기
+                plane.position.set(0, 0.02, 10.5); // 격자 앞 가장자리
+                scene.add(plane);
+            })();
+            // ────────────────────────────────────────────────────────────────
+
+            const floorGeom = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
+            floorPlane = new THREE.Mesh(floorGeom, new THREE.MeshBasicMaterial({ visible: false }));
+            floorPlane.rotation.x = -Math.PI / 2;
+            scene.add(floorPlane);
+
+            updateGhostMesh();
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('resize', onResize);
+            window.addEventListener('wheel', onWheel, { passive: false });
+
+            document.getElementById('opacityRange').addEventListener('input', (e) => {
+                const v = e.target.value / 100;
+                // 연습 모드 병합 메쉬에 적용
+                if (mergedViewGroup) {
+                    mergedViewGroup.children.forEach(child => {
+                        if (child.material) child.material.opacity = v;
+                    });
+                }
+                // 제작 모드 개별 메쉬에도 적용 (모드 전환 후 값 유지용)
+                voxels.forEach(vxl => {
+                    vxl.group.children.forEach(child => {
+                        if (child.material) child.material.opacity = v;
+                    });
+                });
+            });
+
+            animate();
+            addVoxel(0.5, 0.5, 0.5, 'cube', 0);
+        }
+
+        // ============ 형상 생성 팩토리 ============
+        function createWedgeGeometry(baseW, baseH) {
+            // baseW:baseH 비율의 빗면 (삼각형 단면 → Z축으로 extrude)
+            const shape = new THREE.Shape();
+            // 빗면의 가장 높은 부분(짧은 면)이 놓인 격자의 시작점에 딱 맞도록
+            // 시작점(왼쪽 아래)을 (-0.5, -0.5)로 고정합니다.
+            const startX = -0.5;
+            const startY = -0.5;
+            shape.moveTo(startX, startY);
+            shape.lineTo(startX + baseW, startY);
+            shape.lineTo(startX, startY + baseH);
+            const geom = new THREE.ExtrudeGeometry(shape, { depth: UNIT, bevelEnabled: false });
+            geom.translate(0, 0, -0.5);
+            return geom;
+        }
+
+        function createVoxelComponents(shapeType, mat, edgeMat, holeMat) {
+            const group = new THREE.Group();
+            let geom, mesh, lines, innerHole;
+            const threshold = 2;
+
+            if (shapeType === 'cube') {
+                geom = new THREE.BoxGeometry(UNIT, UNIT, UNIT);
+            } else if (shapeType === 'wedge') {
+                geom = createWedgeGeometry(1, 1);
+            } else if (shapeType === 'wedge12') {
+                geom = createWedgeGeometry(1, 2);
+            } else if (shapeType === 'wedge13') {
+                geom = createWedgeGeometry(1, 3);
+            } else if (shapeType === 'wedge21') {
+                geom = createWedgeGeometry(2, 1);
+            } else if (shapeType === 'wedge31') {
+                geom = createWedgeGeometry(3, 1);
+            } else if (shapeType === 'cylinder') {
+                geom = new THREE.CylinderGeometry(0.5, 0.5, UNIT, 32);
+            } else if (shapeType.startsWith('hole')) {
+                const shape = new THREE.Shape();
+                shape.moveTo(-0.5, -0.5); shape.lineTo(0.5, -0.5); shape.lineTo(0.5, 0.5); shape.lineTo(-0.5, 0.5);
+                const holePath = new THREE.Path(); holePath.absarc(0, 0, 0.4, 0, Math.PI * 2, true);
+                shape.holes.push(holePath);
+                geom = new THREE.ExtrudeGeometry(shape, { depth: UNIT, bevelEnabled: false });
+                geom.translate(0, 0, -0.5);
+
+                const cylGeom = new THREE.CylinderGeometry(0.4, 0.4, UNIT, 32, 1, true);
+                innerHole = new THREE.Mesh(cylGeom, holeMat.clone());
+                innerHole.rotation.x = Math.PI / 2;
+            }
+
+            mesh = new THREE.Mesh(geom, mat.clone());
+            lines = new THREE.LineSegments(new THREE.EdgesGeometry(geom, threshold), edgeMat.clone());
+
+            if (shapeType === 'holeX') {
+                mesh.rotation.y = Math.PI / 2;
+                lines.rotation.y = Math.PI / 2;
+                if (innerHole) innerHole.rotation.y = Math.PI / 2;
+            } else if (shapeType === 'holeY') {
+                mesh.rotation.x = Math.PI / 2;
+                lines.rotation.x = Math.PI / 2;
+                if (innerHole) innerHole.rotation.x = Math.PI / 2;
+            }
+
+            group.add(mesh);
+            group.add(lines);
+            if (innerHole) group.add(innerHole);
+
+            mesh.userData.isVoxelMesh = true;
+
+            return { group, mesh };
+        }
+
+        // ============ Voxel 관리 ============
+        function addVoxel(x, y, z, shapeType, rotation, recordUndo = true) {
+            if (voxels.some(v => Math.abs(v.pos.x - x) < 0.1 && Math.abs(v.pos.y - y) < 0.1 && Math.abs(v.pos.z - z) < 0.1)) return;
+
+            const { group, mesh } = createVoxelComponents(shapeType, BASE_MAT, EDGE_MAT, HOLE_MAT);
+
+            group.position.set(x, y, z);
+            group.rotation.y = rotation * (Math.PI / 2);
+
+            const voxelObj = { group, mesh, pos: { x, y, z }, shape: shapeType, rotation };
+            mesh.userData.voxel = voxelObj;
+
+            scene.add(group);
+            voxels.push(voxelObj);
+
+            if (recordUndo) {
+                undoStack.push({ type: 'add', data: { x, y, z, shape: shapeType, rotation } });
+                redoStack = [];
+            }
+        }
+
+        function removeVoxel(hitMesh, recordUndo = true) {
+            const voxelObj = hitMesh.userData.voxel;
+            if (voxelObj) {
+                if (recordUndo) {
+                    undoStack.push({ type: 'remove', data: { x: voxelObj.pos.x, y: voxelObj.pos.y, z: voxelObj.pos.z, shape: voxelObj.shape, rotation: voxelObj.rotation } });
+                    redoStack = [];
+                }
+                scene.remove(voxelObj.group);
+                voxels = voxels.filter(v => v !== voxelObj);
+            }
+        }
+
+        // ============ Undo/Redo ============
+        function undoAction() {
+            if (undoStack.length === 0) return;
+            const action = undoStack.pop();
+            if (action.type === 'add') {
+                // 추가된 것을 취소 → 해당 위치의 voxel 삭제
+                const v = voxels.find(v => Math.abs(v.pos.x - action.data.x) < 0.1 && Math.abs(v.pos.y - action.data.y) < 0.1 && Math.abs(v.pos.z - action.data.z) < 0.1);
+                if (v) {
+                    scene.remove(v.group);
+                    voxels = voxels.filter(vx => vx !== v);
+                }
+                redoStack.push(action);
+            } else if (action.type === 'remove') {
+                // 삭제된 것을 취소 → 다시 추가
+                addVoxel(action.data.x, action.data.y, action.data.z, action.data.shape, action.data.rotation, false);
+                redoStack.push(action);
+            }
+        }
+
+        function redoAction() {
+            if (redoStack.length === 0) return;
+            const action = redoStack.pop();
+            if (action.type === 'add') {
+                addVoxel(action.data.x, action.data.y, action.data.z, action.data.shape, action.data.rotation, false);
+                undoStack.push(action);
+            } else if (action.type === 'remove') {
+                const v = voxels.find(v => Math.abs(v.pos.x - action.data.x) < 0.1 && Math.abs(v.pos.y - action.data.y) < 0.1 && Math.abs(v.pos.z - action.data.z) < 0.1);
+                if (v) {
+                    scene.remove(v.group);
+                    voxels = voxels.filter(vx => vx !== v);
+                }
+                undoStack.push(action);
+            }
+        }
+
+        // ============ 저장/불러오기 ============
+        function saveData() {
+            const data = voxels.map(v => ({
+                x: v.pos.x, y: v.pos.y, z: v.pos.z,
+                shape: v.shape, // Changed from 'type' to 'shape' to match existing voxelObj structure
+                rotation: v.rotation
+            }));
+            
+            const dataStr = JSON.stringify(data);
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            const date = new Date();
+            const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+            a.download = `도면데이터_${dateStr}.json`;
+            a.href = url;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showToast('파일로 저장되었습니다.');
+        }
+
+        function loadData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        clearAll();
+                        setTimeout(() => {
+                            data.forEach(d => addVoxel(d.x, d.y, d.z, d.shape, d.rotation, false));
+                            undoStack = [];
+                            redoStack = [];
+                            showToast('📂 파일에서 불러오기 완료! (' + data.length + '개 도형)');
+                        }, 50);
+                    } catch (err) {
+                        alert('잘못된 파일 형식입니다. 도면데이터 json 파일을 선택해주세요.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // ============ 스크린샷 ============
+        function takeScreenshot() {
+            renderer.render(scene, camera);
+            const link = document.createElement('a');
+            link.download = '도면_' + new Date().toISOString().slice(0, 10) + '.png';
+            link.href = renderer.domElement.toDataURL('image/png');
+            link.click();
+            showToast('📸 이미지 저장 완료!');
+        }
+
+        // ============ 토스트 메시지 ============
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold z-50 transition-all';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 1500);
+        }
+
+        // ============ Ghost/Preview ============
+        function updateGhostMesh() {
+            if (ghostGroup) scene.remove(ghostGroup);
+            const parts = createVoxelComponents(currentShape, GHOST_MAT, GHOST_EDGE_MAT, GHOST_HOLE_MAT);
+            ghostGroup = parts.group;
+            ghostGroup.visible = false;
+            scene.add(ghostGroup);
+        }
+
+        function getTargetPos(intersect) {
+            if (intersect.object === floorPlane) {
+                return { x: Math.floor(intersect.point.x) + 0.5, y: 0.5, z: Math.floor(intersect.point.z) + 0.5 };
+            }
+
+            const voxelObj = intersect.object.userData.voxel;
+            const center = voxelObj.group.position.clone();
+
+            const normalMatrix = new THREE.Matrix3().getNormalMatrix(intersect.object.matrixWorld);
+            const worldNormal = intersect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+
+            const absX = Math.abs(worldNormal.x);
+            const absY = Math.abs(worldNormal.y);
+            const absZ = Math.abs(worldNormal.z);
+            const axis = new THREE.Vector3();
+
+            if (absX >= absY && absX >= absZ) axis.x = Math.sign(worldNormal.x);
+            else if (absY >= absX && absY >= absZ) axis.y = Math.sign(worldNormal.y);
+            else axis.z = Math.sign(worldNormal.z);
+
+            center.add(axis);
+            center.y = Math.max(0.5, center.y);
+
+            return { x: center.x, y: center.y, z: center.z };
+        }
+
+        // ============ 이벤트 핸들러 ============
+        let isRightDragging = false;
+        let isBuildDragging = false;
+        let dragAxis = null;
+        let dragValue = null;
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // 실습 모드 드래그 회전 또는 제작 모드 우클릭 드래그 회전
+            if ((currentMode === 'view' && isDragging) || isRightDragging) {
+                if (camera === orthoCamera) {
+                    setView('iso'); // 정투상도에서는 드래그 시 입체도로 전환
+                }
+                const dx = (event.clientX - prevDrag.x) * 0.01;
+                const dy = (event.clientY - prevDrag.y) * 0.01;
+                // 카메라를 구면 좌표로 회전
+                const offset = camera.position.clone().sub(new THREE.Vector3(0, 1, 0));
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                spherical.theta -= dx;
+                spherical.phi -= dy;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                offset.setFromSpherical(spherical);
+                camera.position.copy(offset.add(new THREE.Vector3(0, 1, 0)));
+                camera.lookAt(0, 1, 0);
+                prevDrag = { x: event.clientX, y: event.clientY };
+                return;
+            }
+
+            if (currentMode !== 'build') { if (ghostGroup) ghostGroup.visible = false; return; }
+
+            raycaster.setFromCamera(mouse, camera);
+            const targets = [floorPlane, ...voxels.map(v => v.mesh)];
+            const intersects = raycaster.intersectObjects(targets);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                const p = getTargetPos(hit);
+
+                // 드래그(클릭 앤 무브)를 통한 연속 블록 생성 및 삭제
+                if (isBuildDragging) {
+                    const voxelMeshes = voxels.map(v => v.mesh); // Re-map here to ensure it's fresh
+                    if (currentTool === 'delete') {
+                        if (voxelMeshes.includes(hit.object)) removeVoxel(hit.object);
+                    } else if (currentTool === 'add') {
+                        if (dragAxis && p[dragAxis] === dragValue) {
+                            addVoxel(p.x, p.y, p.z, currentShape, currentRotation);
+                        }
+                    }
+                }
+
+                if (currentTool === 'add') {
+                    if (ghostGroup) {
+                        ghostGroup.position.set(p.x, p.y, p.z);
+                        ghostGroup.rotation.y = currentRotation * (Math.PI / 2);
+                        ghostGroup.visible = true;
+                    }
+                } else {
+                    if (ghostGroup) ghostGroup.visible = false;
+                }
+            } else {
+                if (ghostGroup) ghostGroup.visible = false;
+            }
+        }
+
+        function onMouseDown(event) {
+            if (event.target.closest('.pointer-auto')) return;
+
+            dragStart = { x: event.clientX, y: event.clientY };
+            prevDrag = { x: event.clientX, y: event.clientY };
+
+            if (event.button === 2) {
+                isRightDragging = true;
+                return; // 우클릭 시 드래그 시작, 즉시 삭제하지 않음
+            }
+
+            if (currentMode === 'view') {
+                if (event.button === 0) isDragging = true;
+                return;
+            }
+
+            if (currentMode === 'build' && event.button === 0) {
+                isBuildDragging = true;
+            }
+
+            raycaster.setFromCamera(mouse, camera);
+            const voxelMeshes = voxels.map(v => v.mesh);
+            const intersects = raycaster.intersectObjects([floorPlane, ...voxelMeshes]);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                // 단일 클릭으로 추가/삭제
+                if (currentTool === 'delete') {
+                    if (voxelMeshes.includes(hit.object)) removeVoxel(hit.object);
+                } else if (currentMode === 'build' && currentTool === 'add') {
+                    const p = getTargetPos(hit);
+                    const n = hit.face ? hit.face.normal : new THREE.Vector3(0, 1, 0);
+                    if (Math.abs(n.y) > 0.5) { dragAxis = 'y'; dragValue = p.y; }
+                    else if (Math.abs(n.x) > 0.5) { dragAxis = 'x'; dragValue = p.x; }
+                    else { dragAxis = 'z'; dragValue = p.z; }
+                    
+                    addVoxel(p.x, p.y, p.z, currentShape, currentRotation);
+                }
+            }
+        }
+
+        function onMouseUp(event) {
+            if (event.button === 2 && isRightDragging) {
+                isRightDragging = false;
+                // 우클릭 이동 거리가 일정 이하이면 클릭으로 판정하여 삭제
+                const dist = Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y);
+                if (dist < 5 && currentMode === 'build') {
+                    raycaster.setFromCamera(mouse, camera);
+                    const voxelMeshes = voxels.map(v => v.mesh);
+                    // 바닥재(floorPlane) 제외하고 메쉬만 삭제 대상
+                    const intersects = raycaster.intersectObjects(voxelMeshes);
+                    if (intersects.length > 0) {
+                        removeVoxel(intersects[0].object);
+                    }
+                }
+            }
+            if (event.button === 0) {
+                if (currentMode === 'view') {
+                    const dist = Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y);
+                    if (dist < 5) { // 클릭으로 간주
+                        raycaster.setFromCamera(mouse, camera);
+                        const voxelMeshes = voxels.map(v => v.mesh);
+                        const intersects = raycaster.intersectObjects(voxelMeshes);
+                        if (intersects.length > 0) {
+                            highlightDirectionalFaces(intersects[0]);
+                        } else {
+                            clearHighlight();
+                        }
+                    }
+                }
+                isDragging = false;
+                isBuildDragging = false;
+            }
+        }
+
+        function onWheel(event) {
+            event.preventDefault();
+            if (camera === perspectiveCamera) {
+                const offset = camera.position.clone().sub(new THREE.Vector3(0, 1, 0));
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                spherical.radius *= (event.deltaY > 0) ? 1.1 : 0.9;
+                spherical.radius = Math.max(3, Math.min(50, spherical.radius));
+                offset.setFromSpherical(spherical);
+                camera.position.copy(offset.add(new THREE.Vector3(0, 1, 0)));
+                camera.lookAt(0, 1, 0);
+            } else {
+                // 평행 투영 카메라 줌 인/아웃
+                const zoomFactor = (event.deltaY > 0) ? 0.9 : 1.1;
+                orthoCamera.zoom *= zoomFactor;
+                orthoCamera.zoom = Math.max(0.5, Math.min(10, orthoCamera.zoom));
+                orthoCamera.updateProjectionMatrix();
+            }
+        }
+
+        function onKeyDown(event) {
+            if (event.key.toLowerCase() === 'r' && currentMode === 'build') {
+                rotateShape();
+            }
+            if (event.ctrlKey && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                undoAction();
+            }
+            if (event.ctrlKey && event.key.toLowerCase() === 'y') {
+                event.preventDefault();
+                redoAction();
+            }
+        }
+
+        // ============ UI 제어 ============
+        function setTool(tool) {
+            currentTool = tool;
+            document.getElementById('toolAdd').classList.toggle('btn-active', tool === 'add');
+            document.getElementById('toolDelete').classList.toggle('btn-active', tool === 'delete');
+
+            document.getElementById('shapePalette').style.opacity = (tool === 'add') ? '1' : '0.4';
+            document.getElementById('shapePalette').style.pointerEvents = (tool === 'add') ? 'auto' : 'none';
+            if (tool === 'delete') if (ghostGroup) ghostGroup.visible = false;
+        }
+
+        function setShape(shape) {
+            currentShape = shape;
+            document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('shape-active'));
+            document.getElementById('shape-' + shape).classList.add('shape-active');
+            currentRotation = 0;
+            updateGhostMesh();
+        }
+
+        function rotateShape() {
+            currentRotation = (currentRotation + 1) % 4;
+            if (ghostGroup) ghostGroup.rotation.y = currentRotation * (Math.PI / 2);
+        }
+
+        // ── 연습 모드: 내부 경계선 제거, 외부 엣지만 표시 ──────────────
+        function buildMergedView() {
+            // 기존 병합 엣지 제거
+            if (mergedViewGroup) {
+                scene.remove(mergedViewGroup);
+                mergedViewGroup.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
+                mergedViewGroup = null;
+            }
+            if (voxels.length === 0) return;
+
+            try {
+                // 1) 개별 블럭의 EdgeLines(검은 경계선) 숨기기
+                voxels.forEach(v => {
+                    v.group.children.forEach(child => {
+                        if (child.isLineSegments) child.visible = false;
+                    });
+                });
+
+                // 2) 전체 지오메트리를 하나로 병합하여 외부 엣지 계산
+                const allPositions = [];
+                const snap = v => Math.round(v * 10000) / 10000; // 부동소수점 보정 (정밀도 4)
+
+                for (const voxel of voxels) {
+                    const mesh = voxel.mesh;
+                    const geom = mesh.geometry.clone();
+
+                    // mesh 로컬 변환 적용 (holeX, holeY 등의 rotation)
+                    const meshMat4 = new THREE.Matrix4();
+                    meshMat4.makeRotationFromEuler(mesh.rotation);
+                    geom.applyMatrix4(meshMat4);
+
+                    // 그룹 변환 적용 (회전 → 이동)
+                    const groupMat4 = new THREE.Matrix4();
+                    groupMat4.makeRotationY(voxel.rotation * Math.PI / 2);
+                    groupMat4.setPosition(voxel.pos.x, voxel.pos.y, voxel.pos.z);
+                    geom.applyMatrix4(groupMat4);
+
+                    const pos = geom.attributes.position;
+                    const index = geom.index;
+                    if (index) {
+                        for (let i = 0; i < index.count; i++) {
+                            const idx = index.getX(i);
+                            allPositions.push(snap(pos.getX(idx)), snap(pos.getY(idx)), snap(pos.getZ(idx)));
+                        }
+                    } else {
+                        for (let i = 0; i < pos.count; i++) {
+                            allPositions.push(snap(pos.getX(i)), snap(pos.getY(i)), snap(pos.getZ(i)));
+                        }
+                    }
+                    geom.dispose();
+                }
+
+                const mergedGeom = new THREE.BufferGeometry();
+                mergedGeom.setAttribute('position', new THREE.Float32BufferAttribute(allPositions, 3));
+                mergedGeom.computeVertexNormals();
+
+                // 외부 엣지만 표시 (이면각 1° 이상인 엣지만)
+                const edgesGeom = new THREE.EdgesGeometry(mergedGeom, 1);
+                const edgeCount = edgesGeom.attributes.position ? edgesGeom.attributes.position.count / 2 : 0;
+                console.log('병합 엣지 수:', edgeCount, '정점 수:', allPositions.length / 3);
+
+                if (edgeCount > 0) {
+                    const edgesLines = new THREE.LineSegments(edgesGeom, EDGE_MAT.clone());
+                    mergedViewGroup = new THREE.Group();
+                    mergedViewGroup.add(edgesLines);
+                    scene.add(mergedViewGroup);
+                    showToast('✅ 합쳐짐 (외부 엣지: ' + edgeCount + '개)');
+                } else {
+                    // 엣지가 없으면 fallback: 개별 EdgeLines 복원
+                    showToast('⚠️ 외부 엣지 계산 실패 - 개별 경계선 유지');
+                    voxels.forEach(v => {
+                        v.group.children.forEach(child => {
+                            if (child.isLineSegments) child.visible = true;
+                        });
+                    });
+                }
+            } catch(e) {
+                console.error('buildMergedView 오류:', e);
+                showToast('⚠️ 병합 오류: ' + e.message);
+                // 에러 시 개별 EdgeLines 복원
+                voxels.forEach(v => {
+                    v.group.children.forEach(child => {
+                        if (child.isLineSegments) child.visible = true;
+                    });
+                });
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const isBuild = (mode === 'build');
+            document.getElementById('modeBadge').innerText = isBuild ? '제작 모드' : '실습 모드';
+            document.getElementById('modeBadge').className = `mode-badge ${isBuild ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`;
+            document.getElementById('buildTools').classList.toggle('hidden', !isBuild);
+            document.getElementById('viewControls').classList.toggle('hidden', isBuild);
+            document.getElementById('canvas-container').style.cursor = isBuild ? 'crosshair' : 'grab';
+
+            document.getElementById('modeBuildBtn').className = `px-8 py-3 rounded-2xl font-black text-sm shadow-lg transition-all ${isBuild ? 'bg-blue-600 text-white ring-4 ring-blue-100' : 'bg-white text-slate-600'}`;
+            document.getElementById('modeViewBtn').className = `px-8 py-3 rounded-2xl font-black text-sm shadow-lg transition-all ${!isBuild ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : 'bg-white text-slate-600'}`;
+
+            if (!isBuild) {
+                // 연습 모드: 경계선 교체
+                buildMergedView();
+                if (ghostGroup) ghostGroup.visible = false;
+                clearHighlight();
+                document.getElementById('opacityRange').value = 100;
+            } else {
+                // 제작 모드: 병합 엣지 제거, 개별 경계선 복원
+                if (mergedViewGroup) {
+                    scene.remove(mergedViewGroup);
+                    mergedViewGroup.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
+                    mergedViewGroup = null;
+                }
+                voxels.forEach(v => {
+                    v.group.children.forEach(child => {
+                        child.visible = true;
+                        if (child.material) child.material.opacity = 1;
+                    });
+                });
+                clearHighlight();
+            }
+        }
+
+        function setView(view) {
+            document.querySelectorAll('[id^="btn-view-"]').forEach(btn => {
+                btn.classList.add('opacity-70');
+                btn.classList.remove('ring-2', 'ring-slate-400');
+            });
+            const activeBtn = document.getElementById('btn-view-' + view);
+            if(activeBtn) {
+                activeBtn.classList.remove('opacity-70');
+                activeBtn.classList.add('ring-2', 'ring-slate-400');
+            }
+
+            const d = 20;
+            if (view === 'iso') {
+                camera = perspectiveCamera;
+                camera.position.set(d, 16, d);
+            } else {
+                camera = orthoCamera;
+                orthoCamera.zoom = 1;
+                orthoCamera.updateProjectionMatrix();
+
+                // 2D 정투상도를 바라볼 때 카메라 위치 (정면도 <-> 우측면도 시점 교환)
+                if (view === 'front') camera.position.set(0, 0, 30);
+                else if (view === 'top') camera.position.set(0, 30, 0);
+                else if (view === 'side') camera.position.set(30, 0, 0);
+            }
+            camera.lookAt(0, 0, 0);
+        }
+
+        function clearAll() {
+            voxels.slice().forEach(v => scene.remove(v.group));
+            voxels = [];
+            undoStack = [];
+            redoStack = [];
+            clearHighlight();
+        }
+
+        function onResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+            
+            perspectiveCamera.aspect = aspect;
+            perspectiveCamera.updateProjectionMatrix();
+
+            const frustumSize = 28;
+            orthoCamera.left = -frustumSize * aspect / 2;
+            orthoCamera.right = frustumSize * aspect / 2;
+            orthoCamera.top = frustumSize / 2;
+            orthoCamera.bottom = -frustumSize / 2;
+            orthoCamera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+        window.oncontextmenu = (e) => e.preventDefault();
+    </script>
+</body>
+
+</html>
