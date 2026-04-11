@@ -190,6 +190,10 @@
                     <input type="range" id="opacityRange" min="10" max="100" value="100"
                         class="w-full accent-blue-600">
                 </div>
+                <button onclick="generateDrawingPage()"
+                    class="w-full py-2 rounded-xl text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow transition-all flex items-center justify-center gap-1.5">
+                    📄 도면 출력 (정면·우측면·평면)
+                </button>
             </div>
 
             <div class="flex gap-3">
@@ -956,6 +960,300 @@
             }
         }
         // ────────────────────────────────────────────────────────────────
+
+        // ============ 도면 출력 (정면·우측면·평면) ============
+        function generateDrawingPage() {
+            if (voxels.length === 0) {
+                showToast('⚠️ 도형을 먼저 만들어 주세요.');
+                return;
+            }
+
+            showToast('📄 도면 생성 중...');
+
+            // 1. 바운딩 박스 계산 (모든 도형의 외곽 크기)
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            let minZ = Infinity, maxZ = -Infinity;
+
+            voxels.forEach(v => {
+                minX = Math.min(minX, v.pos.x - 0.5);
+                maxX = Math.max(maxX, v.pos.x + 0.5);
+                minY = Math.min(minY, v.pos.y - 0.5);
+                maxY = Math.max(maxY, v.pos.y + 0.5);
+                minZ = Math.min(minZ, v.pos.z - 0.5);
+                maxZ = Math.max(maxZ, v.pos.z + 0.5);
+            });
+
+            if (minX === Infinity) return;
+
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+            const cz = (minZ + maxZ) / 2;
+
+            const sizeX = maxX - minX;
+            const sizeY = maxY - minY;
+            const sizeZ = maxZ - minZ;
+
+            // 2. 임시 렌더러 & 씬 설정
+            const origCamera = camera;
+            const origSize = { w: renderer.domElement.width, h: renderer.domElement.height };
+
+            // 도면 품질 향상
+            const drawW = 1000;
+            const drawH = 750;
+            renderer.setSize(drawW, drawH);
+
+            const aspect = drawW / drawH;
+            
+            // 치수선 여백 포함하여 꽉 차게 축척 계산 (모든 뷰 동일 스케일)
+            const padding = 6; 
+            const reqH = Math.max(sizeY, sizeZ);
+            const reqW = Math.max(sizeX, sizeZ);
+            const frustumSize = Math.max(reqW / aspect, reqH) + padding;
+
+            const snapCam = new THREE.OrthographicCamera(
+                -frustumSize * aspect / 2, frustumSize * aspect / 2,
+                frustumSize / 2, -frustumSize / 2,
+                0.1, 1000
+            );
+
+            function capture(px, py, pz, upX, upY, upZ, customFrustum = null) {
+                if (customFrustum) {
+                    snapCam.left = -customFrustum * aspect / 2;
+                    snapCam.right = customFrustum * aspect / 2;
+                    snapCam.top = customFrustum / 2;
+                    snapCam.bottom = -customFrustum / 2;
+                } else {
+                    snapCam.left = -frustumSize * aspect / 2;
+                    snapCam.right = frustumSize * aspect / 2;
+                    snapCam.top = frustumSize / 2;
+                    snapCam.bottom = -frustumSize / 2;
+                }
+                snapCam.position.set(px, py, pz);
+                snapCam.up.set(upX, upY, upZ);
+                // 대상의 중심을 정확히 바라봄
+                snapCam.lookAt(cx, cy, cz);
+                snapCam.updateProjectionMatrix();
+                snapCam.updateMatrixWorld();
+                
+                // Three.js 렌더
+                renderer.render(scene, snapCam);
+                return renderer.domElement.toDataURL('image/png');
+            }
+
+            // 정면도 (Front)
+            const imgFront = capture(cx, cy, maxZ + 30, 0, 1, 0); 
+            
+            // 우측면도 (Side)
+            const imgSide  = capture(maxX + 30, cy, cz, 0, 1, 0); 
+
+            // 평면도 (Top)
+            const imgTop   = capture(cx, maxY + 30, cz, 0, 0, -1); 
+            
+            // 입체도 (Iso) - 입체도는 모서리 대각선 방향이므로 약간 넓은 영역이 필요함
+            // 도형을 더 크게 보이게 하기 위해 스케일을 1.5배에서 1.15배로 축소하여 타이트하게 캡처
+            const imgIso   = capture(cx + 30, cy + 30, cz + 30, 0, 1, 0, frustumSize * 1.15);
+
+            // 렌더러 크기 복원
+            renderer.setSize(origSize.w / window.devicePixelRatio, origSize.h / window.devicePixelRatio);
+            camera = origCamera;
+
+            // 새 창에 도면 출력
+            const win = window.open('', '_blank');
+            if (!win) { showToast('⚠️ 팝업이 차단되었습니다. 허용 후 다시 시도하세요.'); return; }
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+
+            win.document.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>도면 출력 - ${dateStr}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f0f4f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+  .page {
+    background: #fff;
+    border: 2px solid #1e3a5f;
+    width: 100%;
+    max-width: 1100px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 3px solid #1e3a5f;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 900;
+    color: #1e3a5f;
+    letter-spacing: -0.5px;
+  }
+  .page-header .meta {
+    font-size: 12px;
+    color: #64748b;
+    text-align: right;
+    line-height: 1.6;
+  }
+  .views-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2열 구조 */
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .view-box {
+    border: 1.5px solid #94a3b8;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .view-label {
+    background: #1e3a5f;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px 0;
+    letter-spacing: 1px;
+  }
+  .view-label.front  { background: #1d4ed8; }
+  .view-label.side   { background: #b45309; }
+  .view-label.top    { background: #15803d; }
+  .view-label.iso    { background: #475569; }
+  .view-box img {
+    width: 100%;
+    display: block;
+    background: #e2e8f0;
+  }
+  .page-footer {
+    margin-top: 20px;
+    border-top: 1.5px solid #cbd5e1;
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .footer-note {
+    display: flex;
+    gap: 20px;
+  }
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 2px;
+  }
+  .btn-bar {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+  }
+  .btn-bar button {
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s;
+  }
+  .btn-print {
+    background: #1e3a5f;
+    color: #fff;
+  }
+  .btn-print:hover { background: #1d4ed8; }
+  .btn-close {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+  }
+  .btn-close:hover { background: #e2e8f0; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .btn-bar { display: none; }
+    .page { box-shadow: none; border: 2px solid #000; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>📐 정투상도 도면</h1>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">3각법 기준 · 정면도 / 우측면도 / 평면도</div>
+    </div>
+    <div class="meta">
+      <div>출력일자: ${dateStr}</div>
+      <div>도형 수: ${voxels.length}개</div>
+    </div>
+  </div>
+
+  <div class="views-grid">
+    <!-- 1행 1열: 평면도 -->
+    <div class="view-box">
+      <div class="view-label top">평면도 (Top View)</div>
+      <img src="${imgTop}" alt="평면도">
+    </div>
+    <!-- 1행 2열: 입체도 -->
+    <div class="view-box">
+      <div class="view-label iso">입체도 (Isometric View)</div>
+      <img src="${imgIso}" alt="입체도">
+    </div>
+
+    <!-- 2행 1열: 정면도 -->
+    <div class="view-box">
+      <div class="view-label front">정면도 (Front View)</div>
+      <img src="${imgFront}" alt="정면도">
+    </div>
+    <!-- 2행 2열: 우측면도 -->
+    <div class="view-box">
+      <div class="view-label side">우측면도 (Right Side View)</div>
+      <img src="${imgSide}" alt="우측면도">
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <div class="footer-note">
+      <span class="legend"><span class="legend-dot" style="background:#1d4ed8"></span>정면도</span>
+      <span class="legend"><span class="legend-dot" style="background:#b45309"></span>우측면도</span>
+      <span class="legend"><span class="legend-dot" style="background:#15803d"></span>평면도</span>
+      <span class="legend"><span class="legend-dot" style="background:#475569"></span>입체도</span>
+    </div>
+    <div>도면 메이커 · 기술 도면 제작 및 연습 도구</div>
+  </div>
+</div>
+
+<div class="btn-bar">
+  <button class="btn-print" onclick="window.print()">🖨️ 인쇄</button>
+  <button class="btn-close" onclick="window.close()">✕ 닫기</button>
+</div>
+</body>
+</html>`);
+            win.document.close();
+        }
+        // ─────────────────────────────────────────────────────────────────
 
         function switchMode(mode) {
             currentMode = mode;
