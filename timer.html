@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수업 타이머</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes flashRed {
+            0%, 100% { background-color: #fee2e2; }
+            50% { background-color: #fca5a5; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+            20%, 40%, 60%, 80% { transform: translateX(6px); }
+        }
+        .flash-bg { animation: flashRed 0.6s ease-in-out infinite; }
+        .shake { animation: shake 0.5s ease-in-out infinite; }
+
+        /* 원형 프로그레스 */
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform-origin: 50% 50%;
+        }
+
+        /* 프리셋 버튼 */
+        .preset-btn {
+            transition: all 0.15s;
+        }
+        .preset-btn.active {
+            background-color: #4f46e5;
+            color: white;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+        }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-2 font-sans text-slate-800">
+
+    <div id="app" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
+
+        <!-- 헤더 -->
+        <div class="bg-indigo-600 px-5 py-3 text-center">
+            <h1 class="text-xl font-extrabold text-white flex items-center justify-center gap-2">⏱️ 수업 타이머</h1>
+        </div>
+
+        <!-- 메인 영역 -->
+        <div id="mainArea" class="flex flex-col items-center px-5 py-4 gap-4">
+
+            <!-- 시간 프리셋 -->
+            <div class="flex flex-wrap justify-center gap-2 w-full">
+                <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(1)">1분</button>
+                <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(3)">3분</button>
+                <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50 active" onclick="setPreset(5)">5분</button>
+                <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(10)">10분</button>
+                <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(15)">15분</button>
+                <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(20)">20분</button>
+            </div>
+
+            <!-- 시간 직접 입력 -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1">
+                    <input type="number" id="inputMin" min="0" max="99" value="5"
+                        class="w-16 text-center text-2xl font-black border-2 border-slate-300 rounded-xl py-1.5 focus:border-indigo-500 outline-none"
+                        onchange="onManualInput()">
+                    <span class="text-lg font-bold text-slate-500">분</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <input type="number" id="inputSec" min="0" max="59" value="0"
+                        class="w-16 text-center text-2xl font-black border-2 border-slate-300 rounded-xl py-1.5 focus:border-indigo-500 outline-none"
+                        onchange="onManualInput()">
+                    <span class="text-lg font-bold text-slate-500">초</span>
+                </div>
+            </div>
+
+            <!-- 원형 프로그레스 + 카운트다운 -->
+            <div class="relative flex items-center justify-center" style="width:260px;height:260px;">
+                <svg class="progress-ring absolute" width="260" height="260">
+                    <!-- 배경 원 -->
+                    <circle cx="130" cy="130" r="115" stroke="#e2e8f0" stroke-width="14" fill="none"/>
+                    <!-- 프로그레스 원 -->
+                    <circle id="progressCircle" class="progress-ring__circle" cx="130" cy="130" r="115"
+                        stroke="#4f46e5" stroke-width="14" fill="none"
+                        stroke-linecap="round"
+                        stroke-dasharray="722.57" stroke-dashoffset="0"/>
+                </svg>
+                <div id="timerDisplay" class="text-6xl font-black text-slate-800 tabular-nums select-none z-10">05:00</div>
+            </div>
+
+            <!-- 컨트롤 버튼 -->
+            <div class="flex gap-3 w-full justify-center">
+                <button id="btnStart" onclick="startTimer()"
+                    class="flex-1 max-w-[140px] bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md text-base transition-colors flex items-center justify-center gap-2">
+                    ▶️ 시작
+                </button>
+                <button id="btnPause" onclick="pauseTimer()" disabled
+                    class="flex-1 max-w-[140px] bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-md text-base transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                    ⏸️ 일시정지
+                </button>
+                <button id="btnReset" onclick="resetTimer()"
+                    class="flex-1 max-w-[140px] bg-slate-500 hover:bg-slate-600 active:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-md text-base transition-colors flex items-center justify-center gap-2">
+                    🔄 초기화
+                </button>
+            </div>
+        </div>
+
+        <!-- 설정 영역 (접을 수 있는 패널) -->
+        <div class="border-t border-slate-200">
+            <button onclick="toggleSettings()" class="w-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-1 transition-colors">
+                <span id="settingsToggleIcon">▼</span> 소리 설정
+            </button>
+            <div id="settingsPanel" class="px-5 pb-4 flex flex-col gap-3" style="display:none;">
+
+                <!-- 소리 선택 -->
+                <div>
+                    <label class="text-xs font-bold text-slate-600 mb-1 block">🔔 알람 소리</label>
+                    <div class="flex gap-2 items-center">
+                        <select id="soundSelect" onchange="onSoundChange()"
+                            class="flex-1 border-2 border-slate-200 rounded-lg p-2 text-sm font-bold focus:border-indigo-500 outline-none cursor-pointer">
+                            <option value="beep">📢 비프음</option>
+                            <option value="bell" selected>🔔 벨</option>
+                            <option value="chime">🎵 차임</option>
+                            <option value="alert">⚠️ 경고음</option>
+                            <option value="school">🏫 학교종</option>
+                            <option value="custom">🎧 직접 업로드 (mp3)</option>
+                        </select>
+                        <button onclick="previewSound()"
+                            class="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap">
+                            🔊 미리듣기
+                        </button>
+                    </div>
+                </div>
+
+                <!-- mp3 업로드 (custom 선택 시만 표시) -->
+                <div id="mp3UploadArea" class="hidden">
+                    <label class="text-xs font-bold text-slate-600 mb-1 block">🎧 mp3 파일 선택</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="file" id="mp3Input" accept="audio/mp3,audio/mpeg,audio/*" onchange="onMp3Selected(event)"
+                            class="flex-1 text-sm file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer">
+                    </div>
+                    <p id="mp3FileName" class="text-xs text-slate-400 mt-1"></p>
+                </div>
+
+                <!-- 소리 지속시간 -->
+                <div>
+                    <label class="text-xs font-bold text-slate-600 mb-1 block">⏳ 알람 지속시간</label>
+                    <div class="flex gap-2">
+                        <button class="dur-btn px-3 py-1.5 rounded-lg border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50" onclick="setDuration(3)">3초</button>
+                        <button class="dur-btn px-3 py-1.5 rounded-lg border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 active" onclick="setDuration(5)">5초</button>
+                        <button class="dur-btn px-3 py-1.5 rounded-lg border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50" onclick="setDuration(10)">10초</button>
+                        <button class="dur-btn px-3 py-1.5 rounded-lg border-2 border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50" onclick="setDuration(0)">수동 정지</button>
+                    </div>
+                </div>
+
+                <!-- 볼륨 -->
+                <div>
+                    <label class="text-xs font-bold text-slate-600 mb-1 block">🔈 볼륨</label>
+                    <input type="range" id="volumeRange" min="0" max="100" value="80"
+                        class="w-full accent-indigo-600" oninput="onVolumeChange()">
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ─── 상태 변수 ───
+        let totalSeconds = 300;   // 설정된 총 시간 (초)
+        let remaining = 300;      // 남은 시간 (초)
+        let timerInterval = null;
+        let isRunning = false;
+        let isPaused = false;
+        let alarmDuration = 5;    // 알람 지속시간 (초), 0=수동정지
+        let alarmTimeout = null;
+        let isAlarming = false;
+        let customAudioUrl = null;
+        let currentAudioSource = null;
+        let audioCtx = null;
+
+        // ─── DOM 참조 ───
+        const display = document.getElementById('timerDisplay');
+        const circle = document.getElementById('progressCircle');
+        const mainArea = document.getElementById('mainArea');
+        const btnStart = document.getElementById('btnStart');
+        const btnPause = document.getElementById('btnPause');
+        const circumference = 2 * Math.PI * 115; // ≈ 722.57
+
+        // ─── 초기화 ───
+        window.onload = function() {
+            loadSettings();
+            updateDisplay();
+            updateProgress();
+            highlightPreset();
+            highlightDuration();
+
+            // 소리 선택에 따라 mp3 업로드 영역 표시
+            onSoundChange();
+        };
+
+        // ─── 프리셋 ───
+        function setPreset(min) {
+            if (isRunning) return;
+            document.getElementById('inputMin').value = min;
+            document.getElementById('inputSec').value = 0;
+            totalSeconds = min * 60;
+            remaining = totalSeconds;
+            updateDisplay();
+            updateProgress();
+            highlightPreset();
+            saveSettings();
+        }
+
+        function highlightPreset() {
+            const min = parseInt(document.getElementById('inputMin').value) || 0;
+            const sec = parseInt(document.getElementById('inputSec').value) || 0;
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                const presetMin = parseInt(btn.textContent);
+                if (presetMin === min && sec === 0) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // ─── 직접 입력 ───
+        function onManualInput() {
+            if (isRunning) return;
+            const min = Math.max(0, Math.min(99, parseInt(document.getElementById('inputMin').value) || 0));
+            const sec = Math.max(0, Math.min(59, parseInt(document.getElementById('inputSec').value) || 0));
+            document.getElementById('inputMin').value = min;
+            document.getElementById('inputSec').value = sec;
+            totalSeconds = min * 60 + sec;
+            remaining = totalSeconds;
+            updateDisplay();
+            updateProgress();
+            highlightPreset();
+            saveSettings();
+        }
+
+        // ─── 타이머 제어 ───
+        function startTimer() {
+            if (isAlarming) { stopAlarm(); return; }
+
+            if (isPaused) {
+                // 재개
+                isPaused = false;
+                isRunning = true;
+                timerInterval = setInterval(tick, 1000);
+                btnStart.innerHTML = '▶️ 시작';
+                btnStart.classList.replace('bg-emerald-500', 'bg-emerald-500');
+                btnPause.disabled = false;
+                return;
+            }
+
+            if (isRunning) return;
+            if (totalSeconds <= 0) return;
+
+            remaining = totalSeconds;
+            isRunning = true;
+            isPaused = false;
+            updateDisplay();
+            updateProgress();
+
+            timerInterval = setInterval(tick, 1000);
+
+            btnPause.disabled = false;
+            btnStart.disabled = true;
+            btnStart.classList.add('opacity-40', 'cursor-not-allowed');
+
+            // 입력 비활성화
+            document.getElementById('inputMin').disabled = true;
+            document.getElementById('inputSec').disabled = true;
+        }
+
+        function pauseTimer() {
+            if (!isRunning || isPaused) return;
+            clearInterval(timerInterval);
+            isPaused = true;
+            isRunning = false;
+
+            btnStart.disabled = false;
+            btnStart.classList.remove('opacity-40', 'cursor-not-allowed');
+            btnStart.innerHTML = '▶️ 재개';
+            btnPause.disabled = true;
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            stopAlarm();
+            isRunning = false;
+            isPaused = false;
+            remaining = totalSeconds;
+            updateDisplay();
+            updateProgress();
+
+            btnStart.disabled = false;
+            btnStart.classList.remove('opacity-40', 'cursor-not-allowed');
+            btnStart.innerHTML = '▶️ 시작';
+            btnPause.disabled = true;
+
+            document.getElementById('inputMin').disabled = false;
+            document.getElementById('inputSec').disabled = false;
+
+            mainArea.classList.remove('flash-bg', 'shake');
+        }
+
+        function tick() {
+            remaining--;
+            if (remaining <= 0) {
+                remaining = 0;
+                clearInterval(timerInterval);
+                isRunning = false;
+                updateDisplay();
+                updateProgress();
+                timerComplete();
+                return;
+            }
+            updateDisplay();
+            updateProgress();
+        }
+
+        // ─── 표시 업데이트 ───
+        function updateDisplay() {
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            display.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            // 30초 이하일 때 빨간색
+            if (isRunning && remaining <= 30 && remaining > 0) {
+                display.classList.add('text-red-500');
+                display.classList.remove('text-slate-800');
+            } else {
+                display.classList.remove('text-red-500');
+                display.classList.add('text-slate-800');
+            }
+        }
+
+        function updateProgress() {
+            const ratio = totalSeconds > 0 ? remaining / totalSeconds : 1;
+            const offset = circumference * (1 - ratio);
+            circle.style.strokeDashoffset = offset;
+
+            // 30초 이하 빨간색
+            if (isRunning && remaining <= 30 && remaining > 0) {
+                circle.style.stroke = '#ef4444';
+            } else if (remaining === 0 && totalSeconds > 0 && isAlarming) {
+                circle.style.stroke = '#ef4444';
+            } else {
+                circle.style.stroke = '#4f46e5';
+            }
+        }
+
+        // ─── 타이머 완료 ───
+        function timerComplete() {
+            isAlarming = true;
+            mainArea.classList.add('flash-bg', 'shake');
+            display.classList.add('text-red-500');
+            display.classList.remove('text-slate-800');
+
+            btnStart.disabled = false;
+            btnStart.classList.remove('opacity-40', 'cursor-not-allowed');
+            btnStart.innerHTML = '🔇 알람 끄기';
+            btnPause.disabled = true;
+
+            playAlarm();
+
+            // 자동 정지
+            if (alarmDuration > 0) {
+                alarmTimeout = setTimeout(() => { stopAlarm(); }, alarmDuration * 1000);
+            }
+        }
+
+        function stopAlarm() {
+            isAlarming = false;
+            mainArea.classList.remove('flash-bg', 'shake');
+
+            if (alarmTimeout) { clearTimeout(alarmTimeout); alarmTimeout = null; }
+            stopCurrentSound();
+
+            btnStart.innerHTML = '▶️ 시작';
+            btnStart.disabled = false;
+            btnStart.classList.remove('opacity-40', 'cursor-not-allowed');
+
+            document.getElementById('inputMin').disabled = false;
+            document.getElementById('inputSec').disabled = false;
+        }
+
+        // ─── 사운드 엔진 (Web Audio API) ───
+        function getAudioCtx() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        function playTone(type, duration) {
+            const ctx = getAudioCtx();
+            const vol = (parseInt(document.getElementById('volumeRange').value) || 80) / 100;
+            const gain = ctx.createGain();
+            gain.gain.value = vol;
+            gain.connect(ctx.destination);
+
+            const endTime = ctx.currentTime + duration;
+            let sources = [];
+
+            if (type === 'beep') {
+                // 반복 비프음
+                const interval = 0.3;
+                for (let t = 0; t < duration; t += interval * 2) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'square';
+                    osc.frequency.value = 880;
+                    osc.connect(gain);
+                    osc.start(ctx.currentTime + t);
+                    osc.stop(ctx.currentTime + t + interval);
+                    sources.push(osc);
+                }
+            } else if (type === 'bell') {
+                // 벨 소리 (여러 주파수 조합)
+                const freqs = [523.25, 659.25, 783.99]; // C5, E5, G5
+                const interval = 0.8;
+                for (let t = 0; t < duration; t += interval) {
+                    freqs.forEach(f => {
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sine';
+                        osc.frequency.value = f;
+                        const envGain = ctx.createGain();
+                        envGain.gain.setValueAtTime(vol * 0.5, ctx.currentTime + t);
+                        envGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.7);
+                        osc.connect(envGain);
+                        envGain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + t);
+                        osc.stop(ctx.currentTime + t + 0.7);
+                        sources.push(osc);
+                    });
+                }
+            } else if (type === 'chime') {
+                // 차임 — 음계 순차
+                const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
+                const noteLen = 0.4;
+                let t = 0;
+                for (let rep = 0; t < duration; rep++) {
+                    notes.forEach(f => {
+                        if (t >= duration) return;
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sine';
+                        osc.frequency.value = f;
+                        const envGain = ctx.createGain();
+                        envGain.gain.setValueAtTime(vol * 0.6, ctx.currentTime + t);
+                        envGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + noteLen);
+                        osc.connect(envGain);
+                        envGain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + t);
+                        osc.stop(ctx.currentTime + t + noteLen);
+                        sources.push(osc);
+                        t += noteLen;
+                    });
+                }
+            } else if (type === 'alert') {
+                // 경고음 — 사이렌 효과
+                const osc = ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                for (let t = 0; t < duration; t += 0.5) {
+                    osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + t + 0.25);
+                    osc.frequency.linearRampToValueAtTime(440, ctx.currentTime + t + 0.5);
+                }
+                osc.connect(gain);
+                osc.start();
+                osc.stop(endTime);
+                sources.push(osc);
+            } else if (type === 'school') {
+                // 학교종 — "학교종이 땡땡땡" 멜로디 패턴
+                const melody = [
+                    { f: 392.00, d: 0.4 }, // G4
+                    { f: 392.00, d: 0.4 }, // G4
+                    { f: 440.00, d: 0.4 }, // A4
+                    { f: 440.00, d: 0.4 }, // A4
+                    { f: 392.00, d: 0.4 }, // G4
+                    { f: 392.00, d: 0.4 }, // G4
+                    { f: 329.63, d: 0.8 }, // E4
+                    { f: 392.00, d: 0.4 }, // G4
+                    { f: 392.00, d: 0.4 }, // G4
+                    { f: 329.63, d: 0.4 }, // E4
+                    { f: 329.63, d: 0.4 }, // E4
+                    { f: 293.66, d: 0.8 }, // D4
+                ];
+                let t = 0;
+                while (t < duration) {
+                    melody.forEach(note => {
+                        if (t >= duration) return;
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sine';
+                        osc.frequency.value = note.f;
+                        const envGain = ctx.createGain();
+                        envGain.gain.setValueAtTime(vol * 0.6, ctx.currentTime + t);
+                        envGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + note.d * 0.9);
+                        osc.connect(envGain);
+                        envGain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + t);
+                        osc.stop(ctx.currentTime + t + note.d);
+                        sources.push(osc);
+                        t += note.d;
+                    });
+                }
+            }
+
+            currentAudioSource = { sources, ctx };
+        }
+
+        function playCustomMp3(duration) {
+            if (!customAudioUrl) return;
+            const audio = new Audio(customAudioUrl);
+            const vol = (parseInt(document.getElementById('volumeRange').value) || 80) / 100;
+            audio.volume = vol;
+            audio.loop = (duration === 0);
+            audio.play();
+            currentAudioSource = { audio };
+
+            if (duration > 0) {
+                setTimeout(() => { audio.pause(); audio.currentTime = 0; }, duration * 1000);
+            }
+        }
+
+        function playAlarm() {
+            const selected = document.getElementById('soundSelect').value;
+            const dur = alarmDuration > 0 ? alarmDuration : 30; // 수동정지 시 최대 30초 재생
+
+            if (selected === 'custom') {
+                playCustomMp3(alarmDuration);
+            } else {
+                playTone(selected, dur);
+            }
+        }
+
+        function previewSound() {
+            stopCurrentSound();
+            const selected = document.getElementById('soundSelect').value;
+            if (selected === 'custom') {
+                playCustomMp3(2);
+            } else {
+                playTone(selected, 2);
+            }
+        }
+
+        function stopCurrentSound() {
+            if (!currentAudioSource) return;
+            if (currentAudioSource.audio) {
+                currentAudioSource.audio.pause();
+                currentAudioSource.audio.currentTime = 0;
+            }
+            if (currentAudioSource.sources) {
+                currentAudioSource.sources.forEach(s => { try { s.stop(); } catch(e) {} });
+            }
+            currentAudioSource = null;
+        }
+
+        // ─── 소리 설정 UI ───
+        function onSoundChange() {
+            const selected = document.getElementById('soundSelect').value;
+            document.getElementById('mp3UploadArea').classList.toggle('hidden', selected !== 'custom');
+            saveSettings();
+        }
+
+        function onMp3Selected(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            customAudioUrl = URL.createObjectURL(file);
+            document.getElementById('mp3FileName').textContent = `선택됨: ${file.name}`;
+        }
+
+        function onVolumeChange() {
+            saveSettings();
+        }
+
+        // ─── 소리 지속시간 ───
+        function setDuration(sec) {
+            alarmDuration = sec;
+            highlightDuration();
+            saveSettings();
+        }
+
+        function highlightDuration() {
+            document.querySelectorAll('.dur-btn').forEach(btn => {
+                const val = btn.textContent === '수동 정지' ? 0 : parseInt(btn.textContent);
+                if (val === alarmDuration) {
+                    btn.classList.add('active');
+                    btn.style.backgroundColor = '#4f46e5';
+                    btn.style.color = 'white';
+                    btn.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.3)';
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.backgroundColor = '';
+                    btn.style.color = '';
+                    btn.style.boxShadow = '';
+                }
+            });
+        }
+
+        // ─── 설정 패널 토글 ───
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            const icon = document.getElementById('settingsToggleIcon');
+            const isHidden = panel.style.display === 'none';
+            panel.style.display = isHidden ? 'flex' : 'none';
+            icon.textContent = isHidden ? '▲' : '▼';
+        }
+
+        // ─── localStorage ───
+        function saveSettings() {
+            const data = {
+                min: parseInt(document.getElementById('inputMin').value) || 0,
+                sec: parseInt(document.getElementById('inputSec').value) || 0,
+                sound: document.getElementById('soundSelect').value,
+                duration: alarmDuration,
+                volume: parseInt(document.getElementById('volumeRange').value) || 80
+            };
+            localStorage.setItem('timerSettings', JSON.stringify(data));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('timerSettings');
+            if (!saved) return;
+            try {
+                const data = JSON.parse(saved);
+                if (data.min !== undefined) document.getElementById('inputMin').value = data.min;
+                if (data.sec !== undefined) document.getElementById('inputSec').value = data.sec;
+                if (data.sound) document.getElementById('soundSelect').value = data.sound;
+                if (data.duration !== undefined) alarmDuration = data.duration;
+                if (data.volume !== undefined) document.getElementById('volumeRange').value = data.volume;
+                totalSeconds = (data.min || 0) * 60 + (data.sec || 0);
+                remaining = totalSeconds;
+            } catch(e) {}
+        }
+    </script>
+</body>
+</html>
