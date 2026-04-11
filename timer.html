@@ -12,8 +12,8 @@
         }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
-            20%, 40%, 60%, 80% { transform: translateX(6px); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-1px); }
+            20%, 40%, 60%, 80% { transform: translateX(1px); }
         }
         .flash-bg { animation: flashRed 0.6s ease-in-out infinite; }
         .shake { animation: shake 0.5s ease-in-out infinite; }
@@ -35,6 +35,15 @@
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
         }
 
+        /* 미니 모드 */
+        .mini-mode #mainArea { padding: 12px 16px; gap: 10px; }
+        .mini-mode .preset-row, .mini-mode .input-row, .mini-mode .settings-area { display: none !important; }
+        .mini-mode .ring-wrap { width: 160px !important; height: 160px !important; }
+        .mini-mode .ring-wrap svg { width: 160px; height: 160px; }
+        .mini-mode .ring-wrap svg circle { cx: 80; cy: 80; r: 68; stroke-width: 10; }
+        .mini-mode #timerDisplay { font-size: 2.5rem; }
+        .mini-mode .ctrl-btns button { padding: 8px 0; font-size: 0.8rem; }
+
         /* 커스텀 스크롤바 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -45,15 +54,17 @@
     <div id="app" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
 
         <!-- 헤더 -->
-        <div class="bg-indigo-600 px-5 py-3 text-center">
+        <div class="bg-indigo-600 px-5 py-3 flex items-center justify-between">
+            <div class="w-8"></div>
             <h1 class="text-xl font-extrabold text-white flex items-center justify-center gap-2">⏱️ 수업 타이머</h1>
+            <button onclick="toggleMiniMode()" id="miniBtn" title="미니 모드 전환" class="w-8 h-8 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-bold flex items-center justify-center transition-colors">▫</button>
         </div>
 
         <!-- 메인 영역 -->
         <div id="mainArea" class="flex flex-col items-center px-5 py-4 gap-4">
 
             <!-- 시간 프리셋 -->
-            <div class="flex flex-wrap justify-center gap-2 w-full">
+            <div class="preset-row flex flex-wrap justify-center gap-2 w-full">
                 <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(1)">1분</button>
                 <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50" onclick="setPreset(3)">3분</button>
                 <button class="preset-btn px-3 py-1.5 rounded-lg border-2 border-indigo-200 text-indigo-700 font-bold text-sm hover:bg-indigo-50 active" onclick="setPreset(5)">5분</button>
@@ -63,7 +74,7 @@
             </div>
 
             <!-- 시간 직접 입력 -->
-            <div class="flex items-center gap-2">
+            <div class="input-row flex items-center gap-2">
                 <div class="flex items-center gap-1">
                     <input type="number" id="inputMin" min="0" max="99" value="5"
                         class="w-16 text-center text-2xl font-black border-2 border-slate-300 rounded-xl py-1.5 focus:border-indigo-500 outline-none"
@@ -79,7 +90,7 @@
             </div>
 
             <!-- 원형 프로그레스 + 카운트다운 -->
-            <div class="relative flex items-center justify-center" style="width:260px;height:260px;">
+            <div class="ring-wrap relative flex items-center justify-center" style="width:260px;height:260px;">
                 <svg class="progress-ring absolute" width="260" height="260">
                     <!-- 배경 원 -->
                     <circle cx="130" cy="130" r="115" stroke="#e2e8f0" stroke-width="14" fill="none"/>
@@ -93,7 +104,7 @@
             </div>
 
             <!-- 컨트롤 버튼 -->
-            <div class="flex gap-3 w-full justify-center">
+            <div class="ctrl-btns flex gap-3 w-full justify-center">
                 <button id="btnStart" onclick="startTimer()"
                     class="flex-1 max-w-[140px] bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md text-base transition-colors flex items-center justify-center gap-2">
                     ▶️ 시작
@@ -110,7 +121,7 @@
         </div>
 
         <!-- 설정 영역 (접을 수 있는 패널) -->
-        <div class="border-t border-slate-200">
+        <div class="settings-area border-t border-slate-200">
             <button onclick="toggleSettings()" class="w-full px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 flex items-center justify-center gap-1 transition-colors">
                 <span id="settingsToggleIcon">▼</span> 소리 설정
             </button>
@@ -127,6 +138,10 @@
                             <option value="chime">🎵 차임</option>
                             <option value="alert">⚠️ 경고음</option>
                             <option value="school">🏫 학교종</option>
+                            <option value="dingdong">🚪 딩동</option>
+                            <option value="trumpet">🎺 팡파레</option>
+                            <option value="whistle">📣 호루라기</option>
+                            <option value="marimba">🎶 마림바</option>
                             <option value="custom">🎧 직접 업로드 (mp3)</option>
                         </select>
                         <button onclick="previewSound()"
@@ -160,7 +175,7 @@
                 <!-- 볼륨 -->
                 <div>
                     <label class="text-xs font-bold text-slate-600 mb-1 block">🔈 볼륨</label>
-                    <input type="range" id="volumeRange" min="0" max="100" value="80"
+                    <input type="range" id="volumeRange" min="0" max="100" value="100"
                         class="w-full accent-indigo-600" oninput="onVolumeChange()">
                 </div>
 
@@ -400,7 +415,7 @@
 
         function playTone(type, duration) {
             const ctx = getAudioCtx();
-            const vol = (parseInt(document.getElementById('volumeRange').value) || 80) / 100;
+            const vol = (parseInt(document.getElementById('volumeRange').value) || 100) / 100;
             const gain = ctx.createGain();
             gain.gain.value = vol;
             gain.connect(ctx.destination);
@@ -510,13 +525,97 @@
                 }
             }
 
+            } else if (type === 'dingdong') {
+                // 딩동 — 도어벨
+                const interval = 1.2;
+                for (let t = 0; t < duration; t += interval) {
+                    // 딩
+                    const osc1 = ctx.createOscillator();
+                    osc1.type = 'sine';
+                    osc1.frequency.value = 830;
+                    const g1 = ctx.createGain();
+                    g1.gain.setValueAtTime(vol * 0.7, ctx.currentTime + t);
+                    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.5);
+                    osc1.connect(g1); g1.connect(ctx.destination);
+                    osc1.start(ctx.currentTime + t); osc1.stop(ctx.currentTime + t + 0.5);
+                    sources.push(osc1);
+                    // 동
+                    const osc2 = ctx.createOscillator();
+                    osc2.type = 'sine';
+                    osc2.frequency.value = 660;
+                    const g2 = ctx.createGain();
+                    g2.gain.setValueAtTime(vol * 0.7, ctx.currentTime + t + 0.5);
+                    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 1.1);
+                    osc2.connect(g2); g2.connect(ctx.destination);
+                    osc2.start(ctx.currentTime + t + 0.5); osc2.stop(ctx.currentTime + t + 1.1);
+                    sources.push(osc2);
+                }
+            } else if (type === 'trumpet') {
+                // 팡파레 — 밝은 금관 느낌
+                const fanfare = [
+                    { f: 523.25, d: 0.2 }, { f: 659.25, d: 0.2 }, { f: 783.99, d: 0.2 },
+                    { f: 1046.50, d: 0.6 }, { f: 783.99, d: 0.2 }, { f: 1046.50, d: 0.8 }
+                ];
+                let t = 0;
+                while (t < duration) {
+                    fanfare.forEach(note => {
+                        if (t >= duration) return;
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sawtooth';
+                        osc.frequency.value = note.f;
+                        const eg = ctx.createGain();
+                        eg.gain.setValueAtTime(vol * 0.35, ctx.currentTime + t);
+                        eg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + note.d * 0.95);
+                        osc.connect(eg); eg.connect(ctx.destination);
+                        osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + note.d);
+                        sources.push(osc);
+                        t += note.d;
+                    });
+                    t += 0.3;
+                }
+            } else if (type === 'whistle') {
+                // 호루라기 — 고주파 삐 반복
+                const interval = 0.6;
+                for (let t = 0; t < duration; t += interval) {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.value = 2800;
+                    const eg = ctx.createGain();
+                    eg.gain.setValueAtTime(vol * 0.4, ctx.currentTime + t);
+                    eg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.35);
+                    osc.connect(eg); eg.connect(ctx.destination);
+                    osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + 0.4);
+                    sources.push(osc);
+                }
+            } else if (type === 'marimba') {
+                // 마림바 — 부드러운 음계 반복
+                const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 659.25];
+                const noteLen = 0.3;
+                let t = 0;
+                while (t < duration) {
+                    notes.forEach(f => {
+                        if (t >= duration) return;
+                        const osc = ctx.createOscillator();
+                        osc.type = 'sine';
+                        osc.frequency.value = f;
+                        const eg = ctx.createGain();
+                        eg.gain.setValueAtTime(vol * 0.6, ctx.currentTime + t);
+                        eg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + noteLen * 0.9);
+                        osc.connect(eg); eg.connect(ctx.destination);
+                        osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + noteLen);
+                        sources.push(osc);
+                        t += noteLen;
+                    });
+                }
+            }
+
             currentAudioSource = { sources, ctx };
         }
 
         function playCustomMp3(duration) {
             if (!customAudioUrl) return;
             const audio = new Audio(customAudioUrl);
-            const vol = (parseInt(document.getElementById('volumeRange').value) || 80) / 100;
+            const vol = (parseInt(document.getElementById('volumeRange').value) || 100) / 100;
             audio.volume = vol;
             audio.loop = (duration === 0);
             audio.play();
@@ -618,7 +717,7 @@
                 sec: parseInt(document.getElementById('inputSec').value) || 0,
                 sound: document.getElementById('soundSelect').value,
                 duration: alarmDuration,
-                volume: parseInt(document.getElementById('volumeRange').value) || 80
+                volume: parseInt(document.getElementById('volumeRange').value) || 100
             };
             localStorage.setItem('timerSettings', JSON.stringify(data));
         }
@@ -636,6 +735,16 @@
                 totalSeconds = (data.min || 0) * 60 + (data.sec || 0);
                 remaining = totalSeconds;
             } catch(e) {}
+        }
+
+        // ─── 미니 모드 ───
+        function toggleMiniMode() {
+            const app = document.getElementById('app');
+            const btn = document.getElementById('miniBtn');
+            app.classList.toggle('mini-mode');
+            const isMini = app.classList.contains('mini-mode');
+            btn.textContent = isMini ? '▣' : '▫';
+            btn.title = isMini ? '일반 모드 전환' : '미니 모드 전환';
         }
     </script>
 </body>
