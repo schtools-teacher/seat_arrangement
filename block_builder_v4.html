@@ -1,0 +1,2125 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>블럭 조립 도구 v4</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f1f5f9;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .pointer-auto {
+            pointer-events: auto;
+        }
+
+        .btn-active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .action-btn {
+            padding: 6px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+
+        .warning-banner {
+            background: #fef2f2;
+            border: 2px solid #ef4444;
+            color: #dc2626;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 14px;
+            text-align: center;
+            animation: pulse 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.8; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.02); }
+        }
+
+        .sym-active {
+            background-color: #fef3c7 !important;
+            border-color: #f59e0b !important;
+            color: #92400e !important;
+        }
+
+        .preset-btn {
+            padding: 4px 0;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+            cursor: pointer;
+            text-align: center;
+        }
+        .preset-btn.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            box-shadow: 0 0 0 1px #93c5fd;
+        }
+        .preset-btn:hover {
+            background-color: #f0f9ff;
+        }
+
+        .tilt-btn {
+            padding: 3px 0;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 700;
+            border: 1.5px solid #e2e8f0;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .tilt-btn.selected {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+            color: #92400e;
+            box-shadow: 0 0 0 1px #fcd34d;
+        }
+        .tilt-btn:hover {
+            background-color: #fefce8;
+        }
+
+        /* 터치 기기 최적화 */
+        @media (pointer: coarse) {
+            .preset-btn { padding: 8px 0; font-size: 12px; }
+            .tilt-btn { padding: 6px 0; font-size: 11px; }
+            .action-btn { padding: 10px 12px; font-size: 13px; }
+            #buildTools { width: 210px !important; }
+        }
+
+        /* 롱프레스 시각 피드백 */
+        .longpress-indicator {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            border: 3px solid #ef4444;
+            transform: translate(-50%, -50%);
+            animation: longpress-ring 0.5s ease-out forwards;
+        }
+        @keyframes longpress-ring {
+            0% { width: 10px; height: 10px; opacity: 0.3; border-width: 2px; }
+            100% { width: 50px; height: 50px; opacity: 1; border-width: 3px; }
+        }
+
+        /* 하단 뷰 조작 버튼 */
+        .touch-view-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 18px;
+            font-weight: 800;
+            border: 2px solid #cbd5e1;
+            background: white;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .touch-view-btn:active {
+            background: #f1f5f9;
+            transform: scale(0.92);
+        }
+
+        /* 터치 도움말 토스트 */
+        .touch-help-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .touch-help-card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px 28px;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+        }
+        .touch-help-card h3 {
+            font-size: 16px;
+            font-weight: 900;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+        .touch-help-card .help-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+        }
+        .touch-help-card .help-icon {
+            font-size: 20px;
+            min-width: 30px;
+            text-align: center;
+        }
+        .touch-help-card .help-text {
+            color: #475569;
+        }
+        .touch-help-card .help-key {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #334155;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ui-overlay p-4 flex">
+        <!-- 왼쪽: 도구 패널 -->
+        <div class="flex flex-col gap-3 h-full">
+            <div class="bg-white/90 p-2.5 rounded-2xl shadow-xl border border-slate-200 pointer-auto">
+                <div class="flex items-center gap-2 mb-1">
+                    <h1 class="text-base font-black text-slate-800">블럭 조립</h1>
+                    <span id="modeBadge" class="px-2 py-0.5 rounded-full font-extrabold text-[10px] bg-blue-100 text-blue-700">제작</span>
+                </div>
+                <p class="text-slate-500 text-[10px] hidden sm:block">R: 방향회전 | Shift+↑↓←→: 넛지 | Alt+클릭: 복제</p>
+                <p class="text-slate-500 text-[10px] sm:hidden">탭: 배치 | 길게누르기: 삭제 | 두손가락: 줌/이동</p>
+                <div class="mt-1 flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-600">블럭:</span>
+                    <span id="blockCount" class="text-sm font-black text-blue-600">0</span>
+                    <span class="text-xs text-slate-400">/ 20~25개</span>
+                </div>
+            </div>
+
+            <div id="buildTools"
+                class="bg-white/95 p-2.5 rounded-2xl shadow-2xl border border-slate-200 pointer-auto w-[190px] flex-1 overflow-y-auto">
+                <div class="flex gap-1.5 mb-2">
+                    <button onclick="setTool('add')" id="toolAdd"
+                        class="flex-1 py-1.5 rounded-xl text-xs font-bold border-2 border-transparent transition-all bg-slate-100 hover:bg-blue-50 btn-active">
+                        ➕ 놓기
+                    </button>
+                    <button onclick="setTool('delete')" id="toolDelete"
+                        class="flex-1 py-1.5 rounded-xl text-xs font-bold border-2 border-transparent transition-all bg-slate-100 hover:bg-red-50 text-slate-600">
+                        🧹 지우기
+                    </button>
+                </div>
+
+                <!-- 블럭 방향 프리셋 -->
+                <div class="mb-2">
+                    <div class="w-full py-1.5 rounded-xl text-center text-sm font-black bg-amber-50 text-amber-800 border-2 border-amber-300">
+                        🧱 블럭 방향
+                    </div>
+
+                    <!-- 미리보기 캔버스 -->
+                    <canvas id="previewCanvas" width="180" height="70" class="mt-1.5 w-full rounded-lg bg-slate-50 border border-slate-200"></canvas>
+
+                    <!-- 자세 선택 -->
+                    <div class="mt-1.5">
+                        <div class="text-[9px] font-bold text-slate-400 mb-0.5">자세</div>
+                        <div class="grid grid-cols-3 gap-1">
+                            <button onclick="setPose(0)" id="pose0" class="preset-btn bg-slate-50 selected">
+                                <div class="text-[13px] leading-none mb-0.5">▬</div>
+                                눕히기
+                            </button>
+                            <button onclick="setPose(1)" id="pose1" class="preset-btn bg-slate-50">
+                                <div class="text-[13px] leading-none mb-0.5">▮</div>
+                                세우기
+                            </button>
+                            <button onclick="setPose(2)" id="pose2" class="preset-btn bg-slate-50">
+                                <div class="text-[13px] leading-none mb-0.5">▯</div>
+                                옆세우기
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 방향 선택 (높이축 회전) -->
+                    <div class="mt-1.5">
+                        <div class="text-[9px] font-bold text-slate-400 mb-0.5">방향 (높이축 회전)</div>
+                        <button onclick="rotateDir()" class="w-full py-1.5 rounded-lg text-xs font-black bg-emerald-100 hover:bg-emerald-200 text-emerald-700 border-2 border-emerald-300 mb-1">🔄 회전 [R]</button>
+                        <div class="grid grid-cols-4 gap-0.5">
+                            <button onclick="setDir(0)" id="dir0" class="preset-btn bg-slate-50 selected">0°</button>
+                            <button onclick="setDir(1)" id="dir1" class="preset-btn bg-slate-50">90°</button>
+                            <button onclick="setDir(2)" id="dir2" class="preset-btn bg-slate-50">180°</button>
+                            <button onclick="setDir(3)" id="dir3" class="preset-btn bg-slate-50">270°</button>
+                        </div>
+                    </div>
+
+                    <!-- 기울기 선택 -->
+                    <div class="mt-1.5">
+                        <div class="text-[9px] font-bold text-slate-400 mb-0.5">기울기 (정면방향)</div>
+                        <div class="grid grid-cols-7 gap-0.5">
+                            <button onclick="setTilt(0)" id="tilt0" class="tilt-btn selected">0°</button>
+                            <button onclick="setTilt(1)" id="tilt1" class="tilt-btn">15°</button>
+                            <button onclick="setTilt(2)" id="tilt2" class="tilt-btn">30°</button>
+                            <button onclick="setTilt(3)" id="tilt3" class="tilt-btn">45°</button>
+                            <button onclick="setTilt(4)" id="tilt4" class="tilt-btn">60°</button>
+                            <button onclick="setTilt(5)" id="tilt5" class="tilt-btn">75°</button>
+                            <button onclick="setTilt(6)" id="tilt6" class="tilt-btn">90°</button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200 my-2">
+
+                <!-- 대칭 모드 -->
+                <div class="mb-2">
+                    <div class="text-[9px] font-bold text-slate-500 mb-1">대칭 배치</div>
+                    <div class="flex gap-1">
+                        <button onclick="toggleSymmetry('x')" id="symX"
+                            class="flex-1 py-1 rounded-lg text-[9px] font-bold bg-slate-50 hover:bg-amber-50 text-slate-500 border border-slate-200 transition-all">X축 대칭</button>
+                        <button onclick="toggleSymmetry('z')" id="symZ"
+                            class="flex-1 py-1 rounded-lg text-[9px] font-bold bg-slate-50 hover:bg-amber-50 text-slate-500 border border-slate-200 transition-all">Z축 대칭</button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200 my-2">
+
+                <div class="grid grid-cols-2 gap-1">
+                    <button onclick="saveData()"
+                        class="action-btn bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200">💾
+                        저장</button>
+                    <button onclick="loadData()"
+                        class="action-btn bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200">📂
+                        불러오기</button>
+                    <button onclick="takeScreenshot()"
+                        class="action-btn bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200">📸
+                        캡처</button>
+                    <button onclick="undoAction()"
+                        class="action-btn bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200">↩️
+                        되돌리기</button>
+                </div>
+
+                <hr class="border-slate-200 my-2">
+                <button onclick="clearAll()"
+                    class="w-full py-1 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-colors">🗑️
+                    전체 삭제</button>
+            </div>
+
+            <!-- 뷰 컨트롤 + 모드 전환 -->
+            <div class="bg-white/95 p-2.5 rounded-2xl shadow-2xl border border-slate-200 pointer-auto w-[190px]">
+                <div class="grid grid-cols-2 gap-1">
+                    <button onclick="setView('iso')" id="btn-view-iso"
+                        class="bg-slate-700 text-white px-2 py-1.5 rounded-lg text-[10px] font-bold ring-2 ring-slate-400">입체도</button>
+                    <button onclick="setView('front')" id="btn-view-front"
+                        class="bg-blue-500 text-white px-2 py-1.5 rounded-lg text-[10px] font-bold opacity-70 hover:opacity-100">정면도</button>
+                    <button onclick="setView('top')" id="btn-view-top"
+                        class="bg-emerald-500 text-white px-2 py-1.5 rounded-lg text-[10px] font-bold opacity-70 hover:opacity-100">평면도</button>
+                    <button onclick="setView('side')" id="btn-view-side"
+                        class="bg-amber-500 text-white px-2 py-1.5 rounded-lg text-[10px] font-bold opacity-70 hover:opacity-100">우측면도</button>
+                </div>
+
+                <hr class="border-slate-200 my-2">
+
+                <div class="flex flex-col gap-1">
+                    <button onclick="switchMode('build')" id="modeBuildBtn"
+                        class="w-full py-2 rounded-xl font-black text-xs shadow transition-all bg-blue-600 text-white ring-2 ring-blue-100">블럭 조립</button>
+                    <button onclick="switchMode('view')" id="modeViewBtn"
+                        class="w-full py-2 rounded-xl font-black text-xs shadow transition-all bg-white text-slate-600 hover:bg-slate-50 border border-slate-200">살펴보기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 중앙: 경고 배너 -->
+        <div class="flex-1 flex flex-col justify-between items-center">
+            <!-- 상단 경고 -->
+            <div class="pt-2">
+                <div id="warningBanner" class="warning-banner hidden pointer-auto">
+                    ⚠️ 블럭 수가 25개를 초과했습니다! (현재: <span id="warningCount">0</span>개)
+                </div>
+            </div>
+
+            <!-- 뷰 컨트롤 (살펴보기 모드) -->
+            <div class="flex flex-col items-center gap-3">
+                <div id="viewControls"
+                    class="hidden bg-white/95 p-4 rounded-3xl shadow-2xl border border-slate-200 flex flex-col gap-3 min-w-[300px] pointer-auto">
+                    <div class="px-2">
+                        <label class="text-[10px] font-bold text-slate-400 mb-1 block">투명도 (내부 확인)</label>
+                        <input type="range" id="opacityRange" min="10" max="100" value="100"
+                            class="w-full accent-blue-600">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단: 터치용 뷰 조작 버튼 + 도움말 -->
+            <div class="pb-4 flex items-center gap-3 pointer-auto" id="touchViewControls">
+                <button class="touch-view-btn" onclick="zoomCamera(-1)" title="축소">−</button>
+                <button class="touch-view-btn" onclick="resetCameraView()" title="뷰 리셋" style="font-size:14px;">⟲</button>
+                <button class="touch-view-btn" onclick="zoomCamera(1)" title="확대">+</button>
+                <button class="touch-view-btn" onclick="showTouchHelp()" title="도움말" style="font-size:16px;">?</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        let camera, perspectiveCamera, orthoCamera;
+        let renderer, scene, raycaster, mouse;
+        let blocks = [];
+        let currentTool = 'add';
+        let currentMode = 'build';
+        let floorPlane;
+        let ghostGroup;
+
+        // ===== 프리셋 기반 회전 상태 =====
+        // 자세: 0=눕히기, 1=세우기, 2=옆세우기
+        // 방향: 0=가로(→), 1=세로(↑)
+        // 기울기: index 0~6 → [0,15,30,45,60,75,90]도
+        let poseIndex = 0;
+        let dirIndex = 0;
+        let tiltIndex = 0;
+
+        const TILT_VALUES = [0, 15, 30, 45, 60, 75, 90];
+
+        // 프리셋 → 내부 rotX/rotY/rotZ/tiltDeg 매핑
+        const POSE_MAP = [
+            { rotX: 1, rotZ: 0 },  // 눕히기: 넓은면 위 (height=0.75)
+            { rotX: 0, rotZ: 0 },  // 세우기: 기본 (height=2.25)
+            { rotX: 0, rotZ: 1 },  // 옆세우기: 길이 방향 위 (height=11.25)
+        ];
+
+        // 현재 프리셋에서 내부 회전값 계산
+        function getRotFromPreset() {
+            const pose = POSE_MAP[poseIndex];
+            return {
+                rotX: pose.rotX,
+                rotY: dirIndex,     // 0=가로, 1=세로
+                rotZ: pose.rotZ,
+                tiltDeg: TILT_VALUES[tiltIndex]
+            };
+        }
+
+        // 블럭 크기 (mm → 단위 변환, 75% 스케일 적용)
+        const BLOCK_W = 11.25;
+        const BLOCK_H = 2.25;
+        const BLOCK_D = 0.75;
+        const UNIT = 1;
+        const SNAP = BLOCK_D; // 0.75 스냅 단위
+
+        const BOUNDARY_SIZE = 31.25;
+
+        const MIN_BLOCKS = 20;
+        const MAX_BLOCKS = 25;
+
+        let undoStack = [];
+        let redoStack = [];
+
+        let mergedViewGroup = null;
+
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let prevDrag = { x: 0, y: 0 };
+
+        let isSpaceDown = false;
+        let isSpacePanning = false;
+        let lookTarget = new THREE.Vector3(0, 1, 0);
+
+        const GRID_SIZE = 40;
+
+        let lastPlacedBlock = null;
+
+        // 대칭 모드
+        let symmetryX = false;
+        let symmetryZ = false;
+
+        const BASE_MAT = new THREE.MeshPhongMaterial({ color: 0xf59e0b, transparent: true, opacity: 1, shininess: 30 });
+        const EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+
+        const GHOST_MAT = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.4 });
+        const GHOST_EDGE_MAT = new THREE.LineBasicMaterial({ color: 0xb45309, linewidth: 2, transparent: true, opacity: 0.4 });
+
+        const GHOST_SYM_MAT = new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.3 });
+        const GHOST_SYM_EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x2563eb, linewidth: 2, transparent: true, opacity: 0.3 });
+        let ghostSymGroups = [];
+
+        // ============ 블럭 크기/회전 계산 ============
+        function getBlockDimensions() {
+            const r = getRotFromPreset();
+            return getAABBDims(r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+        }
+
+        function getAABBDims(rx, ry, rz, tilt) {
+            const euler = getEulerForState(rx, ry, rz, tilt);
+            const q = new THREE.Quaternion().setFromEuler(euler);
+            const hw = BLOCK_W / 2, hh = BLOCK_H / 2, hd = BLOCK_D / 2;
+            let mnX = Infinity, mxX = -Infinity, mnY = Infinity, mxY = -Infinity, mnZ = Infinity, mxZ = -Infinity;
+            for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+                const v = new THREE.Vector3(sx * hw, sy * hh, sz * hd).applyQuaternion(q);
+                mnX = Math.min(mnX, v.x); mxX = Math.max(mxX, v.x);
+                mnY = Math.min(mnY, v.y); mxY = Math.max(mxY, v.y);
+                mnZ = Math.min(mnZ, v.z); mxZ = Math.max(mxZ, v.z);
+            }
+            return { w: mxX - mnX, h: mxY - mnY, d: mxZ - mnZ };
+        }
+
+        function getEulerForState(rx, ry, rz, tilt) {
+            // 1단계: 자세(pose) — X, Z축 90° 단위
+            const poseEuler = new THREE.Euler(
+                rx * Math.PI / 2,
+                0,                    // ← Y는 여기서 빼고
+                rz * Math.PI / 2,
+                'YXZ'
+            );
+            let resultQ = new THREE.Quaternion().setFromEuler(poseEuler);
+
+            // 2단계: 기울기 — 월드 X축 후회전
+            if (tilt !== 0) {
+                const tiltQ = new THREE.Quaternion().setFromAxisAngle(
+                    new THREE.Vector3(1, 0, 0),
+                    tilt * Math.PI / 180
+                );
+                resultQ = new THREE.Quaternion().multiplyQuaternions(tiltQ, resultQ);
+            }
+
+            // 3단계: 방향 — 월드 Y축 후회전 (회전목마처럼)
+            if (ry !== 0) {
+                const dirQ = new THREE.Quaternion().setFromAxisAngle(
+                    new THREE.Vector3(0, 1, 0),
+                    ry * Math.PI / 2
+                );
+                resultQ = new THREE.Quaternion().multiplyQuaternions(dirQ, resultQ);
+            }
+
+            return new THREE.Euler().setFromQuaternion(resultQ, 'YXZ');
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xe2e8f0);
+
+            const aspect = window.innerWidth / window.innerHeight;
+
+            perspectiveCamera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+            perspectiveCamera.position.set(30, 25, 30);
+            perspectiveCamera.lookAt(0, 0, 0);
+
+            const frustumSize = 50;
+            orthoCamera = new THREE.OrthographicCamera(frustumSize * aspect / -2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / -2, 0.1, 1000);
+
+            camera = perspectiveCamera;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const dLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dLight.position.set(10, 20, 15);
+            scene.add(dLight);
+
+            const gridExtent = 33.75;
+            const gridDivisions = 45;
+            const gridHelper = new THREE.GridHelper(gridExtent, gridDivisions, 0x94a3b8, 0xcbd5e1);
+            scene.add(gridHelper);
+
+            // 정면 방향 표시
+            (function addFloorLabel() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 512, 256);
+                ctx.fillStyle = '#e53e3e';
+                ctx.font = 'bold 90px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('↑ 정면', 256, 128);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false, side: THREE.DoubleSide });
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(5, 2.5), mat);
+                plane.rotation.x = -Math.PI / 2;
+                plane.position.set(0, 0.02, GRID_SIZE / 2 + 1.5);
+                scene.add(plane);
+            })();
+
+            addBoundaryBox();
+
+            const floorGeom = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE);
+            floorPlane = new THREE.Mesh(floorGeom, new THREE.MeshBasicMaterial({ visible: false }));
+            floorPlane.rotation.x = -Math.PI / 2;
+            scene.add(floorPlane);
+
+            updateGhostMesh();
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mousedown', onMouseDown);
+            window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', onKeyUp);
+            window.addEventListener('resize', onResize);
+            window.addEventListener('wheel', onWheel, { passive: false });
+
+            // 터치 이벤트
+            const canvasEl = renderer.domElement;
+            canvasEl.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvasEl.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvasEl.addEventListener('touchend', onTouchEnd, { passive: false });
+            canvasEl.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+            document.getElementById('opacityRange').addEventListener('input', (e) => {
+                const v = e.target.value / 100;
+                if (mergedViewGroup) {
+                    mergedViewGroup.children.forEach(child => {
+                        if (child.material) child.material.opacity = v;
+                    });
+                }
+                blocks.forEach(b => {
+                    b.group.children.forEach(child => {
+                        if (child.material) child.material.opacity = v;
+                    });
+                });
+            });
+
+            animate();
+        }
+
+        // ============ 경계 박스 표시 ============
+        function addBoundaryBox() {
+            const size = BOUNDARY_SIZE;
+            const halfSize = size / 2;
+
+            const boxGeom = new THREE.BoxGeometry(size, size, size);
+            const edgesGeom = new THREE.EdgesGeometry(boxGeom);
+            const boundaryLines = new THREE.LineSegments(edgesGeom, new THREE.LineDashedMaterial({
+                color: 0xef4444, dashSize: 1, gapSize: 0.5, linewidth: 2
+            }));
+            boundaryLines.computeLineDistances();
+            boundaryLines.position.set(0, halfSize, 0);
+            scene.add(boundaryLines);
+
+            const floorMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.05, side: THREE.DoubleSide });
+            const floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), floorMat);
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.set(0, 0.01, 0);
+            scene.add(floorMesh);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 512, 128);
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 48px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('250 × 250 × 250', 256, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const labelMat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthTest: false, side: THREE.DoubleSide });
+            const labelPlane = new THREE.Mesh(new THREE.PlaneGeometry(12, 3), labelMat);
+            labelPlane.position.set(0, size + 1, 0);
+            scene.add(labelPlane);
+        }
+
+        // ============ 블럭 생성 ============
+        function createBlockComponents(mat, edgeMat) {
+            const group = new THREE.Group();
+            const geom = new THREE.BoxGeometry(BLOCK_W, BLOCK_H, BLOCK_D);
+            const mesh = new THREE.Mesh(geom, mat.clone());
+            const lines = new THREE.LineSegments(new THREE.EdgesGeometry(geom, 2), edgeMat.clone());
+            group.add(mesh);
+            group.add(lines);
+            mesh.userData.isBlockMesh = true;
+            return { group, mesh };
+        }
+
+        // ============ 충돌 검사 (OBB - SAT) ============
+        const HALF_EXTENTS = new THREE.Vector3(BLOCK_W / 2 - 0.02, BLOCK_H / 2 - 0.02, BLOCK_D / 2 - 0.02);
+
+        function getOBB(x, y, z, rx, ry, rz, tilt) {
+            const euler = getEulerForState(rx, ry, rz, tilt);
+            const q = new THREE.Quaternion().setFromEuler(euler);
+            const axes = [
+                new THREE.Vector3(1, 0, 0).applyQuaternion(q),
+                new THREE.Vector3(0, 1, 0).applyQuaternion(q),
+                new THREE.Vector3(0, 0, 1).applyQuaternion(q),
+            ];
+            return { center: new THREE.Vector3(x, y, z), axes, half: HALF_EXTENTS };
+        }
+
+        function obbOverlap(a, b) {
+            const T = new THREE.Vector3().subVectors(b.center, a.center);
+            const testAxes = [...a.axes, ...b.axes];
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+                const c = new THREE.Vector3().crossVectors(a.axes[i], b.axes[j]);
+                if (c.lengthSq() > 1e-10) testAxes.push(c.normalize());
+            }
+            const aH = [a.half.x, a.half.y, a.half.z];
+            const bH = [b.half.x, b.half.y, b.half.z];
+            for (const L of testAxes) {
+                let rA = 0, rB = 0;
+                for (let i = 0; i < 3; i++) {
+                    rA += aH[i] * Math.abs(a.axes[i].dot(L));
+                    rB += bH[i] * Math.abs(b.axes[i].dot(L));
+                }
+                if (Math.abs(T.dot(L)) > rA + rB) return false;
+            }
+            return true;
+        }
+
+        // ============ 블럭 관리 ============
+        function checkOverlap(x, y, z, rx, ry, rz, tilt, excludeBlock) {
+            const newOBB = getOBB(x, y, z, rx, ry, rz, tilt);
+            return blocks.some(b => {
+                if (excludeBlock && b === excludeBlock) return false;
+                return obbOverlap(newOBB, getOBB(b.pos.x, b.pos.y, b.pos.z, b.rx, b.ry, b.rz, b.tilt));
+            });
+        }
+
+        function addBlock(x, y, z, rx, ry, rz, tilt, recordUndo = true) {
+            if (checkOverlap(x, y, z, rx, ry, rz, tilt)) {
+                showToast('⚠️ 다른 블럭과 겹칩니다!');
+                return null;
+            }
+
+            const { group, mesh } = createBlockComponents(BASE_MAT, EDGE_MAT);
+
+            group.position.set(x, y, z);
+            group.rotation.copy(getEulerForState(rx, ry, rz, tilt));
+
+            const blockObj = { group, mesh, pos: { x, y, z }, rx, ry, rz, tilt };
+            mesh.userData.block = blockObj;
+
+            scene.add(group);
+            blocks.push(blockObj);
+
+            if (recordUndo) {
+                undoStack.push({ type: 'add', data: { x, y, z, rx, ry, rz, tilt } });
+                redoStack = [];
+            }
+
+            updateBlockCount();
+            lastPlacedBlock = blockObj;
+            return blockObj;
+        }
+
+        // 대칭 배치
+        function addBlockWithSymmetry(x, y, z, rx, ry, rz, tilt) {
+            const mainBlock = addBlock(x, y, z, rx, ry, rz, tilt, false);
+            if (!mainBlock) return;
+
+            const symBlocks = [];
+            symBlocks.push({ x, y, z, rx, ry, rz, tilt });
+
+            if (symmetryX && Math.abs(x) > 0.01) {
+                const sb = addBlock(-x, y, z, rx, ry, rz, tilt, false);
+                if (sb) symBlocks.push({ x: -x, y, z, rx, ry, rz, tilt });
+            }
+            if (symmetryZ && Math.abs(z) > 0.01) {
+                const sb = addBlock(x, y, -z, rx, ry, rz, tilt, false);
+                if (sb) symBlocks.push({ x, y, z: -z, rx, ry, rz, tilt });
+            }
+            if (symmetryX && symmetryZ && (Math.abs(x) > 0.01 || Math.abs(z) > 0.01)) {
+                if (Math.abs(x) > 0.01 && Math.abs(z) > 0.01) {
+                    const sb = addBlock(-x, y, -z, rx, ry, rz, tilt, false);
+                    if (sb) symBlocks.push({ x: -x, y, z: -z, rx, ry, rz, tilt });
+                }
+            }
+
+            undoStack.push({ type: 'add_multi', data: symBlocks });
+            redoStack = [];
+        }
+
+        function removeBlock(hitMesh, recordUndo = true) {
+            const blockObj = hitMesh.userData.block;
+            if (blockObj) {
+                if (recordUndo) {
+                    undoStack.push({ type: 'remove', data: { x: blockObj.pos.x, y: blockObj.pos.y, z: blockObj.pos.z, rx: blockObj.rx, ry: blockObj.ry, rz: blockObj.rz, tilt: blockObj.tilt } });
+                    redoStack = [];
+                }
+                scene.remove(blockObj.group);
+                blocks = blocks.filter(b => b !== blockObj);
+                if (lastPlacedBlock === blockObj) lastPlacedBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
+                updateBlockCount();
+            }
+        }
+
+        function updateBlockCount() {
+            const count = blocks.length;
+            document.getElementById('blockCount').textContent = count;
+
+            const warning = document.getElementById('warningBanner');
+            if (count > MAX_BLOCKS) {
+                warning.classList.remove('hidden');
+                document.getElementById('warningCount').textContent = count;
+                document.getElementById('blockCount').className = 'text-sm font-black text-red-600';
+            } else {
+                warning.classList.add('hidden');
+                if (count >= MIN_BLOCKS && count <= MAX_BLOCKS) {
+                    document.getElementById('blockCount').className = 'text-sm font-black text-emerald-600';
+                } else {
+                    document.getElementById('blockCount').className = 'text-sm font-black text-blue-600';
+                }
+            }
+        }
+
+        // ============ Undo/Redo ============
+        function undoAction() {
+            if (undoStack.length === 0) return;
+            const action = undoStack.pop();
+
+            if (action.type === 'add') {
+                const b = blocks.find(b => Math.abs(b.pos.x - action.data.x) < 0.1 && Math.abs(b.pos.y - action.data.y) < 0.1 && Math.abs(b.pos.z - action.data.z) < 0.1);
+                if (b) { scene.remove(b.group); blocks = blocks.filter(bx => bx !== b); updateBlockCount(); }
+                redoStack.push(action);
+            } else if (action.type === 'add_multi') {
+                action.data.forEach(d => {
+                    const b = blocks.find(b => Math.abs(b.pos.x - d.x) < 0.1 && Math.abs(b.pos.y - d.y) < 0.1 && Math.abs(b.pos.z - d.z) < 0.1);
+                    if (b) { scene.remove(b.group); blocks = blocks.filter(bx => bx !== b); }
+                });
+                updateBlockCount();
+                redoStack.push(action);
+            } else if (action.type === 'remove') {
+                addBlock(action.data.x, action.data.y, action.data.z, action.data.rx, action.data.ry, action.data.rz, action.data.tilt, false);
+                redoStack.push(action);
+            } else if (action.type === 'nudge') {
+                const b = blocks.find(b => Math.abs(b.pos.x - action.data.newX) < 0.1 && Math.abs(b.pos.y - action.data.newY) < 0.1 && Math.abs(b.pos.z - action.data.newZ) < 0.1);
+                if (b) {
+                    b.pos.x = action.data.oldX;
+                    b.pos.y = action.data.oldY;
+                    b.pos.z = action.data.oldZ;
+                    b.group.position.set(b.pos.x, b.pos.y, b.pos.z);
+                }
+                redoStack.push(action);
+            }
+
+            lastPlacedBlock = blocks.length > 0 ? blocks[blocks.length - 1] : null;
+        }
+
+        function redoAction() {
+            if (redoStack.length === 0) return;
+            const action = redoStack.pop();
+
+            if (action.type === 'add') {
+                addBlock(action.data.x, action.data.y, action.data.z, action.data.rx, action.data.ry, action.data.rz, action.data.tilt, false);
+                undoStack.push(action);
+            } else if (action.type === 'add_multi') {
+                action.data.forEach(d => {
+                    addBlock(d.x, d.y, d.z, d.rx, d.ry, d.rz, d.tilt, false);
+                });
+                undoStack.push(action);
+            } else if (action.type === 'remove') {
+                const b = blocks.find(b => Math.abs(b.pos.x - action.data.x) < 0.1 && Math.abs(b.pos.y - action.data.y) < 0.1 && Math.abs(b.pos.z - action.data.z) < 0.1);
+                if (b) { scene.remove(b.group); blocks = blocks.filter(bx => bx !== b); updateBlockCount(); }
+                undoStack.push(action);
+            } else if (action.type === 'nudge') {
+                const b = blocks.find(b => Math.abs(b.pos.x - action.data.oldX) < 0.1 && Math.abs(b.pos.y - action.data.oldY) < 0.1 && Math.abs(b.pos.z - action.data.oldZ) < 0.1);
+                if (b) {
+                    b.pos.x = action.data.newX;
+                    b.pos.y = action.data.newY;
+                    b.pos.z = action.data.newZ;
+                    b.group.position.set(b.pos.x, b.pos.y, b.pos.z);
+                }
+                undoStack.push(action);
+            }
+        }
+
+        // ===== 넛지 (Shift+방향키) =====
+        function nudgeLastBlock(dx, dy, dz) {
+            if (!lastPlacedBlock) { showToast('⚠️ 이동할 블럭이 없습니다'); return; }
+            const b = lastPlacedBlock;
+            const oldX = b.pos.x, oldY = b.pos.y, oldZ = b.pos.z;
+            const newX = oldX + dx, newY = Math.max(getAABBDims(b.rx, b.ry, b.rz, b.tilt).h / 2, oldY + dy), newZ = oldZ + dz;
+
+            if (checkOverlap(newX, newY, newZ, b.rx, b.ry, b.rz, b.tilt, b)) {
+                showToast('⚠️ 이동 불가 (충돌)');
+                return;
+            }
+
+            b.pos.x = newX; b.pos.y = newY; b.pos.z = newZ;
+            b.group.position.set(newX, newY, newZ);
+
+            undoStack.push({ type: 'nudge', data: { oldX, oldY, oldZ, newX, newY, newZ } });
+            redoStack = [];
+
+            highlightBlock(b);
+        }
+
+        function highlightBlock(b) {
+            const mesh = b.mesh;
+            const origColor = 0xf59e0b;
+            mesh.material.color.setHex(0x38bdf8);
+            mesh.material.emissive = new THREE.Color(0x0ea5e9);
+            mesh.material.emissiveIntensity = 0.3;
+            setTimeout(() => {
+                mesh.material.color.setHex(origColor);
+                mesh.material.emissive = new THREE.Color(0x000000);
+                mesh.material.emissiveIntensity = 0;
+            }, 200);
+        }
+
+        // ============ 저장/불러오기 ============
+        function saveData() {
+            const data = blocks.map(b => ({
+                x: b.pos.x, y: b.pos.y, z: b.pos.z,
+                rx: b.rx, ry: b.ry, rz: b.rz, tilt: b.tilt
+            }));
+
+            const dataStr = JSON.stringify(data);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+
+            const date = new Date();
+            const dateStr = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`;
+            a.download = `블럭조립_${dateStr}.json`;
+            a.href = url;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('💾 파일로 저장되었습니다.');
+        }
+
+        function loadData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        clearAll();
+                        setTimeout(() => {
+                            data.forEach(d => {
+                                if (d.stand !== undefined) {
+                                    addBlock(d.x, d.y, d.z, 0, d.ry, d.stand ? 1 : 0, 0, false);
+                                } else {
+                                    addBlock(d.x, d.y, d.z, d.rx||0, d.ry||0, d.rz||0, d.tilt||0, false);
+                                }
+                            });
+                            undoStack = [];
+                            redoStack = [];
+                            showToast('📂 불러오기 완료! (' + data.length + '개 블럭)');
+                        }, 50);
+                    } catch (err) {
+                        alert('잘못된 파일 형식입니다.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function takeScreenshot() {
+            renderer.render(scene, camera);
+            const link = document.createElement('a');
+            link.download = '블럭조립_' + new Date().toISOString().slice(0, 10) + '.png';
+            link.href = renderer.domElement.toDataURL('image/png');
+            link.click();
+            showToast('📸 이미지 저장 완료!');
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-bold z-50 transition-all';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 1500);
+        }
+
+        // ============ Ghost/Preview ============
+        function updateGhostMesh() {
+            if (ghostGroup) scene.remove(ghostGroup);
+            const parts = createBlockComponents(GHOST_MAT, GHOST_EDGE_MAT);
+            ghostGroup = parts.group;
+            ghostGroup.visible = false;
+            scene.add(ghostGroup);
+
+            ghostSymGroups.forEach(g => scene.remove(g));
+            ghostSymGroups = [];
+        }
+
+        function updateSymGhosts(pos, rx, ry, rz, tilt) {
+            const symPositions = [];
+            if (symmetryX && Math.abs(pos.x) > 0.01) {
+                symPositions.push({ x: -pos.x, y: pos.y, z: pos.z });
+            }
+            if (symmetryZ && Math.abs(pos.z) > 0.01) {
+                symPositions.push({ x: pos.x, y: pos.y, z: -pos.z });
+            }
+            if (symmetryX && symmetryZ && Math.abs(pos.x) > 0.01 && Math.abs(pos.z) > 0.01) {
+                symPositions.push({ x: -pos.x, y: pos.y, z: -pos.z });
+            }
+
+            while (ghostSymGroups.length < symPositions.length) {
+                const parts = createBlockComponents(GHOST_SYM_MAT, GHOST_SYM_EDGE_MAT);
+                parts.group.visible = false;
+                scene.add(parts.group);
+                ghostSymGroups.push(parts.group);
+            }
+            while (ghostSymGroups.length > symPositions.length) {
+                const g = ghostSymGroups.pop();
+                scene.remove(g);
+            }
+
+            const euler = getEulerForState(rx, ry, rz, tilt);
+            symPositions.forEach((sp, i) => {
+                const g = ghostSymGroups[i];
+                g.position.set(sp.x, sp.y, sp.z);
+                g.rotation.copy(euler);
+                g.visible = true;
+
+                const willOverlap = checkOverlap(sp.x, sp.y, sp.z, rx, ry, rz, tilt);
+                g.children.forEach(child => {
+                    if (child.isMesh && child.material) {
+                        child.material.color.setHex(willOverlap ? 0xff4444 : 0x60a5fa);
+                    }
+                    if (child.isLineSegments && child.material) {
+                        child.material.color.setHex(willOverlap ? 0xcc0000 : 0x2563eb);
+                    }
+                });
+            });
+        }
+
+        function hideSymGhosts() {
+            ghostSymGroups.forEach(g => g.visible = false);
+        }
+
+        // ===== 면 위 그리드 스냅 =====
+        function getSnappedPos(intersect) {
+            const r = getRotFromPreset();
+            const dim = getAABBDims(r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+            const halfH = dim.h / 2;
+
+            if (intersect.object === floorPlane) {
+                const sx = Math.round(intersect.point.x / SNAP) * SNAP;
+                const sz = Math.round(intersect.point.z / SNAP) * SNAP;
+                return { x: sx, y: halfH, z: sz };
+            }
+
+            const blockObj = intersect.object.userData.block;
+            if (!blockObj) return null;
+
+            const center = blockObj.group.position.clone();
+
+            const normalMatrix = new THREE.Matrix3().getNormalMatrix(intersect.object.matrixWorld);
+            const worldNormal = intersect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+
+            const existEuler = getEulerForState(blockObj.rx, blockObj.ry, blockObj.rz, blockObj.tilt);
+            const existQ = new THREE.Quaternion().setFromEuler(existEuler);
+            const existAxes = [
+                new THREE.Vector3(1,0,0).applyQuaternion(existQ),
+                new THREE.Vector3(0,1,0).applyQuaternion(existQ),
+                new THREE.Vector3(0,0,1).applyQuaternion(existQ),
+            ];
+            const existHalfs = [BLOCK_W / 2, BLOCK_H / 2, BLOCK_D / 2];
+            let existExtent = 0;
+            for (let i = 0; i < 3; i++) existExtent += existHalfs[i] * Math.abs(existAxes[i].dot(worldNormal));
+
+            const newEuler = getEulerForState(r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+            const newQ = new THREE.Quaternion().setFromEuler(newEuler);
+            const newAxes = [
+                new THREE.Vector3(1,0,0).applyQuaternion(newQ),
+                new THREE.Vector3(0,1,0).applyQuaternion(newQ),
+                new THREE.Vector3(0,0,1).applyQuaternion(newQ),
+            ];
+            const newHalfs = [BLOCK_W / 2, BLOCK_H / 2, BLOCK_D / 2];
+            let newExtent = 0;
+            for (let i = 0; i < 3; i++) newExtent += newHalfs[i] * Math.abs(newAxes[i].dot(worldNormal));
+
+            // 면 위 오프셋 계산
+            const hitToCenter = intersect.point.clone().sub(center);
+            const inPlane = hitToCenter.clone().sub(worldNormal.clone().multiplyScalar(hitToCenter.dot(worldNormal)));
+            inPlane.x = Math.round(inPlane.x / SNAP) * SNAP;
+            inPlane.y = Math.round(inPlane.y / SNAP) * SNAP;
+            inPlane.z = Math.round(inPlane.z / SNAP) * SNAP;
+
+            const normalOffset = worldNormal.clone().multiplyScalar(existExtent + newExtent);
+            const pos = center.clone().add(inPlane).add(normalOffset);
+
+            pos.y = Math.max(halfH, pos.y);
+            return { x: pos.x, y: pos.y, z: pos.z };
+        }
+
+        // ============ 프리셋 UI 제어 ============
+        function setPose(idx) {
+            poseIndex = idx;
+            for (let i = 0; i < 3; i++) {
+                document.getElementById('pose' + i).classList.toggle('selected', i === idx);
+            }
+            updateGhostMesh();
+            drawPreview();
+        }
+
+        function setDir(idx) {
+            dirIndex = idx;
+            for (let i = 0; i < 4; i++) {
+                document.getElementById('dir' + i).classList.toggle('selected', i === idx);
+            }
+            updateGhostMesh();
+            drawPreview();
+        }
+
+        function rotateDir() {
+            setDir((dirIndex + 1) % 4);
+        }
+
+        function setTilt(idx) {
+            tiltIndex = idx;
+            for (let i = 0; i < 7; i++) {
+                document.getElementById('tilt' + i).classList.toggle('selected', i === idx);
+            }
+            updateGhostMesh();
+            drawPreview();
+        }
+
+        // Alt+클릭 시 기존 블럭의 회전값에서 가장 가까운 프리셋 찾기
+        function findNearestPreset(rx, ry, rz, tilt) {
+            // 자세 매핑: rotX/rotZ 조합으로 결정
+            let bestPose = 1; // 기본값: 세우기
+            for (let p = 0; p < POSE_MAP.length; p++) {
+                if (POSE_MAP[p].rotX === (rx % 4) && POSE_MAP[p].rotZ === (rz % 4)) {
+                    bestPose = p;
+                    break;
+                }
+            }
+            // rx=1이면 눕히기(0), rx=0,rz=0이면 세우기(1), rx=0,rz=1이면 옆세우기(2)
+            // 나머지 rx/rz 조합은 가장 가까운 자세를 선택
+            if (bestPose === 1) {
+                // 정확한 매칭 못 찾은 경우
+                const rxMod = rx % 4;
+                const rzMod = rz % 4;
+                if (rxMod === 1 || rxMod === 3) bestPose = 0; // 눕히기
+                else if (rzMod === 1 || rzMod === 3) bestPose = 2; // 옆세우기
+            }
+
+            // 방향: rotY (0~3)
+            const bestDir = ry % 4;
+
+            // 기울기: 가장 가까운 값 찾기
+            let bestTilt = 0;
+            let minDiff = Infinity;
+            for (let t = 0; t < TILT_VALUES.length; t++) {
+                const diff = Math.abs(tilt - TILT_VALUES[t]);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestTilt = t;
+                }
+            }
+
+            return { pose: bestPose, dir: bestDir, tilt: bestTilt };
+        }
+
+        // ============ 미리보기 캔버스 (2D 실루엣) ============
+        function drawPreview() {
+            const canvas = document.getElementById('previewCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const cw = canvas.width, ch = canvas.height;
+            ctx.clearRect(0, 0, cw, ch);
+
+            const r = getRotFromPreset();
+            const euler = getEulerForState(r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+            const q = new THREE.Quaternion().setFromEuler(euler);
+
+            // 블럭의 8개 꼭짓점을 투영
+            const hw = BLOCK_W / 2, hh = BLOCK_H / 2, hd = BLOCK_D / 2;
+            const corners3D = [];
+            for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+                const v = new THREE.Vector3(sx * hw, sy * hh, sz * hd).applyQuaternion(q);
+                corners3D.push(v);
+            }
+
+            // 등각 투영 (isometric-like)
+            const angleX = 0.5;  // 살짝 위에서 봄
+            const angleY = 0.6;  // 약간 옆에서
+            const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+            const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+
+            const project = (v) => {
+                // Y축 회전 → X축 회전 → 2D 투영
+                const x1 = v.x * cosY + v.z * sinY;
+                const z1 = -v.x * sinY + v.z * cosY;
+                const y1 = v.y * cosX - z1 * sinX;
+                return { x: x1, y: -y1 };
+            };
+
+            const pts2D = corners3D.map(project);
+
+            // 스케일 계산
+            let minPx = Infinity, maxPx = -Infinity, minPy = Infinity, maxPy = -Infinity;
+            pts2D.forEach(p => {
+                minPx = Math.min(minPx, p.x); maxPx = Math.max(maxPx, p.x);
+                minPy = Math.min(minPy, p.y); maxPy = Math.max(maxPy, p.y);
+            });
+            const pw = maxPx - minPx, ph = maxPy - minPy;
+            const scale = Math.min((cw - 20) / pw, (ch - 16) / ph);
+            const ox = cw / 2, oy = ch / 2;
+
+            // 면 정의 (각 면의 꼭짓점 인덱스) - BoxGeometry 순서에 맞춤
+            // corner index: 0=(-,-,-), 1=(-,-,+), 2=(-,+,-), 3=(-,+,+), 4=(+,-,-), 5=(+,-,+), 6=(+,+,-), 7=(+,+,+)
+            const faces = [
+                { verts: [4,6,7,5], color: '#f59e0b' },  // +X면
+                { verts: [0,2,3,1], color: '#d97706' },  // -X면
+                { verts: [2,6,7,3], color: '#fbbf24' },  // +Y면 (윗면)
+                { verts: [0,4,5,1], color: '#b45309' },  // -Y면 (아랫면)
+                { verts: [1,3,7,5], color: '#f59e0b' },  // +Z면
+                { verts: [0,2,6,4], color: '#d97706' },  // -Z면
+            ];
+
+            // 각 면의 노멀 계산 (보이는 면만 그리기)
+            const visibleFaces = [];
+            faces.forEach(face => {
+                const v0 = corners3D[face.verts[0]];
+                const v1 = corners3D[face.verts[1]];
+                const v2 = corners3D[face.verts[2]];
+                const edge1 = new THREE.Vector3().subVectors(v1, v0);
+                const edge2 = new THREE.Vector3().subVectors(v2, v0);
+                const normal = new THREE.Vector3().crossVectors(edge1, edge2);
+
+                // 카메라 방향 (등각 투영의 시점 방향)
+                const viewDir = new THREE.Vector3(
+                    Math.sin(angleY) * Math.cos(angleX),
+                    Math.sin(angleX),
+                    Math.cos(angleY) * Math.cos(angleX)
+                );
+
+                if (normal.dot(viewDir) > 0) {
+                    visibleFaces.push(face);
+                }
+            });
+
+            // 보이는 면 그리기
+            visibleFaces.forEach(face => {
+                const facePoints = face.verts.map(i => pts2D[i]);
+                ctx.beginPath();
+                ctx.moveTo(ox + facePoints[0].x * scale, oy + facePoints[0].y * scale);
+                for (let i = 1; i < facePoints.length; i++) {
+                    ctx.lineTo(ox + facePoints[i].x * scale, oy + facePoints[i].y * scale);
+                }
+                ctx.closePath();
+                ctx.fillStyle = face.color;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            // 하단에 현재 상태 텍스트
+            const poseNames = ['눕히기', '세우기', '옆세우기'];
+            const dirNames = ['가로→', '세로↑'];
+            const label = `${poseNames[poseIndex]} · ${dirNames[dirIndex]} · ${TILT_VALUES[tiltIndex]}°`;
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(label, cw / 2, ch - 4);
+        }
+
+        // ============ 이벤트 핸들러 ============
+        let isRightDragging = false;
+        let isBuildDragging = false;
+
+        // ============ 터치 상태 ============
+        let touchState = {
+            startTime: 0,
+            startPos: null,
+            lastPos: null,
+            isTouching: false,
+            isPinching: false,
+            isPanning: false,
+            isLongPress: false,
+            longPressTimer: null,
+            longPressIndicator: null,
+            initialPinchDist: 0,
+            initialPinchCenter: null,
+            initialSpherical: null,
+            lastTouchCount: 0,
+            moved: false,
+            twoFingerTapDetected: false,
+        };
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            if (isSpacePanning) {
+                const dx = (event.clientX - prevDrag.x);
+                const dy = (event.clientY - prevDrag.y);
+
+                const right = new THREE.Vector3();
+                const up = new THREE.Vector3();
+                camera.getWorldDirection(new THREE.Vector3());
+                right.crossVectors(camera.up, camera.getWorldDirection(new THREE.Vector3())).normalize();
+                up.copy(camera.up).normalize();
+
+                const panSpeed = 0.05;
+                const panDelta = new THREE.Vector3();
+                panDelta.addScaledVector(right, dx * panSpeed);
+                panDelta.addScaledVector(up, -dy * panSpeed);
+
+                camera.position.add(panDelta);
+                lookTarget.add(panDelta);
+                camera.lookAt(lookTarget);
+
+                prevDrag = { x: event.clientX, y: event.clientY };
+                return;
+            }
+
+            if ((currentMode === 'view' && isDragging) || isRightDragging) {
+                if (camera === orthoCamera) setView('iso');
+                const dx = (event.clientX - prevDrag.x) * 0.01;
+                const dy = (event.clientY - prevDrag.y) * 0.01;
+                const offset = camera.position.clone().sub(lookTarget);
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                spherical.theta -= dx;
+                spherical.phi -= dy;
+                spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                offset.setFromSpherical(spherical);
+                camera.position.copy(offset.add(lookTarget));
+                camera.lookAt(lookTarget);
+                prevDrag = { x: event.clientX, y: event.clientY };
+                return;
+            }
+
+            if (currentMode !== 'build') { if (ghostGroup) ghostGroup.visible = false; hideSymGhosts(); return; }
+
+            updateGhostFromMouse();
+        }
+
+        function onMouseDown(event) {
+            if (event.target.closest('.pointer-auto')) return;
+
+            dragStart = { x: event.clientX, y: event.clientY };
+            prevDrag = { x: event.clientX, y: event.clientY };
+
+            if (isSpaceDown && event.button === 0) {
+                isSpacePanning = true;
+                return;
+            }
+
+            if (event.button === 2) {
+                isRightDragging = true;
+                return;
+            }
+
+            if (currentMode === 'view') {
+                if (event.button === 0) isDragging = true;
+                return;
+            }
+
+            if (currentMode === 'build' && event.button === 0) {
+                isBuildDragging = true;
+            }
+
+            const r = getRotFromPreset();
+
+            raycaster.setFromCamera(mouse, camera);
+            const blockMeshes = blocks.map(b => b.mesh);
+            const intersects = raycaster.intersectObjects([floorPlane, ...blockMeshes]);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+
+                // Alt+클릭: 블럭 회전 복제
+                if (event.altKey && blockMeshes.includes(hit.object)) {
+                    const srcBlock = hit.object.userData.block;
+                    if (srcBlock) {
+                        const preset = findNearestPreset(srcBlock.rx, srcBlock.ry, srcBlock.rz, srcBlock.tilt);
+                        setPose(preset.pose);
+                        setDir(preset.dir);
+                        setTilt(preset.tilt);
+                        showToast('🔄 블럭 방향을 복제했습니다');
+                    }
+                    return;
+                }
+
+                if (currentTool === 'delete') {
+                    if (blockMeshes.includes(hit.object)) removeBlock(hit.object);
+                } else if (currentMode === 'build' && currentTool === 'add') {
+                    const p = getSnappedPos(hit);
+                    if (p) {
+                        if (symmetryX || symmetryZ) {
+                            addBlockWithSymmetry(p.x, p.y, p.z, r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+                        } else {
+                            addBlock(p.x, p.y, p.z, r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+                        }
+                    }
+                }
+            }
+        }
+
+        function onMouseUp(event) {
+            if (event.button === 0 && isSpacePanning) {
+                isSpacePanning = false;
+                return;
+            }
+            if (event.button === 2 && isRightDragging) {
+                isRightDragging = false;
+                const dist = Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y);
+                if (dist < 5 && currentMode === 'build') {
+                    raycaster.setFromCamera(mouse, camera);
+                    const blockMeshes = blocks.map(b => b.mesh);
+                    const intersects = raycaster.intersectObjects(blockMeshes);
+                    if (intersects.length > 0) {
+                        removeBlock(intersects[0].object);
+                    }
+                }
+            }
+            if (event.button === 0) {
+                isDragging = false;
+                isBuildDragging = false;
+            }
+        }
+
+        function onWheel(event) {
+            event.preventDefault();
+
+            // 트랙패드 핀치 줌 (ctrlKey가 true일 때)
+            if (event.ctrlKey) {
+                if (camera === perspectiveCamera) {
+                    const offset = camera.position.clone().sub(lookTarget);
+                    const spherical = new THREE.Spherical().setFromVector3(offset);
+                    spherical.radius *= (event.deltaY > 0) ? 1.05 : 0.95;
+                    spherical.radius = Math.max(5, Math.min(80, spherical.radius));
+                    offset.setFromSpherical(spherical);
+                    camera.position.copy(offset.add(lookTarget));
+                    camera.lookAt(lookTarget);
+                } else {
+                    const zoomFactor = (event.deltaY > 0) ? 0.95 : 1.05;
+                    orthoCamera.zoom *= zoomFactor;
+                    orthoCamera.zoom = Math.max(0.3, Math.min(10, orthoCamera.zoom));
+                    orthoCamera.updateProjectionMatrix();
+                }
+                return;
+            }
+
+            // 일반 스크롤 휠
+            if (camera === perspectiveCamera) {
+                const offset = camera.position.clone().sub(lookTarget);
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                spherical.radius *= (event.deltaY > 0) ? 1.1 : 0.9;
+                spherical.radius = Math.max(5, Math.min(80, spherical.radius));
+                offset.setFromSpherical(spherical);
+                camera.position.copy(offset.add(lookTarget));
+                camera.lookAt(lookTarget);
+            } else {
+                const zoomFactor = (event.deltaY > 0) ? 0.9 : 1.1;
+                orthoCamera.zoom *= zoomFactor;
+                orthoCamera.zoom = Math.max(0.3, Math.min(10, orthoCamera.zoom));
+                orthoCamera.updateProjectionMatrix();
+            }
+        }
+
+        function onKeyDown(event) {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                isSpaceDown = true;
+                document.getElementById('canvas-container').style.cursor = 'grab';
+                return;
+            }
+
+            // R: 방향 회전 (높이축 90°)
+            if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.shiftKey && currentMode === 'build') {
+                rotateDir();
+                return;
+            }
+
+            // 1, 2, 3: 자세 선택 (눕히기/세우기/옆세우기)
+            if (!event.ctrlKey && !event.shiftKey && !event.altKey && currentMode === 'build') {
+                if (event.key === '1') { setPose(0); showToast('▬ 눕히기'); return; }
+                if (event.key === '2') { setPose(1); showToast('▮ 세우기'); return; }
+                if (event.key === '3') { setPose(2); showToast('▯ 옆세우기'); return; }
+            }
+
+            // Q/E: 기울기 증감 (15° 단위)
+            if (!event.ctrlKey && !event.shiftKey && currentMode === 'build') {
+                if (event.key === 'q' || event.key === 'Q') {
+                    if (tiltIndex > 0) { setTilt(tiltIndex - 1); showToast('기울기: ' + TILT_VALUES[tiltIndex] + '°'); }
+                    return;
+                }
+                if (event.key === 'e' || event.key === 'E') {
+                    if (tiltIndex < 6) { setTilt(tiltIndex + 1); showToast('기울기: ' + TILT_VALUES[tiltIndex] + '°'); }
+                    return;
+                }
+            }
+
+            // Tab: 놓기/지우기 도구 전환
+            if (event.key === 'Tab' && !event.ctrlKey && currentMode === 'build') {
+                event.preventDefault();
+                const newTool = currentTool === 'add' ? 'delete' : 'add';
+                setTool(newTool);
+                showToast(newTool === 'add' ? '➕ 놓기 도구' : '🧹 지우기 도구');
+                return;
+            }
+
+            // D: 삭제 모드 토글
+            if ((event.key === 'd' || event.key === 'D') && !event.ctrlKey && !event.shiftKey && currentMode === 'build') {
+                const newTool = currentTool === 'delete' ? 'add' : 'delete';
+                setTool(newTool);
+                showToast(newTool === 'add' ? '➕ 놓기 도구' : '🧹 지우기 도구');
+                return;
+            }
+
+            // V: 빌드/뷰 모드 전환
+            if ((event.key === 'v' || event.key === 'V') && !event.ctrlKey && !event.shiftKey) {
+                switchMode(currentMode === 'build' ? 'view' : 'build');
+                return;
+            }
+
+            // Shift+방향키: 넛지
+            if (event.shiftKey && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && currentMode === 'build') {
+                event.preventDefault();
+                const step = SNAP;
+                if (event.key === 'ArrowLeft') nudgeLastBlock(-step, 0, 0);
+                else if (event.key === 'ArrowRight') nudgeLastBlock(step, 0, 0);
+                else if (event.key === 'ArrowUp') nudgeLastBlock(0, 0, -step);
+                else if (event.key === 'ArrowDown') nudgeLastBlock(0, 0, step);
+                return;
+            }
+            // Shift+W/S: 높이 넛지
+            if (event.shiftKey && ['w','s','W','S'].includes(event.key) && currentMode === 'build') {
+                event.preventDefault();
+                const step = SNAP;
+                if (event.key.toLowerCase() === 'w') nudgeLastBlock(0, step, 0);
+                else nudgeLastBlock(0, -step, 0);
+                return;
+            }
+
+            // 방향키: 뷰 회전 / 팬
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+                event.preventDefault();
+
+                if (isSpaceDown) {
+                    const right = new THREE.Vector3();
+                    const up = new THREE.Vector3();
+                    camera.getWorldDirection(new THREE.Vector3());
+                    right.crossVectors(camera.up, camera.getWorldDirection(new THREE.Vector3())).normalize();
+                    up.copy(camera.up).normalize();
+
+                    const panStep = 1.0;
+                    const panDelta = new THREE.Vector3();
+                    if (event.key === 'ArrowLeft') panDelta.addScaledVector(right, panStep);
+                    if (event.key === 'ArrowRight') panDelta.addScaledVector(right, -panStep);
+                    if (event.key === 'ArrowUp') panDelta.addScaledVector(up, panStep);
+                    if (event.key === 'ArrowDown') panDelta.addScaledVector(up, -panStep);
+
+                    camera.position.add(panDelta);
+                    lookTarget.add(panDelta);
+                    camera.lookAt(lookTarget);
+                    return;
+                }
+
+                if (camera === orthoCamera) setView('iso');
+                const offset = camera.position.clone().sub(lookTarget);
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                const step = 0.05;
+                if (event.key === 'ArrowLeft') spherical.theta += step;
+                if (event.key === 'ArrowRight') spherical.theta -= step;
+                if (event.key === 'ArrowUp') spherical.phi = Math.max(0.1, spherical.phi - step);
+                if (event.key === 'ArrowDown') spherical.phi = Math.min(Math.PI - 0.1, spherical.phi + step);
+                offset.setFromSpherical(spherical);
+                camera.position.copy(offset.add(lookTarget));
+                camera.lookAt(lookTarget);
+                return;
+            }
+            if (event.ctrlKey && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                undoAction();
+            }
+            if (event.ctrlKey && event.key.toLowerCase() === 'y') {
+                event.preventDefault();
+                redoAction();
+            }
+        }
+
+        function onKeyUp(event) {
+            if (event.code === 'Space') {
+                isSpaceDown = false;
+                isSpacePanning = false;
+                document.getElementById('canvas-container').style.cursor = currentMode === 'build' ? 'crosshair' : 'grab';
+            }
+        }
+
+        // ============ 터치 핸들러 ============
+        function getTouchDistance(t1, t2) {
+            return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+        function getTouchCenter(t1, t2) {
+            return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+        }
+
+        function showLongPressIndicator(x, y) {
+            clearLongPressIndicator();
+            const el = document.createElement('div');
+            el.className = 'longpress-indicator';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            document.body.appendChild(el);
+            touchState.longPressIndicator = el;
+        }
+        function clearLongPressIndicator() {
+            if (touchState.longPressIndicator) {
+                touchState.longPressIndicator.remove();
+                touchState.longPressIndicator = null;
+            }
+        }
+        function clearLongPressTimer() {
+            if (touchState.longPressTimer) {
+                clearTimeout(touchState.longPressTimer);
+                touchState.longPressTimer = null;
+            }
+            clearLongPressIndicator();
+        }
+
+        function updateMouseFromTouch(touch) {
+            mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function onTouchStart(event) {
+            if (event.target.closest('.pointer-auto')) return;
+            event.preventDefault();
+
+            const touches = event.touches;
+            touchState.isTouching = true;
+            touchState.moved = false;
+
+            if (touches.length === 1) {
+                const t = touches[0];
+                touchState.startTime = Date.now();
+                touchState.startPos = { x: t.clientX, y: t.clientY };
+                touchState.lastPos = { x: t.clientX, y: t.clientY };
+                touchState.isPinching = false;
+                touchState.isPanning = false;
+                touchState.isLongPress = false;
+                touchState.twoFingerTapDetected = false;
+
+                updateMouseFromTouch(t);
+
+                // 고스트 미리보기 업데이트 (빌드 모드, 놓기 도구)
+                if (currentMode === 'build' && currentTool === 'add') {
+                    updateGhostFromMouse();
+                }
+
+                // 롱프레스 타이머 시작 (500ms → 삭제)
+                clearLongPressTimer();
+                touchState.longPressTimer = setTimeout(() => {
+                    if (!touchState.moved && touchState.isTouching && !touchState.isPinching) {
+                        touchState.isLongPress = true;
+                        showLongPressIndicator(t.clientX, t.clientY);
+
+                        // 롱프레스: 블럭 삭제
+                        if (currentMode === 'build') {
+                            raycaster.setFromCamera(mouse, camera);
+                            const blockMeshes = blocks.map(b => b.mesh);
+                            const intersects = raycaster.intersectObjects(blockMeshes);
+                            if (intersects.length > 0) {
+                                removeBlock(intersects[0].object);
+                                showToast('🗑️ 블럭 삭제됨 (롱프레스)');
+                                if (navigator.vibrate) navigator.vibrate(30);
+                            }
+                        }
+                    }
+                }, 500);
+
+            } else if (touches.length === 2) {
+                clearLongPressTimer();
+                touchState.isPinching = true;
+                touchState.initialPinchDist = getTouchDistance(touches[0], touches[1]);
+                touchState.initialPinchCenter = getTouchCenter(touches[0], touches[1]);
+                touchState.lastPos = touchState.initialPinchCenter;
+
+                // 현재 카메라 구면 좌표 저장
+                if (camera === perspectiveCamera) {
+                    const offset = camera.position.clone().sub(lookTarget);
+                    touchState.initialSpherical = new THREE.Spherical().setFromVector3(offset);
+                }
+
+                // 두손가락 탭 감지용
+                touchState.twoFingerTapDetected = true;
+                touchState.moved = false;
+
+                if (ghostGroup) ghostGroup.visible = false;
+                hideSymGhosts();
+            }
+        }
+
+        function onTouchMove(event) {
+            if (event.target.closest('.pointer-auto')) return;
+            event.preventDefault();
+
+            const touches = event.touches;
+
+            if (touches.length === 1 && !touchState.isPinching) {
+                const t = touches[0];
+                const dx = t.clientX - touchState.startPos.x;
+                const dy = t.clientY - touchState.startPos.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > 8) {
+                    touchState.moved = true;
+                    clearLongPressTimer();
+                }
+
+                updateMouseFromTouch(t);
+
+                if (touchState.moved) {
+                    if (currentMode === 'view' || currentTool === 'delete') {
+                        // 뷰 회전 (1손가락 드래그)
+                        if (camera === orthoCamera) setView('iso');
+                        const mdx = (t.clientX - touchState.lastPos.x) * 0.008;
+                        const mdy = (t.clientY - touchState.lastPos.y) * 0.008;
+                        const offset = camera.position.clone().sub(lookTarget);
+                        const spherical = new THREE.Spherical().setFromVector3(offset);
+                        spherical.theta -= mdx;
+                        spherical.phi -= mdy;
+                        spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                        offset.setFromSpherical(spherical);
+                        camera.position.copy(offset.add(lookTarget));
+                        camera.lookAt(lookTarget);
+                    } else if (currentMode === 'build' && currentTool === 'add') {
+                        // 빌드 모드: 고스트 업데이트 (놓기는 하지 않음)
+                        updateGhostFromMouse();
+                    }
+                }
+
+                touchState.lastPos = { x: t.clientX, y: t.clientY };
+
+            } else if (touches.length === 2) {
+                touchState.moved = true;
+                touchState.twoFingerTapDetected = false;
+
+                const curDist = getTouchDistance(touches[0], touches[1]);
+                const curCenter = getTouchCenter(touches[0], touches[1]);
+
+                // 핀치 줌
+                const pinchRatio = touchState.initialPinchDist / curDist;
+                if (camera === perspectiveCamera && touchState.initialSpherical) {
+                    const offset = camera.position.clone().sub(lookTarget);
+                    const spherical = new THREE.Spherical().setFromVector3(offset);
+                    spherical.radius = Math.max(5, Math.min(80, touchState.initialSpherical.radius * pinchRatio));
+                    offset.setFromSpherical(spherical);
+                    camera.position.copy(offset.add(lookTarget));
+                    camera.lookAt(lookTarget);
+                } else if (camera === orthoCamera) {
+                    const zoomDelta = curDist / touchState.initialPinchDist;
+                    orthoCamera.zoom = Math.max(0.3, Math.min(10, zoomDelta));
+                    orthoCamera.updateProjectionMatrix();
+                }
+
+                // 두손가락 패닝
+                const panDx = curCenter.x - touchState.lastPos.x;
+                const panDy = curCenter.y - touchState.lastPos.y;
+                if (Math.abs(panDx) > 0.5 || Math.abs(panDy) > 0.5) {
+                    touchState.isPanning = true;
+                    const right = new THREE.Vector3();
+                    const up = new THREE.Vector3();
+                    right.crossVectors(camera.up, camera.getWorldDirection(new THREE.Vector3())).normalize();
+                    up.copy(camera.up).normalize();
+                    const panSpeed = 0.04;
+                    const panDelta = new THREE.Vector3();
+                    panDelta.addScaledVector(right, panDx * panSpeed);
+                    panDelta.addScaledVector(up, -panDy * panSpeed);
+                    camera.position.add(panDelta);
+                    lookTarget.add(panDelta);
+                    camera.lookAt(lookTarget);
+                }
+
+                touchState.lastPos = curCenter;
+            }
+        }
+
+        function onTouchEnd(event) {
+            if (event.target.closest('.pointer-auto')) return;
+            event.preventDefault();
+
+            const remainingTouches = event.touches.length;
+
+            // 두손가락 탭 → 되돌리기
+            if (touchState.twoFingerTapDetected && !touchState.moved && remainingTouches === 0) {
+                undoAction();
+                showToast('↩️ 되돌리기 (두손가락 탭)');
+                clearLongPressTimer();
+                touchState.isTouching = false;
+                touchState.isPinching = false;
+                touchState.twoFingerTapDetected = false;
+                return;
+            }
+
+            if (remainingTouches === 0) {
+                clearLongPressTimer();
+
+                // 싱글 탭 (움직이지 않고, 롱프레스 아닌 경우)
+                if (!touchState.moved && !touchState.isLongPress && !touchState.isPinching) {
+                    const elapsed = Date.now() - touchState.startTime;
+                    if (elapsed < 400) {
+                        // 탭: 블럭 놓기 또는 삭제
+                        if (currentMode === 'build') {
+                            const r = getRotFromPreset();
+                            raycaster.setFromCamera(mouse, camera);
+                            const blockMeshes = blocks.map(b => b.mesh);
+                            const intersects = raycaster.intersectObjects([floorPlane, ...blockMeshes]);
+
+                            if (intersects.length > 0) {
+                                const hit = intersects[0];
+
+                                if (currentTool === 'delete') {
+                                    if (blockMeshes.includes(hit.object)) removeBlock(hit.object);
+                                } else if (currentTool === 'add') {
+                                    const p = getSnappedPos(hit);
+                                    if (p) {
+                                        if (symmetryX || symmetryZ) {
+                                            addBlockWithSymmetry(p.x, p.y, p.z, r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+                                        } else {
+                                            addBlock(p.x, p.y, p.z, r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 상태 리셋
+                touchState.isTouching = false;
+                touchState.isPinching = false;
+                touchState.isPanning = false;
+                touchState.isLongPress = false;
+                touchState.twoFingerTapDetected = false;
+                if (ghostGroup) ghostGroup.visible = false;
+                hideSymGhosts();
+
+            } else if (remainingTouches === 1) {
+                // 2→1로 줄어들 때: 핀치 종료, 남은 터치를 새 싱글터치로
+                touchState.isPinching = false;
+                touchState.isPanning = false;
+                const t = event.touches[0];
+                touchState.startPos = { x: t.clientX, y: t.clientY };
+                touchState.lastPos = { x: t.clientX, y: t.clientY };
+                touchState.moved = false;
+                updateMouseFromTouch(t);
+            }
+        }
+
+        // 마우스/터치 공통: 고스트 업데이트
+        function updateGhostFromMouse() {
+            const r = getRotFromPreset();
+            raycaster.setFromCamera(mouse, camera);
+            const targets = [floorPlane, ...blocks.map(b => b.mesh)];
+            const intersects = raycaster.intersectObjects(targets);
+
+            if (intersects.length > 0 && currentTool === 'add') {
+                const hit = intersects[0];
+                const p = getSnappedPos(hit);
+                if (p && ghostGroup) {
+                    ghostGroup.position.set(p.x, p.y, p.z);
+                    ghostGroup.rotation.copy(getEulerForState(r.rotX, r.rotY, r.rotZ, r.tiltDeg));
+                    ghostGroup.visible = true;
+
+                    const willOverlap = checkOverlap(p.x, p.y, p.z, r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+                    ghostGroup.children.forEach(child => {
+                        if (child.isMesh && child.material) {
+                            child.material.color.setHex(willOverlap ? 0xff4444 : 0xfbbf24);
+                        }
+                        if (child.isLineSegments && child.material) {
+                            child.material.color.setHex(willOverlap ? 0xcc0000 : 0xb45309);
+                        }
+                    });
+
+                    if (symmetryX || symmetryZ) {
+                        updateSymGhosts(p, r.rotX, r.rotY, r.rotZ, r.tiltDeg);
+                    } else {
+                        hideSymGhosts();
+                    }
+                }
+            } else {
+                if (ghostGroup) ghostGroup.visible = false;
+                hideSymGhosts();
+            }
+        }
+
+        // ============ 줌/리셋/도움말 ============
+        function zoomCamera(dir) {
+            if (camera === perspectiveCamera) {
+                const offset = camera.position.clone().sub(lookTarget);
+                const spherical = new THREE.Spherical().setFromVector3(offset);
+                spherical.radius *= (dir > 0) ? 0.85 : 1.18;
+                spherical.radius = Math.max(5, Math.min(80, spherical.radius));
+                offset.setFromSpherical(spherical);
+                camera.position.copy(offset.add(lookTarget));
+                camera.lookAt(lookTarget);
+            } else {
+                orthoCamera.zoom *= (dir > 0) ? 1.15 : 0.87;
+                orthoCamera.zoom = Math.max(0.3, Math.min(10, orthoCamera.zoom));
+                orthoCamera.updateProjectionMatrix();
+            }
+        }
+
+        function resetCameraView() {
+            lookTarget.set(0, 0, 0);
+            camera = perspectiveCamera;
+            camera.position.set(30, 25, 30);
+            camera.lookAt(0, 0, 0);
+            setView('iso');
+            showToast('📷 뷰 리셋');
+        }
+
+        function showTouchHelp() {
+            const existing = document.querySelector('.touch-help-overlay');
+            if (existing) { existing.remove(); return; }
+
+            const overlay = document.createElement('div');
+            overlay.className = 'touch-help-overlay';
+            overlay.innerHTML = `
+                <div class="touch-help-card">
+                    <h3>🎮 조작 안내</h3>
+                    <div class="help-row"><span class="help-icon">👆</span><span class="help-text">탭(터치) — 블럭 놓기/삭제</span></div>
+                    <div class="help-row"><span class="help-icon">👆💨</span><span class="help-text">길게 누르기 (0.5초) — 블럭 삭제</span></div>
+                    <div class="help-row"><span class="help-icon">☝️↔</span><span class="help-text">1손가락 드래그 — 뷰 회전</span></div>
+                    <div class="help-row"><span class="help-icon">🤏</span><span class="help-text">두손가락 핀치 — 줌 인/아웃</span></div>
+                    <div class="help-row"><span class="help-icon">✌️↔</span><span class="help-text">두손가락 드래그 — 화면 이동</span></div>
+                    <div class="help-row"><span class="help-icon">✌️👆</span><span class="help-text">두손가락 탭 — 되돌리기</span></div>
+                    <hr style="margin:8px 0;border-color:#f1f5f9">
+                    <div class="help-row"><span class="help-icon">⌨️</span><span class="help-text"><span class="help-key">R</span> 방향 회전 &nbsp; <span class="help-key">1</span><span class="help-key">2</span><span class="help-key">3</span> 자세 선택</span></div>
+                    <div class="help-row"><span class="help-icon">⌨️</span><span class="help-text"><span class="help-key">Q</span><span class="help-key">E</span> 기울기 ±15° &nbsp; <span class="help-key">Tab</span> 도구 전환</span></div>
+                    <div class="help-row"><span class="help-icon">⌨️</span><span class="help-text"><span class="help-key">V</span> 모드 전환 &nbsp; <span class="help-key">Shift+↑↓←→</span> 넛지</span></div>
+                    <button onclick="this.closest('.touch-help-overlay').remove()" 
+                        style="width:100%;margin-top:12px;padding:10px;border-radius:12px;background:#3b82f6;color:white;font-weight:800;font-size:14px;border:none;cursor:pointer;">
+                        닫기
+                    </button>
+                </div>
+            `;
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+            document.body.appendChild(overlay);
+        }
+
+        // ============ UI 제어 ============
+        function setTool(tool) {
+            currentTool = tool;
+            document.getElementById('toolAdd').classList.toggle('btn-active', tool === 'add');
+            document.getElementById('toolDelete').classList.toggle('btn-active', tool === 'delete');
+            if (tool === 'delete' && ghostGroup) ghostGroup.visible = false;
+        }
+
+        function toggleSymmetry(axis) {
+            if (axis === 'x') {
+                symmetryX = !symmetryX;
+                document.getElementById('symX').classList.toggle('sym-active', symmetryX);
+            } else {
+                symmetryZ = !symmetryZ;
+                document.getElementById('symZ').classList.toggle('sym-active', symmetryZ);
+            }
+            const msg = [];
+            if (symmetryX) msg.push('X축');
+            if (symmetryZ) msg.push('Z축');
+            showToast(msg.length ? `🪞 대칭 모드: ${msg.join(' + ')}` : '🪞 대칭 모드 해제');
+        }
+
+        // ============ 병합 뷰 ============
+        function buildMergedView() {
+            if (mergedViewGroup) {
+                scene.remove(mergedViewGroup);
+                mergedViewGroup.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
+                mergedViewGroup = null;
+            }
+            if (blocks.length === 0) return;
+
+            try {
+                blocks.forEach(b => {
+                    b.group.children.forEach(child => {
+                        if (child.isLineSegments) child.visible = false;
+                    });
+                });
+
+                const allPositions = [];
+                const snap = v => Math.round(v * 10000) / 10000;
+
+                for (const block of blocks) {
+                    const mesh = block.mesh;
+                    const geom = mesh.geometry.clone();
+
+                    const meshMat4 = new THREE.Matrix4();
+                    meshMat4.makeRotationFromEuler(mesh.rotation);
+                    geom.applyMatrix4(meshMat4);
+
+                    const groupMat4 = new THREE.Matrix4();
+                    groupMat4.makeRotationFromEuler(block.group.rotation);
+                    groupMat4.setPosition(block.pos.x, block.pos.y, block.pos.z);
+                    geom.applyMatrix4(groupMat4);
+
+                    const pos = geom.attributes.position;
+                    const index = geom.index;
+                    if (index) {
+                        for (let i = 0; i < index.count; i++) {
+                            const idx = index.getX(i);
+                            allPositions.push(snap(pos.getX(idx)), snap(pos.getY(idx)), snap(pos.getZ(idx)));
+                        }
+                    } else {
+                        for (let i = 0; i < pos.count; i++) {
+                            allPositions.push(snap(pos.getX(i)), snap(pos.getY(i)), snap(pos.getZ(i)));
+                        }
+                    }
+                    geom.dispose();
+                }
+
+                const mergedGeom = new THREE.BufferGeometry();
+                mergedGeom.setAttribute('position', new THREE.Float32BufferAttribute(allPositions, 3));
+                mergedGeom.computeVertexNormals();
+
+                const edgesGeom = new THREE.EdgesGeometry(mergedGeom, 1);
+                const edgeCount = edgesGeom.attributes.position ? edgesGeom.attributes.position.count / 2 : 0;
+
+                if (edgeCount > 0) {
+                    const edgesLines = new THREE.LineSegments(edgesGeom, EDGE_MAT.clone());
+                    mergedViewGroup = new THREE.Group();
+                    mergedViewGroup.add(edgesLines);
+                    scene.add(mergedViewGroup);
+                } else {
+                    blocks.forEach(b => {
+                        b.group.children.forEach(child => {
+                            if (child.isLineSegments) child.visible = true;
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error('buildMergedView 오류:', e);
+                blocks.forEach(b => {
+                    b.group.children.forEach(child => {
+                        if (child.isLineSegments) child.visible = true;
+                    });
+                });
+            }
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const isBuild = (mode === 'build');
+            document.getElementById('modeBadge').innerText = isBuild ? '제작' : '보기';
+            document.getElementById('modeBadge').className = `px-2 py-0.5 rounded-full font-extrabold text-[10px] ${isBuild ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'}`;
+            document.getElementById('buildTools').classList.toggle('hidden', !isBuild);
+            document.getElementById('viewControls').classList.toggle('hidden', isBuild);
+            document.getElementById('canvas-container').style.cursor = isBuild ? 'crosshair' : 'grab';
+
+            document.getElementById('modeBuildBtn').className = `w-full py-2 rounded-xl font-black text-xs shadow transition-all ${isBuild ? 'bg-blue-600 text-white ring-2 ring-blue-100' : 'bg-white text-slate-600'}`;
+            document.getElementById('modeViewBtn').className = `w-full py-2 rounded-xl font-black text-xs shadow transition-all ${!isBuild ? 'bg-emerald-600 text-white ring-2 ring-emerald-100' : 'bg-white text-slate-600'}`;
+
+            if (!isBuild) {
+                buildMergedView();
+                if (ghostGroup) ghostGroup.visible = false;
+                hideSymGhosts();
+                document.getElementById('opacityRange').value = 100;
+            } else {
+                if (mergedViewGroup) {
+                    scene.remove(mergedViewGroup);
+                    mergedViewGroup.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); });
+                    mergedViewGroup = null;
+                }
+                blocks.forEach(b => {
+                    b.group.children.forEach(child => {
+                        child.visible = true;
+                        if (child.material) child.material.opacity = 1;
+                    });
+                });
+            }
+        }
+
+        function setView(view) {
+            document.querySelectorAll('[id^="btn-view-"]').forEach(btn => {
+                btn.classList.add('opacity-70');
+                btn.classList.remove('ring-2', 'ring-slate-400');
+            });
+            const activeBtn = document.getElementById('btn-view-' + view);
+            if (activeBtn) {
+                activeBtn.classList.remove('opacity-70');
+                activeBtn.classList.add('ring-2', 'ring-slate-400');
+            }
+
+            lookTarget.set(0, 0, 0);
+            const d = 30;
+            if (view === 'iso') {
+                camera = perspectiveCamera;
+                camera.position.set(d, 25, d);
+            } else {
+                camera = orthoCamera;
+                orthoCamera.zoom = 1;
+                orthoCamera.updateProjectionMatrix();
+
+                if (view === 'front') camera.position.set(0, 0, 50);
+                else if (view === 'top') camera.position.set(0, 50, 0);
+                else if (view === 'side') camera.position.set(50, 0, 0);
+            }
+            camera.lookAt(0, 0, 0);
+        }
+
+        function clearAll() {
+            blocks.slice().forEach(b => scene.remove(b.group));
+            blocks = [];
+            undoStack = [];
+            redoStack = [];
+            lastPlacedBlock = null;
+            updateBlockCount();
+        }
+
+        function onResize() {
+            const aspect = window.innerWidth / window.innerHeight;
+
+            perspectiveCamera.aspect = aspect;
+            perspectiveCamera.updateProjectionMatrix();
+
+            const frustumSize = 50;
+            orthoCamera.left = -frustumSize * aspect / 2;
+            orthoCamera.right = frustumSize * aspect / 2;
+            orthoCamera.top = frustumSize / 2;
+            orthoCamera.bottom = -frustumSize / 2;
+            orthoCamera.updateProjectionMatrix();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = () => { init(); drawPreview(); };
+        window.oncontextmenu = (e) => e.preventDefault();
+    </script>
+</body>
+
+</html>
