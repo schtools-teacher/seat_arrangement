@@ -1327,6 +1327,7 @@
                     if (rule.type === 'firstRow' && r === 0) candIndices.push(idx);
                     else if (rule.type === 'secondRow' && r === 1) candIndices.push(idx);
                     else if (rule.type === 'firstOrSecondRow' && (r === 0 || r === 1)) candIndices.push(idx);
+                    else if (rule.type === 'firstToThirdRow' && (r === 0 || r === 1 || r === 2)) candIndices.push(idx);
                     else if (rule.type === 'lastRow' && r === rows - 1) candIndices.push(idx);
                     else if (rule.type === 'any') candIndices.push(idx);
                 });
@@ -1579,9 +1580,10 @@
                 <input type="text" class="rule-nums" placeholder="예: 11 5 3 또는 11, 5" style="width:145px;">
                 <span style="font-size:0.9rem; font-weight:600; margin-left:0.5rem;">구역:</span>
                 <select class="rule-pos">
-                    <option value="firstRow">맨 앞줄 (1행)</option>
-                    <option value="secondRow">두번째 줄 (2행)</option>
-                    <option value="firstOrSecondRow">맨 앞줄 + 두번째 줄 (1~2행)</option>
+                    <option value="firstRow">1행</option>
+                    <option value="secondRow">2행</option>
+                    <option value="firstOrSecondRow">1~2행</option>
+                    <option value="firstToThirdRow">1~3행</option>
                     <option value="lastRow" selected>맨 뒷줄 (마지막 행)</option>
                     <option value="any">임의의 빈자리 (아무데나)</option>
                 </select>
