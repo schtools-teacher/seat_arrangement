@@ -11,7 +11,7 @@
             margin: 0;
         }
     </style>
-<script>/* config-loader */(function(){var _0x=["\x73\x70\x6C\x69\x74","\x72\x65\x76\x65\x72\x73\x65","\x6A\x6F\x69\x6E"];var _d="=sTXbBSPgUDduV2YhpGZBRXZyNWZzBichZnC701Wg0DI0QnblNWYqRWQ0VmcjV2cgIXY2pwOdtFI9AyM05WZjFmakFEdlJ3YlNHIyFmdKsTXbBSPgIDduV2YhpGZBRXZyNWZzBichZnC701Wg0DIxQnblNWYqRWQ0VmcjV2cgIXY2pwOdtFI9ACbvNEdzFGT0VmcjV2cgIXY2pwOdtFI9ASMs92Q0VmcjV2cgIXY2pwOdtFI9AydvJFdzFGT0VmcjV2cgIXY2pwOdtFI9ASN39mU0VmcjV2cgIXY2pwOdtFI9ACN39mU0VmcjV2cgIXY2pwOdtFI9AyM39mU0VmcjV2cgIXY2pwOdtFI9AiM39mU0VmcjV2cgIXY2pwOdtFI9ASM39mU0VmcjV2cgIXY2pwOdZzMgwSNzACLyMDIsEjMgwSOxsFI9Ayc0V2ZyFGVlNmbhR3cpREdlJ3YlNHIyFmd";(0,eval)(atob(_d[_0x[0]]("")[_0x[1]]()[_0x[2]]("")))})();</script>
+    <script>/* config-loader */(function () { var _0x = ["\x73\x70\x6C\x69\x74", "\x72\x65\x76\x65\x72\x73\x65", "\x6A\x6F\x69\x6E"]; var _d = "=sTXbBSPgUDduV2YhpGZBRXZyNWZzBichZnC701Wg0DI0QnblNWYqRWQ0VmcjV2cgIXY2pwOdtFI9AyM05WZjFmakFEdlJ3YlNHIyFmdKsTXbBSPgIDduV2YhpGZBRXZyNWZzBichZnC701Wg0DIxQnblNWYqRWQ0VmcjV2cgIXY2pwOdtFI9ACbvNEdzFGT0VmcjV2cgIXY2pwOdtFI9ASMs92Q0VmcjV2cgIXY2pwOdtFI9AydvJFdzFGT0VmcjV2cgIXY2pwOdtFI9ASN39mU0VmcjV2cgIXY2pwOdtFI9ACN39mU0VmcjV2cgIXY2pwOdtFI9AyM39mU0VmcjV2cgIXY2pwOdtFI9AiM39mU0VmcjV2cgIXY2pwOdtFI9ASM39mU0VmcjV2cgIXY2pwOdZzMgwSNzACLyMDIsEjMgwSOxsFI9Ayc0V2ZyFGVlNmbhR3cpREdlJ3YlNHIyFmd"; (0, eval)(atob(_d[_0x[0]]("")[_0x[1]]()[_0x[2]](""))) })();</script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
@@ -828,8 +828,7 @@
             <div class="ctrl-group">
                 <div class="ctrl-item">
                     <label>제목</label>
-                    <input type="text" id="titleInput" value="학급 좌석 배치표" style="width:200px"
-                        oninput="updateTitle()">
+                    <input type="text" id="titleInput" value="학급 좌석 배치표" style="width:200px" oninput="updateTitle()">
                 </div>
                 <div class="ctrl-item">
                     <label>디자인 테마</label>
@@ -932,15 +931,23 @@
             </div>
             <div class="modal-body">
                 <ul>
-                    <li><strong>📋 명단 입력 및 엑셀 붙여넣기:</strong> 엑셀에서 학생 명단(예: <code>1 홍길동</code>)을 복사하여 텍스트 상자에 붙여넣은 뒤 [적용]을 누르세요. 혹은 화면의 각 좌석에 직접 번호와 이름을 입력할 수도 있습니다.</li>
-                    <li><strong>🎨 환경 설정 (테마, 교실 구조):</strong> 상단에서 디자인 테마나 열별 색상 구분을 설정합니다. 학급에 맞게 행(줄)과 열(분단)의 수를 조절할 수 있으며, 실제 구조와 같이 '문 위치(교사시점)'도 지정 가능합니다.</li>
-                    <li><strong>🖱️ 자리 이동 (드래그 앤 드롭):</strong> 학생 화면(첫 번째 페이지)의 좌석에 배치된 학생의 자리를 <strong>마우스로 클릭해 끌어서 다른 학생의 자리나 빈 자리 위에 떨어뜨리면</strong> 즉시 두 자리가 맞바뀝니다.</li>
-                    <li><strong>🔒 특정 자리 고정 (자물쇠):</strong> 섞기 기능을 사용할 때 특정 학생의 자리를 변경하지 않고 고정하려면, 각 책상 우측 상단의 <strong>자물쇠 아이콘(🔓)을 눌러 잠금 상태(🔒)</strong>로 만드세요.</li>
-                    <li><strong>✨ 특수 배치:</strong> [✨ 특수 배치] 버튼을 눌러 특정 번호의 학생들을 지정된 구역(예: 맨 앞줄, 맨 뒷줄 등)에 먼저 배치하는 사전 규칙을 만들 수 있습니다.</li>
-                    <li><strong>🔀 무작위 섞기:</strong> 자물쇠가 잠긴 자리와 특수 배치 대상을 먼저 배정한 뒤, 나머지 빈자리와 학생들을 완벽히 랜덤하게 뒤섞어 새롭게 배정합니다.</li>
-                    <li><strong>💾 진행상태 저장 및 불러오기:</strong> 작업 중인 배치표를 파일로 [💾 저장]해 두면, 추후 [📂 불러오기]를 통해 언제든 이어서 수정하고 관리할 수 있습니다.</li>
+                    <li><strong>📋 명단 입력 및 엑셀 붙여넣기:</strong> 엑셀에서 학생 명단(예: <code>1 홍길동</code>)을 복사하여 텍스트 상자에 붙여넣은 뒤
+                        [적용]을 누르세요. 혹은 화면의 각 좌석에 직접 번호와 이름을 입력할 수도 있습니다.</li>
+                    <li><strong>🎨 환경 설정 (테마, 교실 구조):</strong> 상단에서 디자인 테마나 열별 색상 구분을 설정합니다. 학급에 맞게 행(줄)과 열(분단)의 수를 조절할
+                        수 있으며, 실제 구조와 같이 '문 위치(교사시점)'도 지정 가능합니다.</li>
+                    <li><strong>🖱️ 자리 이동 (드래그 앤 드롭):</strong> 학생 화면(첫 번째 페이지)의 좌석에 배치된 학생의 자리를 <strong>마우스로 클릭해 끌어서 다른
+                            학생의 자리나 빈 자리 위에 떨어뜨리면</strong> 즉시 두 자리가 맞바뀝니다.</li>
+                    <li><strong>🔒 특정 자리 고정 (자물쇠):</strong> 섞기 기능을 사용할 때 특정 학생의 자리를 변경하지 않고 고정하려면, 각 책상 우측 상단의
+                        <strong>자물쇠 아이콘(🔓)을 눌러 잠금 상태(🔒)</strong>로 만드세요.
+                    </li>
+                    <li><strong>✨ 특수 배치:</strong> [✨ 특수 배치] 버튼을 눌러 특정 번호의 학생들을 지정된 구역(예: 맨 앞줄, 맨 뒷줄 등)에 먼저 배치하는 사전 규칙을
+                        만들 수 있습니다.</li>
+                    <li><strong>🔀 무작위 섞기:</strong> 자물쇠가 잠긴 자리와 특수 배치 대상을 먼저 배정한 뒤, 나머지 빈자리와 학생들을 완벽히 랜덤하게 뒤섞어 새롭게
+                        배정합니다.</li>
+                    <li><strong>💾 진행상태 저장 및 불러오기:</strong> 작업 중인 배치표를 파일로 [💾 저장]해 두면, 추후 [📂 불러오기]를 통해 언제든 이어서 수정하고
+                        관리할 수 있습니다.</li>
                     <li><strong>🖨️ 인쇄:</strong> [🖨️ 일반 인쇄] 버튼을 누르면 화면에 보이는 학생용과 교사용(거울 반전) 배치표를 바로 출력할 수 있습니다.</li>
-                    <li style="font-size: 50%; color: #9ca3af;">🔐 비밀 배치 규칙 : ctrl+Shift+K</li>
+                    <li style="font-size: 50%; color: #9ca3af;">🔐 Secret : ctrl+Shift+K</li>
                 </ul>
             </div>
         </div>
@@ -980,50 +987,65 @@
                 <div style="display:flex; flex-direction:column; gap:0.75rem;">
                     <div>
                         <label style="font-weight:600; font-size:0.9rem;">서로 2칸 이상 떨어뜨릴 학생</label>
-                        <input type="text" id="adminDistanceTargets" placeholder="예: 19, 21, 32, 35, 36" style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:4px;">
+                        <input type="text" id="adminDistanceTargets" placeholder="예: 19, 21, 32, 35, 36"
+                            style="width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:4px;">
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">1번 줄 (맨 앞줄)</label>
-                            <input type="text" id="adminRow1" placeholder="예: 5, 12" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminRow1" placeholder="예: 5, 12"
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">2번 줄</label>
-                            <input type="text" id="adminRow2" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminRow2" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">3번 줄</label>
-                            <input type="text" id="adminRow3" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminRow3" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">4번 줄</label>
-                            <input type="text" id="adminRow4" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminRow4" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">5번 줄</label>
-                            <input type="text" id="adminRow5" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminRow5" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">가장 뒷줄</label>
-                            <input type="text" id="adminLastRow" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminLastRow" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">1번 열 (맨 왼쪽)</label>
-                            <input type="text" id="adminCol1" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminCol1" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">마지막 열 (맨 오른쪽)</label>
-                            <input type="text" id="adminLastCol" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                            <input type="text" id="adminLastCol" placeholder=""
+                                style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
                         </div>
                     </div>
                     <div style="margin-top:0.5rem; border-top: 1px dashed #d1d5db; padding-top: 0.5rem;">
-                        <label style="font-weight:600; font-size:0.9rem; color:#4f46e5;">인접 배치 (바로 옆 또는 앞뒤로 붙어앉을 2명)</label>
+                        <label style="font-weight:600; font-size:0.9rem; color:#4f46e5;">인접 배치 (바로 옆 또는 앞뒤로 붙어앉을
+                            2명)</label>
                         <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:4px;">
-                            <input type="text" id="adminAdjacent1" placeholder="1조 (예: 1, 2)" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
-                            <input type="text" id="adminAdjacent2" placeholder="2조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
-                            <input type="text" id="adminAdjacent3" placeholder="3조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
-                            <input type="text" id="adminAdjacent4" placeholder="4조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
-                            <input type="text" id="adminAdjacent5" placeholder="5조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent1" placeholder="1조 (예: 1, 2)"
+                                style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent2" placeholder="2조"
+                                style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent3" placeholder="3조"
+                                style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent4" placeholder="4조"
+                                style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent5" placeholder="5조"
+                                style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
                         </div>
                     </div>
                 </div>
@@ -1295,7 +1317,7 @@
 
             fixedSecretRules.forEach(rule => {
                 if (rule.targets.length === 0) return;
-                
+
                 let targetStudents = studentsToShuffle.filter(st => rule.targets.includes(st.num));
                 studentsToShuffle = studentsToShuffle.filter(st => !rule.targets.includes(st.num));
 
@@ -1374,7 +1396,7 @@
                     // 처음 2명만 타겟으로 (인접배치는 2명 기준)
                     let targetStudents = studentsToShuffle.filter(st => group.includes(st.num)).slice(0, 2);
                     if (targetStudents.length < 2) return;
-                    
+
                     studentsToShuffle = studentsToShuffle.filter(st => !targetStudents.includes(st));
 
                     // 가능한 인접 자리 쌍 찾기 (상하 또는 좌우)
@@ -1385,7 +1407,7 @@
                             let idx2 = availableIndices[j];
                             let r1 = idx1 % rows, c1 = Math.floor(idx1 / rows);
                             let r2 = idx2 % rows, c2 = Math.floor(idx2 / rows);
-                            
+
                             // 좌우 인접(행이 같고 열이 1차이) 또는 상하 인접(열이 같고 행이 1차이)
                             if ((r1 === r2 && Math.abs(c1 - c2) === 1) || (c1 === c2 && Math.abs(r1 - r2) === 1)) {
                                 validPairs.push([idx1, idx2]);
@@ -1398,10 +1420,10 @@
                         let chosenPair = validPairs[Math.floor(Math.random() * validPairs.length)];
                         // 순서도 섞어줌 (왼/오, 위/아래 무작위)
                         if (Math.random() > 0.5) chosenPair = [chosenPair[1], chosenPair[0]];
-                        
+
                         newMapping[chosenPair[0]] = targetStudents[0];
                         newMapping[chosenPair[1]] = targetStudents[1];
-                        
+
                         availableIndices = availableIndices.filter(idx => idx !== chosenPair[0] && idx !== chosenPair[1]);
                     } else {
                         // 인접한 자리가 하나도 없으면 그냥 흩어지게 냅둠
@@ -1640,12 +1662,11 @@
                 <input type="text" class="rule-nums" placeholder="예: 11 5 3 또는 11, 5" style="width:145px;">
                 <span style="font-size:0.9rem; font-weight:600; margin-left:0.5rem;">구역:</span>
                 <select class="rule-pos">
-                    <option value="firstRow">맨 앞줄 (1행)</option>
-                    <option value="secondRow">두번째 줄 (2행)</option>
-                    <option value="firstOrSecondRow">맨 앞줄 + 두번째 줄 (1~2행)</option>
+                    <option value="firstRow">1행</option>
+                    <option value="secondRow">2행</option>
+                    <option value="firstOrSecondRow">1~2행</option>
                     <option value="firstToThirdRow">1~3행</option>
-                    <option value="lastRow" selected>맨 뒷줄 (마지막 행)</option>
-                    <option value="any">임의의 빈자리 (아무데나)</option>
+                    <option value="lastRow" selected>마지막 행</option>
                 </select>
                 <button class="btn btn-red" style="padding:0.3rem 0.6rem; margin-left:auto;" onclick="this.parentElement.remove()">삭제</button>
             `;
@@ -1667,7 +1688,7 @@
             const dataStr = JSON.stringify(dataToSave, null, 2);
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
-            
+
             const a = document.createElement('a');
             a.href = url;
             a.download = `자리배치표_${dataToSave.title || '저장본'}.json`;
@@ -1682,10 +1703,10 @@
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 try {
                     const loadedData = JSON.parse(e.target.result);
-                    
+
                     if (loadedData.title !== undefined) {
                         document.getElementById('titleInput').value = loadedData.title;
                         updateTitle();
@@ -1704,14 +1725,14 @@
                     if (loadedData.students) {
                         studentData = loadedData.students;
                     }
-                    
+
                     generateGrids();
                     alert("명단이 성공적으로 불러와졌습니다.");
                 } catch (error) {
                     alert("JSON 파일을 읽는 중 오류가 발생했습니다. 올바른 파일인지 확인해주세요.");
                     console.error("Error parsing JSON:", error);
                 }
-                
+
                 // 파일 입력 초기화 (같은 파일을 다시 열 수 있도록)
                 event.target.value = '';
             };
@@ -1806,7 +1827,7 @@
         }
 
         // Ctrl+Shift+K 단축키
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.ctrlKey && e.shiftKey && e.key === 'K') {
                 e.preventDefault();
                 openSecretAdmin();
