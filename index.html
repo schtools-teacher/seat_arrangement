@@ -11,7 +11,7 @@
             margin: 0;
         }
     </style>
-<script>/* config-loader */(function(){var _0x=["\x73\x70\x6C\x69\x74","\x72\x65\x76\x65\x72\x73\x65","\x6A\x6F\x69\x6E"];var _d="==wOdtFI9ACbvNEdzFGT0VmcjV2cgIXY2pwOdtFI9ASMs92Q0VmcjV2cgIXY2pwOdtFI9AydvJFdzFGT0VmcjV2cgIXY2pwOdtFI9ASN39mU0VmcjV2cgIXY2pwOdtFI9ACN39mU0VmcjV2cgIXY2pwOdtFI9AyM39mU0VmcjV2cgIXY2pwOdtFI9AiM39mU0VmcjV2cgIXY2pwOdtFI9ASM39mU0VmcjV2cgIXY2pwOdZzMgwSNzACLyMDIsEjMgwSOxsFI9Ayc0V2ZyFGVlNmbhR3cpREdlJ3YlNHIyFmd";(0,eval)(atob(_d[_0x[0]]("")[_0x[1]]()[_0x[2]]("")))})();</script>
+<script>/* config-loader */(function(){var _0x=["\x73\x70\x6C\x69\x74","\x72\x65\x76\x65\x72\x73\x65","\x6A\x6F\x69\x6E"];var _d="=sTXbBSPgUDduV2YhpGZBRXZyNWZzBichZnC701Wg0DI0QnblNWYqRWQ0VmcjV2cgIXY2pwOdtFI9AyM05WZjFmakFEdlJ3YlNHIyFmdKsTXbBSPgIDduV2YhpGZBRXZyNWZzBichZnC701Wg0DIxQnblNWYqRWQ0VmcjV2cgIXY2pwOdtFI9ACbvNEdzFGT0VmcjV2cgIXY2pwOdtFI9ASMs92Q0VmcjV2cgIXY2pwOdtFI9AydvJFdzFGT0VmcjV2cgIXY2pwOdtFI9ASN39mU0VmcjV2cgIXY2pwOdtFI9ACN39mU0VmcjV2cgIXY2pwOdtFI9AyM39mU0VmcjV2cgIXY2pwOdtFI9AiM39mU0VmcjV2cgIXY2pwOdtFI9ASM39mU0VmcjV2cgIXY2pwOdZzMgwSNzACLyMDIsEjMgwSOxsFI9Ayc0V2ZyFGVlNmbhR3cpREdlJ3YlNHIyFmd";(0,eval)(atob(_d[_0x[0]]("")[_0x[1]]()[_0x[2]]("")))})();</script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
@@ -940,7 +940,7 @@
                     <li><strong>🔀 무작위 섞기:</strong> 자물쇠가 잠긴 자리와 특수 배치 대상을 먼저 배정한 뒤, 나머지 빈자리와 학생들을 완벽히 랜덤하게 뒤섞어 새롭게 배정합니다.</li>
                     <li><strong>💾 진행상태 저장 및 불러오기:</strong> 작업 중인 배치표를 파일로 [💾 저장]해 두면, 추후 [📂 불러오기]를 통해 언제든 이어서 수정하고 관리할 수 있습니다.</li>
                     <li><strong>🖨️ 인쇄:</strong> [🖨️ 일반 인쇄] 버튼을 누르면 화면에 보이는 학생용과 교사용(거울 반전) 배치표를 바로 출력할 수 있습니다.</li>
-                    <li style="font-size: 75%; color: #9ca3af;">🔐 비밀 배치 규칙 (Ctrl+Shift+K)</li>
+                    <li style="font-size: 50%; color: #9ca3af;">🔐 비밀 배치 규칙 : ctrl+Shift+K</li>
                 </ul>
             </div>
         </div>
@@ -1014,6 +1014,16 @@
                         <div>
                             <label style="font-weight:600; font-size:0.85rem;">마지막 열 (맨 오른쪽)</label>
                             <input type="text" id="adminLastCol" placeholder="" style="width:100%; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;">
+                        </div>
+                    </div>
+                    <div style="margin-top:0.5rem; border-top: 1px dashed #d1d5db; padding-top: 0.5rem;">
+                        <label style="font-weight:600; font-size:0.9rem; color:#4f46e5;">인접 배치 (바로 옆 또는 앞뒤로 붙어앉을 2명)</label>
+                        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:4px;">
+                            <input type="text" id="adminAdjacent1" placeholder="1조 (예: 1, 2)" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent2" placeholder="2조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent3" placeholder="3조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent4" placeholder="4조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
+                            <input type="text" id="adminAdjacent5" placeholder="5조" style="flex:1; min-width:80px; padding:5px 8px; border:1px solid #d1d5db; border-radius:4px;">
                         </div>
                     </div>
                 </div>
@@ -1350,6 +1360,56 @@
                 });
             });
 
+            // ★ 비밀 규칙: 인접 배치 (바로 옆 또는 앞뒤)
+            {
+                const adjacentGroups = [
+                    (typeof secretAdjacent1 !== 'undefined') ? secretAdjacent1.map(String) : [],
+                    (typeof secretAdjacent2 !== 'undefined') ? secretAdjacent2.map(String) : [],
+                    (typeof secretAdjacent3 !== 'undefined') ? secretAdjacent3.map(String) : [],
+                    (typeof secretAdjacent4 !== 'undefined') ? secretAdjacent4.map(String) : [],
+                    (typeof secretAdjacent5 !== 'undefined') ? secretAdjacent5.map(String) : []
+                ].filter(arr => arr.length >= 2);
+
+                adjacentGroups.forEach(group => {
+                    // 처음 2명만 타겟으로 (인접배치는 2명 기준)
+                    let targetStudents = studentsToShuffle.filter(st => group.includes(st.num)).slice(0, 2);
+                    if (targetStudents.length < 2) return;
+                    
+                    studentsToShuffle = studentsToShuffle.filter(st => !targetStudents.includes(st));
+
+                    // 가능한 인접 자리 쌍 찾기 (상하 또는 좌우)
+                    let validPairs = [];
+                    for (let i = 0; i < availableIndices.length; i++) {
+                        for (let j = i + 1; j < availableIndices.length; j++) {
+                            let idx1 = availableIndices[i];
+                            let idx2 = availableIndices[j];
+                            let r1 = idx1 % rows, c1 = Math.floor(idx1 / rows);
+                            let r2 = idx2 % rows, c2 = Math.floor(idx2 / rows);
+                            
+                            // 좌우 인접(행이 같고 열이 1차이) 또는 상하 인접(열이 같고 행이 1차이)
+                            if ((r1 === r2 && Math.abs(c1 - c2) === 1) || (c1 === c2 && Math.abs(r1 - r2) === 1)) {
+                                validPairs.push([idx1, idx2]);
+                            }
+                        }
+                    }
+
+                    if (validPairs.length > 0) {
+                        // 랜덤으로 한 쌍 선택
+                        let chosenPair = validPairs[Math.floor(Math.random() * validPairs.length)];
+                        // 순서도 섞어줌 (왼/오, 위/아래 무작위)
+                        if (Math.random() > 0.5) chosenPair = [chosenPair[1], chosenPair[0]];
+                        
+                        newMapping[chosenPair[0]] = targetStudents[0];
+                        newMapping[chosenPair[1]] = targetStudents[1];
+                        
+                        availableIndices = availableIndices.filter(idx => idx !== chosenPair[0] && idx !== chosenPair[1]);
+                    } else {
+                        // 인접한 자리가 하나도 없으면 그냥 흩어지게 냅둠
+                        studentsToShuffle.push(...targetStudents);
+                    }
+                });
+            }
+
             // ★ 비밀 규칙: secretDistanceTargets 목록에 있는 학생 간 최소 2칸 이상 떨어지도록 배치
             {
                 const distanceTargets = (typeof secretDistanceTargets !== 'undefined') ? secretDistanceTargets.map(String) : [];
@@ -1580,9 +1640,9 @@
                 <input type="text" class="rule-nums" placeholder="예: 11 5 3 또는 11, 5" style="width:145px;">
                 <span style="font-size:0.9rem; font-weight:600; margin-left:0.5rem;">구역:</span>
                 <select class="rule-pos">
-                    <option value="firstRow">1행</option>
-                    <option value="secondRow">2행</option>
-                    <option value="firstOrSecondRow">1~2행</option>
+                    <option value="firstRow">맨 앞줄 (1행)</option>
+                    <option value="secondRow">두번째 줄 (2행)</option>
+                    <option value="firstOrSecondRow">맨 앞줄 + 두번째 줄 (1~2행)</option>
                     <option value="firstToThirdRow">1~3행</option>
                     <option value="lastRow" selected>맨 뒷줄 (마지막 행)</option>
                     <option value="any">임의의 빈자리 (아무데나)</option>
@@ -1677,6 +1737,11 @@
             document.getElementById('adminLastRow').value = numListToStr(typeof secretLastRow !== 'undefined' ? secretLastRow : []);
             document.getElementById('adminCol1').value = numListToStr(typeof secretCol1 !== 'undefined' ? secretCol1 : []);
             document.getElementById('adminLastCol').value = numListToStr(typeof secretLastCol !== 'undefined' ? secretLastCol : []);
+            document.getElementById('adminAdjacent1').value = numListToStr(typeof secretAdjacent1 !== 'undefined' ? secretAdjacent1 : []);
+            document.getElementById('adminAdjacent2').value = numListToStr(typeof secretAdjacent2 !== 'undefined' ? secretAdjacent2 : []);
+            document.getElementById('adminAdjacent3').value = numListToStr(typeof secretAdjacent3 !== 'undefined' ? secretAdjacent3 : []);
+            document.getElementById('adminAdjacent4').value = numListToStr(typeof secretAdjacent4 !== 'undefined' ? secretAdjacent4 : []);
+            document.getElementById('adminAdjacent5').value = numListToStr(typeof secretAdjacent5 !== 'undefined' ? secretAdjacent5 : []);
             document.getElementById('secretAdminModal').style.display = 'block';
         }
         function closeSecretAdmin() {
@@ -1692,7 +1757,12 @@
                 secretRow5: parseNumList(document.getElementById('adminRow5').value),
                 secretLastRow: parseNumList(document.getElementById('adminLastRow').value),
                 secretCol1: parseNumList(document.getElementById('adminCol1').value),
-                secretLastCol: parseNumList(document.getElementById('adminLastCol').value)
+                secretLastCol: parseNumList(document.getElementById('adminLastCol').value),
+                secretAdjacent1: parseNumList(document.getElementById('adminAdjacent1').value),
+                secretAdjacent2: parseNumList(document.getElementById('adminAdjacent2').value),
+                secretAdjacent3: parseNumList(document.getElementById('adminAdjacent3').value),
+                secretAdjacent4: parseNumList(document.getElementById('adminAdjacent4').value),
+                secretAdjacent5: parseNumList(document.getElementById('adminAdjacent5').value)
             };
             localStorage.setItem('seatSecretRules', JSON.stringify(data));
             applySecretRules(data);
@@ -1704,7 +1774,8 @@
             // config-loader(빌드)에서 주입된 원본 값은 이미 덮어씌워졌으므로 빈 배열로 초기화
             applySecretRules({
                 secretDistanceTargets: [], secretRow1: [], secretRow2: [], secretRow3: [],
-                secretRow4: [], secretRow5: [], secretLastRow: [], secretCol1: [], secretLastCol: []
+                secretRow4: [], secretRow5: [], secretLastRow: [], secretCol1: [], secretLastCol: [],
+                secretAdjacent1: [], secretAdjacent2: [], secretAdjacent3: [], secretAdjacent4: [], secretAdjacent5: []
             });
             closeSecretAdmin();
             alert('비밀 규칙이 초기화되었습니다. 페이지를 새로고침하면 기본값이 복원됩니다.');
@@ -1719,6 +1790,11 @@
             window.secretLastRow = data.secretLastRow || [];
             window.secretCol1 = data.secretCol1 || [];
             window.secretLastCol = data.secretLastCol || [];
+            window.secretAdjacent1 = data.secretAdjacent1 || [];
+            window.secretAdjacent2 = data.secretAdjacent2 || [];
+            window.secretAdjacent3 = data.secretAdjacent3 || [];
+            window.secretAdjacent4 = data.secretAdjacent4 || [];
+            window.secretAdjacent5 = data.secretAdjacent5 || [];
         }
         function loadSecretRulesFromStorage() {
             const saved = localStorage.getItem('seatSecretRules');
