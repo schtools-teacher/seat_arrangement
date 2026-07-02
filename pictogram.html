@@ -1545,11 +1545,6 @@
                 geminiApiKeyInput.focus();
                 return;
             }
-            if (!apiKey.startsWith('AIza')) {
-                alert('잘못된 API Key 형식입니다!\n구글 AI Studio에서 발급받은 키는 반드시 "AIzaSy..."로 시작해야 합니다.\n다시 발급 및 복사해주세요.');
-                geminiApiKeyInput.focus();
-                return;
-            }
             if (!rawPrompt) {
                 alert('그릴 그림에 대한 설명을 입력해 주세요.');
                 aiPromptInput.focus();
