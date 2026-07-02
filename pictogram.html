@@ -1545,6 +1545,11 @@
                 geminiApiKeyInput.focus();
                 return;
             }
+            if (!apiKey.startsWith('AIza')) {
+                alert('잘못된 API Key 형식입니다!\n구글 AI Studio에서 발급받은 키는 반드시 "AIzaSy..."로 시작해야 합니다.\n다시 발급 및 복사해주세요.');
+                geminiApiKeyInput.focus();
+                return;
+            }
             if (!rawPrompt) {
                 alert('그릴 그림에 대한 설명을 입력해 주세요.');
                 aiPromptInput.focus();
@@ -1580,9 +1585,11 @@
                 }
 
                 // Imagen API Endpoint (Google AI Studio REST)
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
+                const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
+                // 정적 HTML(GitHub Pages)에서의 브라우저 CORS 에러 방지를 위해 프록시 우회 라우팅
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
-                const response = await fetch(url, {
+                const response = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
