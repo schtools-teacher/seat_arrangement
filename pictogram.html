@@ -1580,11 +1580,9 @@
                 }
 
                 // Imagen API Endpoint (Google AI Studio REST)
-                const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
-                // 정적 HTML(GitHub Pages)에서의 브라우저 CORS 에러 방지를 위해 프록시 우회 라우팅
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
 
-                const response = await fetch(proxyUrl, {
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1615,7 +1613,15 @@
                 aiLoadingContainer.classList.add('hidden');
                 aiResultPreviewContainer.classList.remove('hidden');
             } catch (err) {
-                alert(`AI 이미지 생성 실패: ${err.message}\n(API Key 또는 네트워크 상태를 확인하세요)`);
+                let errorMessage = `AI 이미지 생성 실패: ${err.message}\n\n`;
+                if (err.message.includes('Failed to fetch')) {
+                    errorMessage += `[네트워크 통신 차단됨!]\n학교(교육청) 인터넷 방화벽이나 보안/광고차단 프로그램이 구글 AI 접속을 강제로 막고 있습니다.\n👉 해결책: 스마트폰 핫스팟으로 인터넷을 연결한 뒤 다시 시도해 보세요.`;
+                } else {
+                    errorMessage += `(API Key 오류 또는 구글 서버 장애일 수 있습니다)`;
+                }
+                
+                alert(errorMessage);
+                console.error("Gemini API Error Details:", err);
                 aiLoadingContainer.classList.add('hidden');
                 aiPlaceholderPreview.classList.remove('hidden');
             }
