@@ -138,10 +138,83 @@
                 <button onclick="switchTab('shapes-tab')" id="btn-shapes-tab" class="tab-btn flex-1 py-2.5 text-center rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
                     📐 도형 & 텍스트
                 </button>
+                <button onclick="switchTab('ai-tab')" id="btn-ai-tab" class="tab-btn flex-1 py-2.5 text-center rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
+                    🤖 AI 생성
+                </button>
             </nav>
 
             <!-- 탭 컨텐츠 -->
             <div class="flex-1 overflow-y-auto p-5">
+                <!-- 탭 3: AI 이미지 생성 -->
+                <div id="ai-tab" class="tab-content space-y-4">
+                    <div>
+                        <h2 class="text-xs font-black text-slate-700 uppercase tracking-wider mb-2">Gemini AI 이미지 생성</h2>
+                        <p class="text-[10px] text-slate-500 mb-3.5 leading-relaxed">
+                            구글 Imagen 3 AI를 사용하여 고품질의 안전 픽토그램 이미지를 생성합니다.
+                        </p>
+                        
+                        <!-- API Key 설정 -->
+                        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-4">
+                            <label class="text-[10px] font-black text-indigo-700 block mb-1">🔑 Gemini API Key 설정</label>
+                            <input type="password" id="geminiApiKey" placeholder="AIzaSy..." class="w-full bg-white border border-indigo-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-indigo-500 mb-1">
+                            <div class="flex justify-between items-center text-[9px] text-indigo-600">
+                                <a href="https://aistudio.google.com/" target="_blank" class="font-bold underline hover:text-indigo-800">무료 API Key 발급 ↗</a>
+                                <span class="text-slate-400">브라우저에 안전하게 저장됩니다.</span>
+                            </div>
+                        </div>
+
+                        <!-- 생성 프롬프트 입력 -->
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-slate-500 block">🎨 그림 묘사하기 (한글 지원)</label>
+                            <input type="text" id="aiPrompt" placeholder="예: 자전거 타는 사람" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-850 placeholder-slate-400 focus:outline-none focus:border-indigo-500" onkeydown="if(event.key==='Enter') generateAiImage()">
+                            
+                            <!-- 스타일 선택기 -->
+                            <label class="text-[10px] font-black text-slate-500 block pt-1">🎯 스타일 프리셋</label>
+                            <select id="aiStylePreset" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500">
+                                <option value="black_white_pictogram">단색 픽토그램 (검은색 실루엣 아이콘)</option>
+                                <option value="line_art_pictogram">라인 아트 픽토그램 (선으로 표현된 단순 기호)</option>
+                                <option value="flat_color_sign">심플 플랫 컬러 (단순화된 안전 표지)</option>
+                                <option value="cartoon_safety">친근한 만화 안전 캐릭터</option>
+                            </select>
+
+                            <button onclick="generateAiImage()" id="generateAiBtn" class="w-full mt-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+                                ✨ 이미지 생성하기
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 생성 결과 및 로딩 창 -->
+                    <div class="pt-3.5 border-t border-slate-100">
+                        <h3 class="text-[11px] font-black text-indigo-600 mb-2">AI 생성 결과</h3>
+                        <div id="ai-loading-container" class="hidden flex flex-col items-center justify-center py-8 gap-2 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+                            <svg class="animate-spin h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-[10px] text-slate-500 font-bold">AI가 이미지를 그리는 중... (약 10초)</span>
+                        </div>
+                        
+                        <div id="ai-result-preview-container" class="hidden flex flex-col items-center gap-3">
+                            <div class="relative w-full aspect-square max-w-[200px] border border-slate-200 rounded-xl overflow-hidden bg-white shadow-inner flex items-center justify-center">
+                                <img id="aiResultImg" class="max-w-full max-h-full object-contain" />
+                            </div>
+                            
+                            <div class="flex gap-2 w-full max-w-[200px]">
+                                <button id="addAiToCanvasBtn" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer text-center">
+                                    ➕ 캔버스에 추가
+                                </button>
+                                <button id="aiBgRemoveBtn" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors cursor-pointer" title="흰색 배경을 감지하여 투명하게 처리합니다.">
+                                    ✂️ 배경 투명화
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="ai-placeholder-preview" class="flex items-center justify-center py-12 text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
+                            여기에 생성된 이미지가 나타납니다.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 탭 1: 실시간 웹 아이콘 수집 -->
                 <div id="search-tab" class="tab-content active space-y-4">
                     <div>
@@ -1424,6 +1497,178 @@
                 document.body.removeChild(link);
                 URL.revokeObjectURL(blobURL);
             });
+        });
+
+        // --- 14. Gemini AI 이미지 생성 (Imagen 3 연동) 및 배경 처리 ---
+        const geminiApiKeyInput = document.getElementById('geminiApiKey');
+        const aiPromptInput = document.getElementById('aiPrompt');
+        const aiStylePresetSelect = document.getElementById('aiStylePreset');
+        const aiPlaceholderPreview = document.getElementById('ai-placeholder-preview');
+        const aiLoadingContainer = document.getElementById('ai-loading-container');
+        const aiResultPreviewContainer = document.getElementById('ai-result-preview-container');
+        const aiResultImg = document.getElementById('aiResultImg');
+        const addAiToCanvasBtn = document.getElementById('addAiToCanvasBtn');
+        const aiBgRemoveBtn = document.getElementById('aiBgRemoveBtn');
+
+        let lastGeneratedBase64 = ''; // 원본 생성 이미지 백업
+        let currentProcessedBase64 = ''; // 가공된 이미지
+
+        // 1) 로컬 스토리지에 저장된 API Key 복원
+        const savedApiKey = localStorage.getItem('gemini_api_key');
+        if (savedApiKey) {
+            geminiApiKeyInput.value = savedApiKey;
+        }
+
+        // API Key 입력 시 자동 저장
+        geminiApiKeyInput.addEventListener('input', (e) => {
+            localStorage.setItem('gemini_api_key', e.target.value.trim());
+        });
+
+        // 2) AI 이미지 생성 코어 함수
+        async function generateAiImage() {
+            const apiKey = geminiApiKeyInput.value.trim();
+            const rawPrompt = aiPromptInput.value.trim();
+
+            if (!apiKey) {
+                alert('Gemini API Key를 먼저 입력해 주세요.');
+                switchTab('ai-tab');
+                geminiApiKeyInput.focus();
+                return;
+            }
+            if (!rawPrompt) {
+                alert('그릴 그림에 대한 설명을 입력해 주세요.');
+                aiPromptInput.focus();
+                return;
+            }
+
+            // UI 로딩 처리
+            aiPlaceholderPreview.classList.add('hidden');
+            aiResultPreviewContainer.classList.add('hidden');
+            aiLoadingContainer.classList.remove('hidden');
+
+            try {
+                // 한글 입력인 경우 영어로 자동 번역 처리
+                let englishPrompt = rawPrompt;
+                if (isKorean(rawPrompt)) {
+                    englishPrompt = await translateKoreanToEnglish(rawPrompt);
+                }
+
+                // 스타일 프리셋별 특화 엔지니어링 프롬프트
+                const style = aiStylePresetSelect.value;
+                let finalPrompt = '';
+
+                if (style === 'black_white_pictogram') {
+                    finalPrompt = `simple flat black and white vector silhouette pictogram icon of ${englishPrompt}, minimalist, isolated on a solid white background, high contrast, clean edges, logo style, no shadows, no gray tones, no 3D effects`;
+                } else if (style === 'line_art_pictogram') {
+                    finalPrompt = `minimalist vector line art icon of ${englishPrompt}, simple outline, clean strokes, isolated on a solid white background, flat style, logo design, no fills, no color, no shadows`;
+                } else if (style === 'flat_color_sign') {
+                    finalPrompt = `simple flat vector icon design of ${englishPrompt}, bold colors, minimalist shapes, safety sign style, isolated on a solid white background, graphic design, no gradient, no shadows`;
+                } else if (style === 'cartoon_safety') {
+                    finalPrompt = `cute and friendly safety cartoon mascot of ${englishPrompt}, simple line art, bright colors, friendly expression, warning mascot style, isolated on a solid white background, flat vector illustration`;
+                } else {
+                    finalPrompt = `${englishPrompt}, simple safety icon, minimalist isolated on white background`;
+                }
+
+                // Imagen API Endpoint (Google AI Studio REST)
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:generateImages?key=${apiKey}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: finalPrompt,
+                        numberOfImages: 1,
+                        outputMimeType: 'image/jpeg',
+                        aspectRatio: '1:1'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    const errMsg = errData.error?.message || `HTTP 오류 ${response.status}`;
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                if (!data.generatedImages || data.generatedImages.length === 0) {
+                    throw new Error('API 응답에 생성된 이미지가 없습니다.');
+                }
+
+                const base64Data = data.generatedImages[0].image.imageBytes;
+                lastGeneratedBase64 = `data:image/jpeg;base64,${base64Data}`;
+                currentProcessedBase64 = lastGeneratedBase64;
+
+                // 결과 표시
+                aiResultImg.src = currentProcessedBase64;
+                aiLoadingContainer.classList.add('hidden');
+                aiResultPreviewContainer.classList.remove('hidden');
+            } catch (err) {
+                alert(`AI 이미지 생성 실패: ${err.message}\n(API Key 또는 네트워크 상태를 확인하세요)`);
+                aiLoadingContainer.classList.add('hidden');
+                aiPlaceholderPreview.classList.remove('hidden');
+            }
+        }
+
+        // 3) 캔버스에 생성 완료 이미지 추가
+        addAiToCanvasBtn.addEventListener('click', () => {
+            if (!currentProcessedBase64) return;
+
+            fabric.Image.fromURL(currentProcessedBase64, (img) => {
+                if (!img) {
+                    alert('이미지를 캔버스에 추가하는 데 실패했습니다.');
+                    return;
+                }
+                img.set({
+                    left: 150,
+                    top: 150,
+                    cornerColor: '#6366f1',
+                    cornerStyle: 'circle',
+                    transparentCorners: false,
+                    padding: 5
+                });
+                img.scaleToWidth(200);
+                canvas.add(img);
+                canvas.setActiveObject(img);
+                canvas.renderAll();
+                saveState();
+            }, { crossOrigin: 'anonymous' });
+        });
+
+        // 4) 흰색/밝은 계열 배경 투명화 헬퍼 함수
+        aiBgRemoveBtn.addEventListener('click', () => {
+            if (!lastGeneratedBase64) return;
+
+            const imgEl = new Image();
+            imgEl.src = lastGeneratedBase64;
+            imgEl.onload = () => {
+                const canvasTemp = document.createElement('canvas');
+                const ctxTemp = canvasTemp.getContext('2d');
+                canvasTemp.width = imgEl.width;
+                canvasTemp.height = imgEl.height;
+
+                // 임시 캔버스에 그리기
+                ctxTemp.drawImage(imgEl, 0, 0);
+
+                const imgData = ctxTemp.getImageData(0, 0, canvasTemp.width, canvasTemp.height);
+                const data = imgData.data;
+
+                // 흰색 계열 픽셀 제거 (R, G, B가 모두 240 이상일 경우 완전히 투명 처리)
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i+1];
+                    const b = data[i+2];
+
+                    if (r >= 240 && g >= 240 && b >= 240) {
+                        data[i+3] = 0; // Alpha를 0으로
+                    }
+                }
+
+                ctxTemp.putImageData(imgData, 0, 0);
+                currentProcessedBase64 = canvasTemp.toDataURL('image/png');
+                aiResultImg.src = currentProcessedBase64;
+                
+                alert('배경 투명화가 완료되었습니다. [캔버스에 추가]를 눌러 배치하세요.');
+            };
         });
 
         saveState();
