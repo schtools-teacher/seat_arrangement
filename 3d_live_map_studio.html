@@ -18,8 +18,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow-x: auto;
-      overflow-y: hidden;
+      overflow: hidden;
       font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f8fafc;
       touch-action: none;
@@ -27,9 +26,33 @@
     #app-wrapper {
       position: relative;
       width: 100%;
-      height: 100%;
-      min-width: 100%;
+      height: calc(100vh - 3.5rem);
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
       transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #main-sidebar {
+      width: 320px;
+      min-width: 320px;
+      height: 100%;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+      z-index: 20;
+    }
+    #main-sidebar.collapsed {
+      margin-left: -320px;
+      opacity: 0;
+      pointer-events: none;
+    }
+    #viewport-wrapper {
+      flex: 1;
+      position: relative;
+      height: 100%;
+      min-width: 0;
+      overflow: hidden;
+      background-color: #f1f5f9;
     }
     #viewport-container {
       position: absolute;
@@ -70,69 +93,69 @@
     }
   </style>
 </head>
-<body class="text-slate-800 select-none bg-slate-50">
+<body class="text-slate-800 select-none bg-slate-100 flex flex-col h-screen w-screen overflow-hidden">
 
-  <div id="app-wrapper">
-    <div id="viewport-container" class="cursor-grab active:cursor-grabbing"></div>
+  <!-- 상단 공통 네비게이션 헤더 바 -->
+  <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 flex-shrink-0 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-600/20">
+        <i class="fa-solid fa-earth-asia text-base"></i>
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-2">
+          3D Live Map Studio
+          <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">LIVE TILES</span>
+        </h1>
+        <p class="text-[11px] text-slate-500 hidden sm:block">실시간 글로벌 타일 맵 3차원 인터랙티브 스튜디오</p>
+      </div>
+    </div>
 
-    <!-- 상단 헤더 -->
-    <header class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
-      <div class="flex items-center gap-3 glass-panel px-4 py-2.5 rounded-xl pointer-events-auto shadow-md">
-        <div class="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-600/20">
-          <i class="fa-solid fa-earth-asia text-lg"></i>
-        </div>
-        <div>
-          <h1 class="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            3D Live Map Studio
-            <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">LIVE TILES</span>
-          </h1>
-          <p class="text-[11px] text-slate-500">실시간 글로벌 타일 맵 3차원 인터랙티브 스튜디오</p>
-        </div>
+    <!-- 상단 컨트롤 버튼 그룹 -->
+    <div class="flex items-center gap-2">
+      <div class="bg-slate-100/80 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shadow-sm">
+        <button id="btn-toggle-sidebar" title="패널 열기/닫기" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5">
+          <i class="fa-solid fa-table-columns"></i><span>패널 토글</span>
+        </button>
+        <button id="btn-screen-wide" title="화면 가로폭 175% 와이드 모드" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrows-left-right-to-line"></i>
+          <span id="screen-width-tag" class="font-semibold">화면 폭: 100%</span>
+        </button>
+        <button id="btn-fullscreen" title="전체화면" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition">
+          <i class="fa-solid fa-expand"></i>
+        </button>
       </div>
 
-      <!-- 상단 컨트롤 버튼 그룹 -->
-      <div class="flex items-center gap-2 pointer-events-auto">
-        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
-          <button id="btn-screen-wide" title="화면 가로폭 175% 와이드 모드" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5">
-            <i class="fa-solid fa-arrows-left-right-to-line"></i>
-            <span id="screen-width-tag" class="font-semibold">화면 폭: 100%</span>
-          </button>
-          <button id="btn-fullscreen" title="전체화면" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition">
-            <i class="fa-solid fa-expand"></i>
-          </button>
-        </div>
-
-        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
-          <button id="btn-toggle-sidebar" title="패널 열기/닫기" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-table-columns text-emerald-600"></i><span class="hidden sm:inline">패널</span>
-          </button>
-          <button id="btn-view-iso" title="입체각 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-shapes text-emerald-600"></i><span class="hidden sm:inline">입체각</span>
-          </button>
-          <button id="btn-view-top" title="평면 탑다운 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-arrows-to-dot text-emerald-600"></i><span class="hidden sm:inline">평면</span>
-          </button>
-          <button id="btn-reset-cam" title="시점 초기화" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition">
-            <i class="fa-solid fa-arrow-rotate-left"></i>
-          </button>
-        </div>
-
-        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
-          <!-- 조작 가이드 모달 열기 버튼 (녹색 강조) -->
-          <button id="btn-open-guide" title="터치 및 마우스 조작 안내" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 shadow-sm">
-            <i class="fa-solid fa-circle-question text-emerald-600 hover:text-inherit"></i>
-            <span>조작 가이드</span>
-          </button>
-          <button id="btn-screenshot" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm shadow-emerald-500/20">
-            <i class="fa-solid fa-camera"></i>
-            <span>이미지 저장</span>
-          </button>
-        </div>
+      <div class="bg-slate-100/80 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shadow-sm">
+        <button id="btn-view-iso" title="입체각 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-shapes text-emerald-600"></i><span class="hidden md:inline">입체각</span>
+        </button>
+        <button id="btn-view-top" title="평면 탑다운 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-arrows-to-dot text-emerald-600"></i><span class="hidden md:inline">평면</span>
+        </button>
+        <button id="btn-reset-cam" title="시점 초기화" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
       </div>
-    </header>
 
-    <!-- 좌측 사이드바 -->
-    <aside id="main-sidebar" style="width: 320px;" class="absolute top-20 left-3 bottom-3 w-80 max-w-[calc(100vw-24px)] glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transition-transform duration-300 overflow-x-hidden">
+      <div class="bg-slate-100/80 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shadow-sm">
+        <!-- 조작 가이드 모달 열기 버튼 (녹색 강조) -->
+        <button id="btn-open-guide" title="터치 및 마우스 조작 안내" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-circle-question text-emerald-600 hover:text-inherit"></i>
+          <span class="hidden sm:inline">조작 가이드</span>
+        </button>
+        <button id="btn-screenshot" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm shadow-emerald-500/20">
+          <i class="fa-solid fa-camera"></i>
+          <span class="hidden sm:inline">이미지 저장</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 작업 영역 (좌측 사이드바 + 우측 3D 지도 캔버스) -->
+  <div id="app-wrapper" class="flex-1 flex w-full relative overflow-x-auto overflow-y-hidden">
+
+    <!-- 좌측 사이드바: 3D 지도 화면 외부에 독립 위치 -->
+    <aside id="main-sidebar" class="w-80 flex-shrink-0 bg-white border-r border-slate-200 p-4 flex flex-col gap-3.5 z-20 transition-all duration-300 overflow-y-auto h-full shadow-sm">
       <!-- 상단 탭 전환 -->
       <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-medium">
         <button id="tab-btn-livemap" class="flex-1 py-1.5 text-center rounded-lg bg-white text-emerald-700 font-bold shadow-sm transition">
@@ -374,7 +397,7 @@
               <span class="text-slate-600 font-medium">지도 전체 크기 배율</span>
               <span id="label-map-scale" class="text-emerald-600 font-mono font-bold">100%</span>
             </div>
-            <input id="range-map-scale" type="range" min="40" max="160" value="70" class="w-full accent-emerald-600">
+            <input id="range-map-scale" type="range" min="40" max="180" value="100" class="w-full accent-emerald-600">
           </div>
           <div>
             <div class="flex justify-between text-xs mb-1">
@@ -395,103 +418,108 @@
       </div>
     </aside>
 
-    <!-- 우측 인스펙터 속성 편집기 -->
-    <div id="inspector-panel" class="absolute top-20 right-3 w-80 glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transform translate-x-[115%] transition-transform duration-300">
-      <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-          <i class="fa-solid fa-sliders text-emerald-600"></i> 속성 편집기
-        </h3>
-        <button id="btn-close-inspector" class="text-slate-400 hover:text-slate-700 text-xs p-1">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+    <!-- 우측 3D 지도 화면 영역: 좌측 패널과 겹치지 않는 독립 캔버스 공간 -->
+    <main id="viewport-wrapper" class="flex-1 relative h-full min-w-0 overflow-hidden bg-slate-100">
+      <div id="viewport-container" class="w-full h-full cursor-grab active:cursor-grabbing outline-none"></div>
+
+      <!-- 우측 인스펙터 속성 편집기 -->
+      <div id="inspector-panel" class="absolute top-4 right-4 w-80 glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transform translate-x-[125%] transition-transform duration-300">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-emerald-600"></i> 속성 편집기
+          </h3>
+          <button id="btn-close-inspector" class="text-slate-400 hover:text-slate-700 text-xs p-1">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3 text-xs overflow-y-auto max-h-[calc(100vh-170px)] pr-1">
+          <div>
+            <label class="text-slate-600 font-medium block mb-1">라벨 텍스트</label>
+            <input id="inspect-label" type="text" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm">
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-600 font-medium">글자 크기</span>
+              <span id="inspect-fontsize-val" class="text-emerald-600 font-mono font-bold">38px</span>
+            </div>
+            <input id="inspect-fontsize" type="range" min="16" max="72" value="38" class="w-full accent-emerald-600">
+          </div>
+          <div>
+            <label class="text-slate-600 font-medium block mb-1">오브젝트 색상</label>
+            <div class="flex items-center gap-2">
+              <input id="inspect-color" type="color" class="w-9 h-8 rounded border border-slate-300 bg-transparent cursor-pointer shadow-sm">
+              <span class="text-slate-500 text-[11px]">클릭하여 색상 교체</span>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-600 font-medium">높이 / 굵기</span>
+              <span id="inspect-height-val" class="text-emerald-600 font-mono font-bold">4.0</span>
+            </div>
+            <input id="inspect-height" type="range" min="0.5" max="15" step="0.5" value="4" class="w-full accent-emerald-600">
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-600 font-medium">폭 / 반경</span>
+              <span id="inspect-width-val" class="text-emerald-600 font-mono font-bold">1.0</span>
+            </div>
+            <!-- 최대값을 기존 6에서 3배인 18로 확장 -->
+            <input id="inspect-width" type="range" min="0.4" max="18" step="0.2" value="1" class="w-full accent-emerald-600">
+          </div>
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-slate-600 font-medium">Y축 회전각</span>
+              <span id="inspect-rot-val" class="text-emerald-600 font-mono font-bold">0°</span>
+            </div>
+            <input id="inspect-rot" type="range" min="0" max="360" value="0" class="w-full accent-emerald-600">
+            <div class="grid grid-cols-3 gap-1.5 mt-1.5">
+              <button type="button" id="btn-obj-rot-ccw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+                <i class="fa-solid fa-rotate-left mr-0.5"></i> -45°
+              </button>
+              <button type="button" id="btn-obj-rot-cw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+                <i class="fa-solid fa-rotate-right mr-0.5"></i> +45°
+              </button>
+              <button type="button" id="btn-obj-rot-reset" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+                0° 초기화
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-slate-600 font-medium block mb-1">위치 X</label>
+              <input id="inspect-pos-x" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
+            </div>
+            <div>
+              <label class="text-slate-600 font-medium block mb-1">위치 Z</label>
+              <input id="inspect-pos-z" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
+            </div>
+          </div>
+          <div class="pt-2 flex items-center gap-2">
+            <button id="btn-duplicate-obj" class="flex-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-semibold transition shadow-sm">
+              <i class="fa-solid fa-clone mr-1"></i> 복제
+            </button>
+            <button id="btn-delete-obj" class="flex-1 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold transition shadow-sm">
+              <i class="fa-solid fa-trash mr-1"></i> 삭제
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div class="space-y-3 text-xs overflow-y-auto max-h-[calc(100vh-170px)] pr-1">
-        <div>
-          <label class="text-slate-600 font-medium block mb-1">라벨 텍스트</label>
-          <input id="inspect-label" type="text" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm">
-        </div>
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="text-slate-600 font-medium">글자 크기</span>
-            <span id="inspect-fontsize-val" class="text-emerald-600 font-mono font-bold">38px</span>
-          </div>
-          <input id="inspect-fontsize" type="range" min="16" max="72" value="38" class="w-full accent-emerald-600">
-        </div>
-        <div>
-          <label class="text-slate-600 font-medium block mb-1">오브젝트 색상</label>
-          <div class="flex items-center gap-2">
-            <input id="inspect-color" type="color" class="w-9 h-8 rounded border border-slate-300 bg-transparent cursor-pointer shadow-sm">
-            <span class="text-slate-500 text-[11px]">클릭하여 색상 교체</span>
-          </div>
-        </div>
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="text-slate-600 font-medium">높이 / 굵기</span>
-            <span id="inspect-height-val" class="text-emerald-600 font-mono font-bold">4.0</span>
-          </div>
-          <input id="inspect-height" type="range" min="0.5" max="15" step="0.5" value="4" class="w-full accent-emerald-600">
-        </div>
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="text-slate-600 font-medium">폭 / 반경</span>
-            <span id="inspect-width-val" class="text-emerald-600 font-mono font-bold">1.0</span>
-          </div>
-          <!-- 최대값을 기존 6에서 3배인 18로 확장 -->
-          <input id="inspect-width" type="range" min="0.4" max="18" step="0.2" value="1" class="w-full accent-emerald-600">
-        </div>
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="text-slate-600 font-medium">Y축 회전각</span>
-            <span id="inspect-rot-val" class="text-emerald-600 font-mono font-bold">0°</span>
-          </div>
-          <input id="inspect-rot" type="range" min="0" max="360" value="0" class="w-full accent-emerald-600">
-          <div class="grid grid-cols-3 gap-1.5 mt-1.5">
-            <button type="button" id="btn-obj-rot-ccw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
-              <i class="fa-solid fa-rotate-left mr-0.5"></i> -45°
-            </button>
-            <button type="button" id="btn-obj-rot-cw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
-              <i class="fa-solid fa-rotate-right mr-0.5"></i> +45°
-            </button>
-            <button type="button" id="btn-obj-rot-reset" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
-              0° 초기화
-            </button>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="text-slate-600 font-medium block mb-1">위치 X</label>
-            <input id="inspect-pos-x" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
-          </div>
-          <div>
-            <label class="text-slate-600 font-medium block mb-1">위치 Z</label>
-            <input id="inspect-pos-z" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
-          </div>
-        </div>
-        <div class="pt-2 flex items-center gap-2">
-          <button id="btn-duplicate-obj" class="flex-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-semibold transition shadow-sm">
-            <i class="fa-solid fa-clone mr-1"></i> 복제
-          </button>
-          <button id="btn-delete-obj" class="flex-1 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold transition shadow-sm">
-            <i class="fa-solid fa-trash mr-1"></i> 삭제
-          </button>
-        </div>
+      <!-- 하단 터치 조작 팁 바 (클릭 시 전체 가이드 모달 열림) -->
+      <div id="btn-quick-guide-trigger" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-[11px] text-slate-700 flex items-center gap-3 z-20 cursor-pointer hover:bg-emerald-50/90 border border-emerald-300 shadow-md transition pointer-events-auto">
+        <span class="flex items-center gap-1 text-emerald-700 font-bold"><i class="fa-solid fa-hand-pointer text-xs"></i> 터치 조작 팁</span>
+        <span class="text-slate-300">|</span>
+        <span><strong>1손가락:</strong> 3D 회전</span>
+        <span><strong>2손가락:</strong> 줌(Pinch) & 이동</span>
+        <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold">전체 보기</span>
       </div>
-    </div>
+    </main>
 
     <!-- 하단 토스트 메시지 -->
     <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-xl glass-panel text-slate-800 text-xs shadow-xl border border-emerald-200">
       <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
       <span id="toast-text" class="font-medium">알림 메시지</span>
-    </div>
-
-    <!-- 하단 터치 조작 팁 바 (클릭 시 전체 가이드 모달 열림) -->
-    <div id="btn-quick-guide-trigger" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-[11px] text-slate-700 flex items-center gap-3 z-20 cursor-pointer hover:bg-emerald-50/90 border border-emerald-300 shadow-md transition pointer-events-auto">
-      <span class="flex items-center gap-1 text-emerald-700 font-bold"><i class="fa-solid fa-hand-pointer text-xs"></i> 터치 조작 팁</span>
-      <span class="text-slate-300">|</span>
-      <span><strong>1손가락:</strong> 3D 회전</span>
-      <span><strong>2손가락:</strong> 줌(Pinch) & 이동</span>
-      <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold">전체 보기</span>
     </div>
 
     <!-- 상세 조작 가이드 모달 (터치스크린 집중 설명) -->
@@ -732,16 +760,17 @@
     }
 
     /* ----------------------------------------------------
-       초기 기본 로고 텍스처 생성기 (절차적 Canvas 렌더링)
+       초기 기본 로고 텍스처 생성기 (20% 가로 확장 와이드 절차적 Canvas 렌더링)
     ---------------------------------------------------- */
     function generateStudioLogoTexture() {
       const canvas = document.createElement('canvas');
-      canvas.width = 1792;
+      canvas.width = 2150;
       canvas.height = 1024;
       const ctx = canvas.getContext('2d');
 
-      // 밝은 베이스 및 부드러운 방사형 그라데이션
-      const grad = ctx.createRadialGradient(896, 512, 100, 896, 512, 900);
+      // 밝은 베이스 및 부드러운 방사형 그라데이션 (확장된 캔버스 중앙 기준)
+      const cx = 1075;
+      const grad = ctx.createRadialGradient(cx, 512, 120, cx, 512, 1100);
       grad.addColorStop(0, '#ffffff');
       grad.addColorStop(0.65, '#f8fafc');
       grad.addColorStop(1, '#e2e8f0');
@@ -770,16 +799,15 @@
       ctx.lineWidth = 4;
       const m = 40, cl = 50;
       // 좌상, 우상, 좌하, 우하 코너
-      [[m, m, 1, 1], [canvas.width - m, m, -1, 1], [m, canvas.height - m, 1, -1], [canvas.width - m, canvas.height - m, -1, -1]].forEach(([cx, cy, dx, dy]) => {
+      [[m, m, 1, 1], [canvas.width - m, m, -1, 1], [m, canvas.height - m, 1, -1], [canvas.width - m, canvas.height - m, -1, -1]].forEach(([cxCoord, cyCoord, dx, dy]) => {
         ctx.beginPath();
-        ctx.moveTo(cx, cy + dy * cl);
-        ctx.lineTo(cx, cy);
-        ctx.lineTo(cx + dx * cl, cy);
+        ctx.moveTo(cxCoord, cyCoord + dy * cl);
+        ctx.lineTo(cxCoord, cyCoord);
+        ctx.lineTo(cxCoord + dx * cl, cyCoord);
         ctx.stroke();
       });
 
       // 중앙 로고 아이콘 심볼 (입체 큐브 & 핀 융합 마크)
-      const cx = 896;
       const cy = 370;
 
       // 글로우 원형 백그라운드
@@ -846,12 +874,12 @@
       
       ctx.font = '900 48px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#0f172a';
-      ctx.fillText('3D LIVE MAP STUDIO', 896, 545);
+      ctx.fillText('3D LIVE MAP STUDIO', cx, 545);
 
       // 서브타이틀 텍스트
       ctx.font = '600 22px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#64748b';
-      ctx.fillText('실시간 온라인 타일 지도 & 캡처 맵 3차원 인터랙티브 에디터', 896, 605);
+      ctx.fillText('실시간 온라인 타일 지도 & 캡처 맵 3차원 인터랙티브 에디터', cx, 605);
 
       // 하단 시작 가이드 카드 3개
       const cards = [
@@ -860,10 +888,10 @@
         { icon: '✏️', title: '오브젝트 배치', desc: '3D 핀, 빌딩, 프리핸드 경로선 드로잉' }
       ];
 
-      const startCardX = 350;
-      const cardW = 340;
+      const cardW = 380;
       const cardH = 95;
       const gap = 35;
+      const startCardX = Math.floor((2150 - (cardW * 3 + gap * 2)) / 2);
       const cardY = 705;
 
       cards.forEach((card, idx) => {
@@ -880,15 +908,15 @@
         // 카드 아이콘 및 텍스트
         ctx.textAlign = 'left';
         ctx.font = '32px system-ui, sans-serif';
-        ctx.fillText(card.icon, x + 20, cardY + 48);
+        ctx.fillText(card.icon, x + 24, cardY + 48);
 
         ctx.font = 'bold 18px system-ui, sans-serif';
         ctx.fillStyle = '#0f172a';
-        ctx.fillText(card.title, x + 72, cardY + 36);
+        ctx.fillText(card.title, x + 76, cardY + 36);
 
         ctx.font = '14px system-ui, sans-serif';
         ctx.fillStyle = '#64748b';
-        ctx.fillText(card.desc, x + 72, cardY + 64);
+        ctx.fillText(card.desc, x + 76, cardY + 64);
       });
 
       const texture = new THREE.CanvasTexture(canvas);
@@ -902,7 +930,8 @@
       rawComposedCanvas = null;
 
       mapPlane.geometry.dispose();
-      mapPlane.geometry = new THREE.PlaneGeometry(87.5, 50);
+      // 가로 20% 확장된 2.1:1 와이드 비율 (105 x 50)
+      mapPlane.geometry = new THREE.PlaneGeometry(105, 50);
 
       const logoTexture = generateStudioLogoTexture();
       if (mapPlane.material.map) mapPlane.material.map.dispose();
@@ -920,8 +949,8 @@
       const centerTileX = lon2tile(lon, zoom);
       const centerTileY = lat2tile(lat, zoom);
 
-      // 3D 씬 가로 175% 와이드 비율에 맞게 7x4 그리드 타일 구성 (총 28개 타일 합성)
-      const cols = 7;
+      // 3D 씬 가로 20% 확장 와이드 비율(105x50)에 맞게 9x4 그리드 타일 구성 (총 36개 고화질 타일 합성)
+      const cols = 9;
       const rows = 4;
       const startX = centerTileX - Math.floor(cols / 2);
       const startY = centerTileY - Math.floor(rows / 2);
@@ -1104,9 +1133,9 @@
       if (restoreBtn) {
         restoreBtn.addEventListener('click', () => {
           rawUploadedImage = null;
-          // 기존 7:4 비율의 평면으로 복원
+          // 20% 가로 확장된 와이드 2.1:1 비율 평면으로 복원
           mapPlane.geometry.dispose();
-          mapPlane.geometry = new THREE.PlaneGeometry(87.5, 50);
+          mapPlane.geometry = new THREE.PlaneGeometry(105, 50);
           loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
         });
       }
@@ -1165,7 +1194,7 @@
       scene.background = new THREE.Color('#f1f5f9'); // 화사한 라이트 배경
 
       camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-      camera.position.set(0, 55, 68);
+      camera.position.set(0, 58, 70);
 
       renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(width, height);
@@ -1195,8 +1224,8 @@
       dirLight.castShadow = false;
       scene.add(dirLight);
 
-      // 지도 바닥판 (와이드 7:4 비율 = 87.5 x 50)
-      const planeGeo = new THREE.PlaneGeometry(87.5, 50);
+      // 지도 바닥판 (가로 20% 확장된 와이드 2.1:1 비율 = 105 x 50)
+      const planeGeo = new THREE.PlaneGeometry(105, 50);
       const planeMat = new THREE.MeshBasicMaterial({
         side: THREE.DoubleSide
       });
@@ -1204,8 +1233,8 @@
       mapPlane.rotation.x = -Math.PI / 2;
       scene.add(mapPlane);
 
-      // 연회색 보조 격자
-      gridHelper = new THREE.GridHelper(100, 50, 0xd1d5db, 0x94a3b8);
+      // 연회색 보조 격자 (확장된 바닥판에 맞게 120 x 60으로 매핑)
+      gridHelper = new THREE.GridHelper(120, 60, 0xd1d5db, 0x94a3b8);
       gridHelper.position.y = 0.01;
       if (gridHelper.material) {
         gridHelper.material.opacity = 0.4;
@@ -2027,20 +2056,22 @@
         loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
       });
 
-      // 사이드바 토글
+      // 사이드바 토글 (지도 외부 독립 패널 접기/펼치기)
       const sidebar = document.getElementById('main-sidebar');
       const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
       let isSidebarOpen = true;
       btnToggleSidebar.addEventListener('click', () => {
         isSidebarOpen = !isSidebarOpen;
         if (isSidebarOpen) {
-          sidebar.classList.remove('-translate-x-[115%]');
-          btnToggleSidebar.classList.remove('bg-emerald-600', 'text-white');
+          sidebar.classList.remove('collapsed');
+          btnToggleSidebar.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5';
         } else {
-          sidebar.classList.add('-translate-x-[115%]');
-          btnToggleSidebar.classList.add('bg-emerald-600', 'text-white');
-          showToast('도구 패널이 접혔습니다.');
+          sidebar.classList.add('collapsed');
+          btnToggleSidebar.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5';
+          showToast('도구 패널이 접혔습니다. (지도 전체 화면)', 'info');
         }
+        setTimeout(onWindowResize, 60);
+        setTimeout(onWindowResize, 320);
       });
 
       // 조작 가이드 모달 제어
@@ -2268,9 +2299,9 @@
 
       // 지도 스케일
       document.getElementById('range-map-scale').addEventListener('input', (e) => {
-        const scale = e.target.value / 70;
+        const scale = e.target.value / 100;
         mapPlane.scale.set(scale, scale, scale);
-        document.getElementById('label-map-scale').textContent = `${Math.round(e.target.value * (100 / 70))}%`;
+        document.getElementById('label-map-scale').textContent = `${e.target.value}%`;
       });
 
       // 화면 폭 와이드 제어
@@ -2309,20 +2340,20 @@
       });
       rangeCanvasWidth.addEventListener('input', (e) => setAppWidth(parseInt(e.target.value)));
 
-      // 뷰포트 프리셋
+      // 뷰포트 프리셋 (가로 20% 확장된 와이드 2.1:1 화면에 최적화된 시점)
       document.getElementById('btn-view-iso').addEventListener('click', () => {
         controls.target.set(0, 0, 0);
-        camera.position.set(45, 45, 45);
+        camera.position.set(52, 48, 52);
         controls.update();
       });
       document.getElementById('btn-view-top').addEventListener('click', () => {
         controls.target.set(0, 0, 0);
-        camera.position.set(0, 75, 0.1);
+        camera.position.set(0, 80, 0.1);
         controls.update();
       });
       document.getElementById('btn-reset-cam').addEventListener('click', () => {
         controls.target.set(0, 0, 0);
-        camera.position.set(0, 55, 68);
+        camera.position.set(0, 58, 70);
         controls.update();
       });
 
