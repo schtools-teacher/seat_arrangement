@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>3D Live Map Studio - 실시간 온라인 맵 3차원 에디터</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      touch-action: none;
+    }
+    #app-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-width: 100%;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #viewport-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      touch-action: none;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.6);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.8);
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    }
+    .loader-spin {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="text-slate-800 select-none bg-slate-50">
+
+  <div id="app-wrapper">
+    <div id="viewport-container" class="cursor-grab active:cursor-grabbing"></div>
+
+    <!-- 상단 헤더 -->
+    <header class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
+      <div class="flex items-center gap-3 glass-panel px-4 py-2.5 rounded-xl pointer-events-auto shadow-md">
+        <div class="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-600/20">
+          <i class="fa-solid fa-earth-asia text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            3D Live Map Studio
+            <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">LIVE TILES</span>
+          </h1>
+          <p class="text-[11px] text-slate-500">실시간 글로벌 타일 맵 3차원 인터랙티브 스튜디오</p>
+        </div>
+      </div>
+
+      <!-- 상단 컨트롤 버튼 그룹 -->
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
+          <button id="btn-screen-wide" title="화면 가로폭 175% 와이드 모드" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-left-right-to-line"></i>
+            <span id="screen-width-tag" class="font-semibold">화면 폭: 100%</span>
+          </button>
+          <button id="btn-fullscreen" title="전체화면" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
+
+        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
+          <button id="btn-toggle-sidebar" title="패널 열기/닫기" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-table-columns text-emerald-600"></i><span class="hidden sm:inline">패널</span>
+          </button>
+          <button id="btn-view-iso" title="입체각 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-shapes text-emerald-600"></i><span class="hidden sm:inline">입체각</span>
+          </button>
+          <button id="btn-view-top" title="평면 탑다운 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-to-dot text-emerald-600"></i><span class="hidden sm:inline">평면</span>
+          </button>
+          <button id="btn-reset-cam" title="시점 초기화" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+          </button>
+        </div>
+
+        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
+          <!-- 조작 가이드 모달 열기 버튼 (녹색 강조) -->
+          <button id="btn-open-guide" title="터치 및 마우스 조작 안내" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-circle-question text-emerald-600 hover:text-inherit"></i>
+            <span>조작 가이드</span>
+          </button>
+          <button id="btn-screenshot" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm shadow-emerald-500/20">
+            <i class="fa-solid fa-camera"></i>
+            <span>이미지 저장</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 좌측 사이드바 -->
+    <aside id="main-sidebar" style="width: 320px;" class="absolute top-20 left-3 bottom-3 w-80 max-w-[calc(100vw-24px)] glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transition-transform duration-300 overflow-x-hidden">
+      <!-- 상단 탭 전환 -->
+      <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-medium">
+        <button id="tab-btn-livemap" class="flex-1 py-1.5 text-center rounded-lg bg-white text-emerald-700 font-bold shadow-sm transition">
+          <i class="fa-solid fa-magnifying-glass-location mr-1"></i> 라이브 지도
+        </button>
+        <button id="tab-btn-add" class="flex-1 py-1.5 text-center rounded-lg text-slate-600 hover:text-slate-900 transition">
+          <i class="fa-solid fa-cubes mr-1"></i> 오브젝트
+        </button>
+        <button id="tab-btn-map" class="flex-1 py-1.5 text-center rounded-lg text-slate-600 hover:text-slate-900 transition">
+          <i class="fa-solid fa-sliders mr-1"></i> 지도 조절
+        </button>
+      </div>
+
+      <!-- 탭 1: 라이브 지도 검색 및 타일 로더 -->
+      <div id="tab-content-livemap" class="flex-1 flex flex-col gap-3.5 overflow-y-auto pr-1">
+        <!-- 검색 박스 -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+          <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block flex items-center justify-between">
+            <span>실시간 장소·주소 검색</span>
+            <span id="search-status-tag" class="text-[10px] text-emerald-600 font-semibold">준비됨</span>
+          </label>
+          <div class="relative">
+            <input id="input-map-search" type="text" placeholder="예: 김포시 장기동, 강남역, 여의도" 
+              class="w-full pl-8 pr-16 py-2 rounded-lg bg-slate-50 border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500">
+            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+            <button id="btn-search-map" class="absolute right-1.5 top-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-semibold transition">
+              검색
+            </button>
+          </div>
+          <!-- 추천 바로가기 버튼들 -->
+          <div class="flex flex-wrap gap-1 pt-1">
+            <button data-query="김포 라베니체" class="quick-loc-btn text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 border border-slate-200 transition">김포 라베니체</button>
+            <button data-query="서울 강남역" class="quick-loc-btn text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 border border-slate-200 transition">강남역</button>
+            <button data-query="판교 테크노밸리" class="quick-loc-btn text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 border border-slate-200 transition">판교 테크노밸리</button>
+            <button data-query="해운대 해수욕장" class="quick-loc-btn text-[10px] px-2 py-0.5 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 border border-slate-200 transition">해운대</button>
+          </div>
+          <!-- 검색 결과 목록 드롭다운 영역 -->
+          <div id="search-results-list" class="hidden max-h-36 overflow-y-auto space-y-1 pt-1 border-t border-slate-100"></div>
+        </div>
+
+        <!-- 지도 스타일 및 줌 레벨 제어 -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2.5">
+          <label class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">타일 지도 스타일 (무료 & 워터마크 없음)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btn-style-osm-hot" class="tile-style-btn py-1.5 px-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-800 text-[11px] font-semibold text-center transition">
+              <i class="fa-solid fa-road mr-1 text-teal-600"></i> 선명 일반 도로 (HOT)
+            </button>
+            <button id="btn-style-osm-de" class="tile-style-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-medium text-center hover:bg-slate-50 transition">
+              <i class="fa-solid fa-map mr-1 text-amber-600"></i> 표준 도로 지도 (DE)
+            </button>
+            <button id="btn-style-esri-sat" class="tile-style-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-medium text-center hover:bg-slate-50 transition">
+              <i class="fa-solid fa-satellite mr-1 text-emerald-600"></i> 실제 위성 사진
+            </button>
+            <button id="btn-style-sat-hybrid" class="tile-style-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-medium text-center hover:bg-slate-50 transition">
+              <i class="fa-solid fa-layer-group mr-1 text-indigo-500"></i> 위성 + 도로명 라벨
+            </button>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600 font-medium">지도 상세 줌 (Zoom Level)</span>
+              <span id="label-live-zoom" class="text-emerald-600 font-mono font-bold">16 (동/도로 단위)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="range-live-zoom" type="range" min="13" max="18" value="16" class="flex-1 accent-emerald-600">
+              <button id="btn-reload-tiles" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs rounded-lg font-medium border border-slate-200 transition">
+                <i class="fa-solid fa-arrows-rotate mr-1"></i> 새로고침
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 현재 로드된 지도 정보 카드 -->
+        <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3 text-[11px] text-emerald-950 space-y-1">
+          <div class="font-bold flex items-center justify-between">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> 현재 중심 위치</span>
+            <span id="current-latlng-tag" class="font-mono text-[10px] text-emerald-700">대기 중 (위치 미지정)</span>
+          </div>
+          <p id="current-placename-tag" class="truncate text-slate-700 font-medium">장소를 검색하거나 캡처 지도를 붙여넣어 시작하세요</p>
+        </div>
+      </div>
+
+      <!-- 탭 2: 오브젝트 추가 & 관리 -->
+      <div id="tab-content-add" class="hidden flex-1 flex flex-col gap-3.5 overflow-y-auto pr-1">
+        <div class="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 text-[11px] text-emerald-900 leading-relaxed flex items-start gap-2">
+          <i class="fa-solid fa-circle-info text-emerald-600 mt-0.5 flex-shrink-0"></i>
+          <span>'선택 커서' 모드에서는 생성 없이 선택·드래그 이동만 동작합니다. 추가할 종류를 선택한 뒤 지도를 클릭하세요.</span>
+        </div>
+
+        <!-- 모드 및 오브젝트 그리드 -->
+        <div>
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">모드 및 오브젝트 종류</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button data-type="select" class="obj-preset-btn col-span-2 flex items-center justify-between px-3 py-2 rounded-xl border-2 border-emerald-500 bg-emerald-50/80 text-emerald-950 shadow-sm transition">
+              <span class="flex items-center gap-1.5 text-xs font-bold truncate">
+                <i class="fa-solid fa-arrow-pointer text-emerald-600"></i>
+                <span>선택 커서 (Select)</span>
+              </span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-200/60 text-emerald-800 font-medium">기본</span>
+            </button>
+            <button data-type="pin" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-solid fa-location-dot text-lg text-rose-500 mb-1"></i>
+              <span class="text-xs font-semibold truncate">위치 핀 (Pin)</span>
+            </button>
+            <button data-type="building" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-solid fa-city text-lg text-cyan-600 mb-1"></i>
+              <span class="text-xs font-medium truncate">건물 (Building)</span>
+            </button>
+            <button data-type="cylinder" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-solid fa-monument text-lg text-emerald-600 mb-1"></i>
+              <span class="text-xs font-medium truncate">타워 (Tower)</span>
+            </button>
+            <button data-type="badge" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-solid fa-tag text-lg text-amber-500 mb-1"></i>
+              <span class="text-xs font-medium truncate">말풍선 라벨</span>
+            </button>
+            <button data-type="freehand" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm relative">
+              <span class="absolute top-1 right-1 px-1 py-0.2 text-[8px] bg-amber-100 text-amber-800 rounded font-bold border border-amber-300">FREE</span>
+              <i class="fa-solid fa-signature text-lg text-amber-600 mb-1"></i>
+              <span class="text-xs font-medium truncate">프리핸드 선</span>
+            </button>
+            <button data-type="line" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-solid fa-arrows-left-right text-lg text-yellow-600 mb-1"></i>
+              <span class="text-xs font-medium truncate">직선 바 (Bar)</span>
+            </button>
+            <button data-type="circle" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-regular fa-circle-dot text-lg text-violet-600 mb-1"></i>
+              <span class="text-xs font-medium truncate">원형 윤곽선</span>
+            </button>
+            <button data-type="rect" class="obj-preset-btn flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-slate-300 transition shadow-sm">
+              <i class="fa-regular fa-square text-lg text-teal-600 mb-1"></i>
+              <span class="text-xs font-medium truncate">사각형 윤곽선</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 신규 오브젝트 설정 -->
+        <div class="space-y-2.5 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">신규 오브젝트 기본값</label>
+          <div>
+            <label class="text-[11px] text-slate-600 block mb-1 font-medium">표시 라벨 텍스트</label>
+            <input id="input-new-label" type="text" placeholder="예: 주요 교차로, 상업 구역" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 shadow-sm">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1 font-medium">라벨 글자 크기</label>
+              <input id="input-new-font-size" type="range" min="18" max="64" value="38" class="w-full accent-emerald-600">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1 font-medium">대표 색상</label>
+              <div class="flex items-center gap-2">
+                <input id="input-new-color" type="color" value="#059669" class="w-8 h-8 rounded border border-slate-300 bg-transparent cursor-pointer shadow-sm">
+                <span class="text-[11px] text-slate-600 font-medium">색상 지정</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 오브젝트 목록 -->
+        <div class="flex-1 flex flex-col min-h-[140px]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">배치된 오브젝트 (<span id="obj-count" class="text-emerald-600">0</span>)</span>
+            <button id="btn-clear-all" class="text-[11px] text-rose-600 hover:text-rose-700 font-medium transition flex items-center gap-1">
+              <i class="fa-solid fa-trash"></i> 전체 삭제
+            </button>
+          </div>
+          <div id="obj-list-container" class="flex-1 overflow-y-auto space-y-1.5 pr-1"></div>
+        </div>
+      </div>
+
+      <!-- 탭 3: 지도 화면 및 화질 조절 -->
+      <div id="tab-content-map" class="hidden flex-1 flex flex-col gap-4 overflow-y-auto pr-1">
+        <!-- 캡처 이미지 파일 열기 및 클립보드 붙여넣기 섹션 추가 -->
+        <div class="space-y-2 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">캡처 지도 직접 적용</label>
+          <div class="flex flex-col gap-2">
+            <label class="flex items-center justify-center gap-2 w-full p-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold cursor-pointer transition shadow-sm">
+              <i class="fa-solid fa-folder-open text-emerald-600"></i>
+              <span>이미지 파일 불러오기</span>
+              <input type="file" id="map-file-input" accept="image/*" class="hidden">
+            </label>
+            <button id="paste-dropzone" class="w-full p-2.5 rounded-xl border border-dashed border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm">
+              <i class="fa-regular fa-clipboard text-amber-600"></i>
+              <span>클립보드 이미지 붙여넣기 (Ctrl+V)</span>
+            </button>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button id="btn-restore-online-map" class="w-full p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-medium transition shadow-sm flex items-center justify-center gap-1">
+                <i class="fa-solid fa-earth-asia text-emerald-600"></i>
+                <span>실시간 지도로 로드</span>
+              </button>
+              <button id="btn-show-logo-screen" class="w-full p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-medium transition shadow-sm flex items-center justify-center gap-1">
+                <i class="fa-solid fa-cube text-indigo-600"></i>
+                <span>기본 로고 화면</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">지도 이미지 선명도</label>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600 font-medium">지도 선명도 / 대비 (Contrast)</span>
+              <span id="label-map-contrast" class="text-emerald-600 font-mono font-bold">115%</span>
+            </div>
+            <input id="range-map-contrast" type="range" min="80" max="200" value="115" class="w-full accent-emerald-600">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600 font-medium">지도 밝기 (Brightness)</span>
+              <span id="label-map-brightness" class="text-emerald-600 font-mono font-bold">100%</span>
+            </div>
+            <input id="range-map-brightness" type="range" min="60" max="140" value="100" class="w-full accent-emerald-600">
+          </div>
+        </div>
+
+        <div class="space-y-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">지도 회전 및 비율</label>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600 font-medium">지도 회전각</span>
+              <span id="label-map-rot" class="text-emerald-600 font-mono font-bold">0°</span>
+            </div>
+            <input id="range-map-rot" type="range" min="0" max="360" value="0" class="w-full accent-emerald-600">
+            <div class="grid grid-cols-3 gap-1.5 mt-1.5">
+              <button type="button" id="btn-map-rot-ccw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+                <i class="fa-solid fa-rotate-left mr-0.5"></i> -90°
+              </button>
+              <button type="button" id="btn-map-rot-cw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+                <i class="fa-solid fa-rotate-right mr-0.5"></i> +90°
+              </button>
+              <button type="button" id="btn-map-rot-reset" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+                0° 리셋
+              </button>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600 font-medium">지도 전체 크기 배율</span>
+              <span id="label-map-scale" class="text-emerald-600 font-mono font-bold">100%</span>
+            </div>
+            <input id="range-map-scale" type="range" min="40" max="160" value="70" class="w-full accent-emerald-600">
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-600 font-medium">작업 화면 전체 가로폭</span>
+              <span id="label-canvas-width" class="text-emerald-600 font-mono font-bold">100%</span>
+            </div>
+            <input id="range-canvas-width" type="range" min="100" max="250" value="100" class="w-full accent-emerald-600">
+          </div>
+        </div>
+
+        <div class="space-y-2 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">바닥 옵션</label>
+          <label class="flex items-center justify-between text-xs text-slate-700 font-medium cursor-pointer">
+            <span>연회색 그리드 격자 표시</span>
+            <input type="checkbox" id="toggle-grid" checked class="rounded accent-emerald-600">
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 우측 인스펙터 속성 편집기 -->
+    <div id="inspector-panel" class="absolute top-20 right-3 w-80 glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transform translate-x-[115%] transition-transform duration-300">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-sliders text-emerald-600"></i> 속성 편집기
+        </h3>
+        <button id="btn-close-inspector" class="text-slate-400 hover:text-slate-700 text-xs p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs overflow-y-auto max-h-[calc(100vh-170px)] pr-1">
+        <div>
+          <label class="text-slate-600 font-medium block mb-1">라벨 텍스트</label>
+          <input id="inspect-label" type="text" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">글자 크기</span>
+            <span id="inspect-fontsize-val" class="text-emerald-600 font-mono font-bold">38px</span>
+          </div>
+          <input id="inspect-fontsize" type="range" min="16" max="72" value="38" class="w-full accent-emerald-600">
+        </div>
+        <div>
+          <label class="text-slate-600 font-medium block mb-1">오브젝트 색상</label>
+          <div class="flex items-center gap-2">
+            <input id="inspect-color" type="color" class="w-9 h-8 rounded border border-slate-300 bg-transparent cursor-pointer shadow-sm">
+            <span class="text-slate-500 text-[11px]">클릭하여 색상 교체</span>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">높이 / 굵기</span>
+            <span id="inspect-height-val" class="text-emerald-600 font-mono font-bold">4.0</span>
+          </div>
+          <input id="inspect-height" type="range" min="0.5" max="15" step="0.5" value="4" class="w-full accent-emerald-600">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">폭 / 반경</span>
+            <span id="inspect-width-val" class="text-emerald-600 font-mono font-bold">1.0</span>
+          </div>
+          <!-- 최대값을 기존 6에서 3배인 18로 확장 -->
+          <input id="inspect-width" type="range" min="0.4" max="18" step="0.2" value="1" class="w-full accent-emerald-600">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">Y축 회전각</span>
+            <span id="inspect-rot-val" class="text-emerald-600 font-mono font-bold">0°</span>
+          </div>
+          <input id="inspect-rot" type="range" min="0" max="360" value="0" class="w-full accent-emerald-600">
+          <div class="grid grid-cols-3 gap-1.5 mt-1.5">
+            <button type="button" id="btn-obj-rot-ccw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+              <i class="fa-solid fa-rotate-left mr-0.5"></i> -45°
+            </button>
+            <button type="button" id="btn-obj-rot-cw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+              <i class="fa-solid fa-rotate-right mr-0.5"></i> +45°
+            </button>
+            <button type="button" id="btn-obj-rot-reset" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+              0° 초기화
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-slate-600 font-medium block mb-1">위치 X</label>
+            <input id="inspect-pos-x" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
+          </div>
+          <div>
+            <label class="text-slate-600 font-medium block mb-1">위치 Z</label>
+            <input id="inspect-pos-z" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
+          </div>
+        </div>
+        <div class="pt-2 flex items-center gap-2">
+          <button id="btn-duplicate-obj" class="flex-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-semibold transition shadow-sm">
+            <i class="fa-solid fa-clone mr-1"></i> 복제
+          </button>
+          <button id="btn-delete-obj" class="flex-1 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold transition shadow-sm">
+            <i class="fa-solid fa-trash mr-1"></i> 삭제
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 토스트 메시지 -->
+    <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-xl glass-panel text-slate-800 text-xs shadow-xl border border-emerald-200">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+      <span id="toast-text" class="font-medium">알림 메시지</span>
+    </div>
+
+    <!-- 하단 터치 조작 팁 바 (클릭 시 전체 가이드 모달 열림) -->
+    <div id="btn-quick-guide-trigger" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-[11px] text-slate-700 flex items-center gap-3 z-20 cursor-pointer hover:bg-emerald-50/90 border border-emerald-300 shadow-md transition pointer-events-auto">
+      <span class="flex items-center gap-1 text-emerald-700 font-bold"><i class="fa-solid fa-hand-pointer text-xs"></i> 터치 조작 팁</span>
+      <span class="text-slate-300">|</span>
+      <span><strong>1손가락:</strong> 3D 회전</span>
+      <span><strong>2손가락:</strong> 줌(Pinch) & 이동</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold">전체 보기</span>
+    </div>
+
+    <!-- 상세 조작 가이드 모달 (터치스크린 집중 설명) -->
+    <div id="guide-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none">
+      <div class="glass-panel w-full max-w-lg rounded-2xl p-5 shadow-2xl border border-emerald-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+        <!-- 모달 헤더 -->
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-base font-bold">
+              <i class="fa-solid fa-book-open"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">3D Live Map 조작 가이드</h3>
+              <p class="text-[11px] text-slate-500">터치스크린 및 마우스/키보드 상세 제스처 안내</p>
+            </div>
+          </div>
+          <button id="btn-close-guide" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <!-- 모달 내용: 터치스크린 조작 섹션 -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 uppercase tracking-wide">
+            <i class="fa-solid fa-mobile-screen-button"></i> 터치스크린 (스마트폰 / 태블릿)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5">
+              <span class="text-xl">👆</span>
+              <div>
+                <p class="font-bold text-slate-800">한 손가락 드래그</p>
+                <p class="text-[11px] text-slate-600 mt-0.5">3차원 카메라 시점 회전<br><span class="text-amber-600 font-medium">(프리핸드 모드 시 경로선 드로잉)</span></p>
+              </div>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5">
+              <span class="text-xl">✌️</span>
+              <div>
+                <p class="font-bold text-slate-800">두 손가락 오므리기 / 벌리기</p>
+                <p class="text-[11px] text-slate-600 mt-0.5">화면 핀치 줌(Pinch Zoom) 확대 및 축소</p>
+              </div>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5">
+              <span class="text-xl">🖐️</span>
+              <div>
+                <p class="font-bold text-slate-800">두 손가락 동시에 밀기</p>
+                <p class="text-[11px] text-slate-600 mt-0.5">지도 화면 평행 이동 (Pan / 스크롤)</p>
+              </div>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5">
+              <span class="text-xl">🤏</span>
+              <div>
+                <p class="font-bold text-slate-800">오브젝트 터치 & 드래그</p>
+                <p class="text-[11px] text-slate-600 mt-0.5">핀이나 건물을 손가락으로 눌러 원하는 위치로 이동</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 모달 내용: PC 및 단축키 섹션 -->
+        <div class="space-y-2.5">
+          <h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wide">
+            <i class="fa-solid fa-keyboard"></i> PC 마우스 & 키보드 단축키
+          </h4>
+          <div class="grid grid-cols-2 gap-2 text-[11px]">
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="font-bold text-slate-800">좌클릭 드래그:</span> 시점 회전 / 드로잉
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="font-bold text-slate-800">우클릭 드래그:</span> 화면 이동 (Pan)
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="font-bold text-slate-800">Ctrl + V:</span> 캡처 지도 즉시 붙여넣기
+            </div>
+            <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
+              <span class="font-bold text-slate-800">Delete (Del) 키:</span> 선택 오브젝트 삭제
+            </div>
+          </div>
+        </div>
+
+        <!-- 모달 하단 닫기 버튼 -->
+        <div class="pt-2 border-t border-slate-200 flex justify-end">
+          <button id="btn-guide-confirm" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition">
+            확인했습니다
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 로딩 스피너 오버레이 -->
+    <div id="tile-loading-overlay" class="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-50 flex flex-col items-center justify-center gap-3 transition-opacity duration-300 opacity-0 pointer-events-none">
+      <div class="glass-panel p-5 rounded-2xl flex flex-col items-center gap-3 shadow-2xl">
+        <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full loader-spin"></div>
+        <div class="text-center">
+          <p class="text-xs font-bold text-slate-800" id="loading-main-text">온라인 타일 지도를 합성하는 중...</p>
+          <p class="text-[11px] text-slate-500 mt-0.5" id="loading-sub-text">고해상도 타일을 다운로드하여 3D 평면에 매핑합니다</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ----------------------------------------------------
+       전역 변수 및 상태 정의
+    ---------------------------------------------------- */
+    let scene, camera, renderer, controls;
+    let mapPlane, gridHelper, dirLight;
+    let currentTexture = null;
+    let rawComposedCanvas = null;
+    let rawUploadedImage = null; // 업로드/붙여넣은 캡처 이미지 저장용
+
+    let sceneObjects = [];
+    let selectedObject = null;
+    let nextObjectId = 1;
+
+    let activePreset = 'select';
+    let isDrawingFreehand = false;
+    let freehandRawPoints = [];
+    let activeDrawingMesh = null;
+
+    let isDraggingObject = false;
+    let draggedObject = null;
+    let dragOffset = new THREE.Vector3();
+    const virtualGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const planeIntersectionPoint = new THREE.Vector3();
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let mouseDownPos = { x: 0, y: 0 };
+    let hasMovedMouse = false;
+
+    // 현재 로드된 지도 지리정보 (기본값: 대한민국 김포시 라베니체 금빛수로 일대)
+    let currentGeo = {
+      lat: 37.6433,
+      lon: 126.6775,
+      zoom: 16,
+      name: '대한민국 경기도 김포시 장기동 (라베니체)',
+      provider: 'osm_hot' // 기본 스타일: 선명 일반 도로 (HOT)
+    };
+
+    function showToast(text, type = 'info') {
+      const toast = document.getElementById('toast-box');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastText.textContent = text;
+      if (type === 'success') {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-600 text-base";
+      } else if (type === 'warn') {
+        toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-600 text-base";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-info text-emerald-600 text-base";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2600);
+    }
+
+    function showLoading(show, title = '온라인 지도를 불러오는 중...') {
+      const overlay = document.getElementById('tile-loading-overlay');
+      const titleEl = document.getElementById('loading-main-text');
+      if (titleEl) titleEl.textContent = title;
+      if (show) {
+        overlay.classList.remove('opacity-0', 'pointer-events-none');
+        overlay.classList.add('opacity-100');
+      } else {
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    function lon2tile(lon, zoom) {
+      return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+    }
+    function lat2tile(lat, zoom) {
+      const rad = lat * Math.PI / 180;
+      return Math.floor((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * Math.pow(2, zoom));
+    }
+
+    // CORS 및 브라우저 Canvas 출력이 100% 검증된 무료 타일 URL 생성
+    function getTileUrls(x, y, z, provider = 'osm_hot') {
+      if (provider === 'osm_hot') {
+        // OSM Humanitarian 타일: Access-Control-Allow-Origin: * 보장 및 한글 지명 지원
+        return {
+          base: `https://tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`,
+          overlay: null,
+          fallback: `https://tile.openstreetmap.de/${z}/${x}/${y}.png`
+        };
+      }
+      if (provider === 'osm_de') {
+        // 독일 OSM 오픈 미러: CORS 허용
+        return {
+          base: `https://tile.openstreetmap.de/${z}/${x}/${y}.png`,
+          overlay: null,
+          fallback: `https://tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`
+        };
+      }
+      if (provider === 'sat_hybrid') {
+        // 고해상도 위성 사진 + 위에 선명한 도로선 및 지명 라벨 2단 복합 합성
+        return {
+          base: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
+          overlay: `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${x}`,
+          overlayRoads: `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/${z}/${y}/${x}`
+        };
+      }
+      // 기본값: 이미 100% 정상 로드 확인된 고화질 실제 위성 사진 (World Imagery)
+      return {
+        base: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
+        overlay: null
+      };
+    }
+
+    // 단일 타일 이미지 로더 (CORS 및 대체 Fallback 처리)
+    function loadSingleTile(url, fallbackUrl = null) {
+      return new Promise((resolve) => {
+        if (!url) return resolve(null);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => {
+          if (fallbackUrl) {
+            const fbImg = new Image();
+            fbImg.crossOrigin = 'anonymous';
+            fbImg.onload = () => resolve(fbImg);
+            fbImg.onerror = () => resolve(null);
+            fbImg.src = fallbackUrl;
+          } else {
+            resolve(null);
+          }
+        };
+        img.src = url;
+      });
+    }
+
+    /* ----------------------------------------------------
+       초기 기본 로고 텍스처 생성기 (절차적 Canvas 렌더링)
+    ---------------------------------------------------- */
+    function generateStudioLogoTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1792;
+      canvas.height = 1024;
+      const ctx = canvas.getContext('2d');
+
+      // 밝은 베이스 및 부드러운 방사형 그라데이션
+      const grad = ctx.createRadialGradient(896, 512, 100, 896, 512, 900);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(0.65, '#f8fafc');
+      grad.addColorStop(1, '#e2e8f0');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 세련된 테크니컬 서브 그리드 라인
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 2;
+      const step = 64;
+      for (let x = step; x < canvas.width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = step; y < canvas.height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // 외곽 프레임 코너 마크
+      ctx.strokeStyle = '#059669';
+      ctx.lineWidth = 4;
+      const m = 40, cl = 50;
+      // 좌상, 우상, 좌하, 우하 코너
+      [[m, m, 1, 1], [canvas.width - m, m, -1, 1], [m, canvas.height - m, 1, -1], [canvas.width - m, canvas.height - m, -1, -1]].forEach(([cx, cy, dx, dy]) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + dy * cl);
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx + dx * cl, cy);
+        ctx.stroke();
+      });
+
+      // 중앙 로고 아이콘 심볼 (입체 큐브 & 핀 융합 마크)
+      const cx = 896;
+      const cy = 370;
+
+      // 글로우 원형 백그라운드
+      ctx.beginPath();
+      ctx.arc(cx, cy, 110, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+      ctx.stroke();
+
+      // 육각형 입체 큐브 심볼
+      ctx.save();
+      ctx.translate(cx, cy);
+      const r = 68;
+      const p1 = [0, -r];
+      const p2 = [r * 0.866, -r * 0.5];
+      const p3 = [r * 0.866, r * 0.5];
+      const p4 = [0, r];
+      const p5 = [-r * 0.866, r * 0.5];
+      const p6 = [-r * 0.866, -r * 0.5];
+      const center = [0, 0];
+
+      // 상단면
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.moveTo(p1[0], p1[1]);
+      ctx.lineTo(p2[0], p2[1]);
+      ctx.lineTo(center[0], center[1]);
+      ctx.lineTo(p6[0], p6[1]);
+      ctx.closePath();
+      ctx.fill();
+
+      // 우측면
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.moveTo(center[0], center[1]);
+      ctx.lineTo(p2[0], p2[1]);
+      ctx.lineTo(p3[0], p3[1]);
+      ctx.lineTo(p4[0], p4[1]);
+      ctx.closePath();
+      ctx.fill();
+
+      // 좌측면
+      ctx.fillStyle = '#047857';
+      ctx.beginPath();
+      ctx.moveTo(p1[0], p1[1]);
+      ctx.lineTo(center[0], center[1]);
+      ctx.lineTo(p4[0], p4[1]);
+      ctx.lineTo(p5[0], p5[1]);
+      ctx.lineTo(p6[0], p6[1]);
+      ctx.closePath();
+      ctx.fill();
+
+      // 큐브 테두리 선
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+
+      // 메인 타이틀 텍스트
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      ctx.font = '900 48px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText('3D LIVE MAP STUDIO', 896, 545);
+
+      // 서브타이틀 텍스트
+      ctx.font = '600 22px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('실시간 온라인 타일 지도 & 캡처 맵 3차원 인터랙티브 에디터', 896, 605);
+
+      // 하단 시작 가이드 카드 3개
+      const cards = [
+        { icon: '🔍', title: '실시간 검색', desc: '좌측 창에서 원하는 주소/지명 검색' },
+        { icon: '📋', title: 'Ctrl + V 붙여넣기', desc: '캡처한 지도 이미지를 즉시 3D로 전환' },
+        { icon: '✏️', title: '오브젝트 배치', desc: '3D 핀, 빌딩, 프리핸드 경로선 드로잉' }
+      ];
+
+      const startCardX = 350;
+      const cardW = 340;
+      const cardH = 95;
+      const gap = 35;
+      const cardY = 705;
+
+      cards.forEach((card, idx) => {
+        const x = startCardX + idx * (cardW + gap);
+        // 카드 배경
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(x, cardY, cardW, cardH, 16);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.stroke();
+
+        // 카드 아이콘 및 텍스트
+        ctx.textAlign = 'left';
+        ctx.font = '32px system-ui, sans-serif';
+        ctx.fillText(card.icon, x + 20, cardY + 48);
+
+        ctx.font = 'bold 18px system-ui, sans-serif';
+        ctx.fillStyle = '#0f172a';
+        ctx.fillText(card.title, x + 72, cardY + 36);
+
+        ctx.font = '14px system-ui, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(card.desc, x + 72, cardY + 64);
+      });
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = 8;
+      return texture;
+    }
+
+    function applyLogoScreenToMap() {
+      rawUploadedImage = null;
+      rawComposedCanvas = null;
+
+      mapPlane.geometry.dispose();
+      mapPlane.geometry = new THREE.PlaneGeometry(87.5, 50);
+
+      const logoTexture = generateStudioLogoTexture();
+      if (mapPlane.material.map) mapPlane.material.map.dispose();
+      mapPlane.material.map = logoTexture;
+      mapPlane.material.needsUpdate = true;
+      currentTexture = logoTexture;
+
+      document.getElementById('current-latlng-tag').textContent = '대기 중 (기본 화면)';
+      document.getElementById('current-placename-tag').textContent = '장소를 검색하거나 캡처 지도를 붙여넣으세요';
+    }
+
+    async function loadOnlineMapTiles(lat, lon, zoom = 16, provider = 'esri_sat') {
+      showLoading(true, `위도 ${lat.toFixed(4)}, 경도 ${lon.toFixed(4)} 지도 생성 중...`);
+
+      const centerTileX = lon2tile(lon, zoom);
+      const centerTileY = lat2tile(lat, zoom);
+
+      // 3D 씬 가로 175% 와이드 비율에 맞게 7x4 그리드 타일 구성 (총 28개 타일 합성)
+      const cols = 7;
+      const rows = 4;
+      const startX = centerTileX - Math.floor(cols / 2);
+      const startY = centerTileY - Math.floor(rows / 2);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = cols * 256;
+      canvas.height = rows * 256;
+      const ctx = canvas.getContext('2d');
+
+      // 밝은 베이스 배경
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const tileTasks = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const tileX = startX + c;
+          const tileY = startY + r;
+          const tileInfo = getTileUrls(tileX, tileY, zoom, provider);
+
+          const task = (async () => {
+            const baseImg = await loadSingleTile(tileInfo.base, tileInfo.fallback);
+            if (baseImg) {
+              ctx.drawImage(baseImg, c * 256, r * 256, 256, 256);
+            } else {
+              // 다운로드 실패 시 밝은 격자 플레이스홀더 렌더
+              ctx.fillStyle = '#e2e8f0';
+              ctx.fillRect(c * 256, r * 256, 256, 256);
+              ctx.strokeStyle = '#cbd5e1';
+              ctx.strokeRect(c * 256, r * 256, 256, 256);
+            }
+
+            // 하이브리드 도로망 오버레이가 있는 경우 추가 합성
+            if (tileInfo.overlayRoads) {
+              const roadImg = await loadSingleTile(tileInfo.overlayRoads);
+              if (roadImg) ctx.drawImage(roadImg, c * 256, r * 256, 256, 256);
+            }
+
+            // 지명 및 경계선 오버레이가 있는 경우 추가 합성
+            if (tileInfo.overlay) {
+              const overlayImg = await loadSingleTile(tileInfo.overlay);
+              if (overlayImg) ctx.drawImage(overlayImg, c * 256, r * 256, 256, 256);
+            }
+          })();
+
+          tileTasks.push(task);
+        }
+      }
+
+      await Promise.all(tileTasks);
+      rawComposedCanvas = canvas;
+
+      renderProcessedLiveTexture();
+      showLoading(false);
+      showToast(`'${currentGeo.name}' 지도가 정상 로드되었습니다!`, 'success');
+
+      document.getElementById('current-latlng-tag').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      document.getElementById('current-placename-tag').textContent = currentGeo.name;
+    }
+
+    function renderProcessedLiveTexture() {
+      // 업로드된 캡처 이미지가 있으면 캡처 이미지 기준으로 렌더링, 없으면 합성된 타일 캔버스 기준 렌더링
+      const sourceImage = rawUploadedImage || rawComposedCanvas;
+      if (!sourceImage) return;
+
+      const contrast = document.getElementById('range-map-contrast') ? document.getElementById('range-map-contrast').value : 115;
+      const brightness = document.getElementById('range-map-brightness') ? document.getElementById('range-map-brightness').value : 100;
+
+      const filterCanvas = document.createElement('canvas');
+      filterCanvas.width = sourceImage.width;
+      filterCanvas.height = sourceImage.height;
+      const fCtx = filterCanvas.getContext('2d');
+
+      fCtx.filter = `contrast(${contrast}%) brightness(${brightness}%)`;
+      fCtx.drawImage(sourceImage, 0, 0);
+
+      const texture = new THREE.CanvasTexture(filterCanvas);
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = 8;
+
+      if (mapPlane.material.map) mapPlane.material.map.dispose();
+      mapPlane.material.map = texture;
+      mapPlane.material.needsUpdate = true;
+      currentTexture = texture;
+    }
+
+    function applyUploadedImageToMap(imageSrc) {
+      const img = new Image();
+      img.onload = function() {
+        rawUploadedImage = img;
+
+        // 원본 이미지 비율에 맞춰 3D 평면 크기 재조정
+        const aspect = img.width / img.height;
+        const baseH = 50;
+        const baseW = baseH * aspect;
+
+        mapPlane.geometry.dispose();
+        mapPlane.geometry = new THREE.PlaneGeometry(baseW, baseH);
+
+        renderProcessedLiveTexture();
+        showToast('캡처 지도 이미지가 3D 바닥에 성공적으로 적용되었습니다!', 'success');
+      };
+      img.src = imageSrc;
+    }
+
+    function handleMapImageUpload(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('올바른 이미지 파일(PNG, JPG, WebP)을 선택해주세요.', 'warn');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        applyUploadedImageToMap(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setupClipboardPaste() {
+      // 단축키 Ctrl+V / Cmd+V 붙여넣기
+      window.addEventListener('paste', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
+        if (!items) return;
+        let imageFound = false;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            handleMapImageUpload(blob);
+            imageFound = true;
+            break;
+          }
+        }
+        if (imageFound) {
+          showToast('클립보드에서 캡처 이미지를 읽어와 지도에 적용했습니다.', 'success');
+        }
+      });
+
+      // 클립보드 붙여넣기 버튼 클릭 핸들러
+      const pasteDropzone = document.getElementById('paste-dropzone');
+      if (pasteDropzone) {
+        pasteDropzone.addEventListener('click', async () => {
+          try {
+            if (navigator.clipboard && navigator.clipboard.read) {
+              const clipboardItems = await navigator.clipboard.read();
+              let imageFound = false;
+              for (const item of clipboardItems) {
+                const imageType = item.types.find(type => type.startsWith('image/'));
+                if (imageType) {
+                  const blob = await item.getType(imageType);
+                  handleMapImageUpload(blob);
+                  imageFound = true;
+                  showToast('클립보드 이미지를 성공적으로 가져왔습니다.', 'success');
+                  break;
+                }
+              }
+              if (!imageFound) {
+                showToast('클립보드에 복사된 이미지가 없습니다.', 'warn');
+              }
+            } else {
+              showToast('Ctrl+V 키를 눌러 캡처 이미지를 붙여넣으세요.', 'info');
+            }
+          } catch (err) {
+            showToast('클립보드 권한이 필요합니다. 지도를 복사한 후 Ctrl + V를 눌러주세요.', 'info');
+          }
+        });
+      }
+
+      // 파일 업로드 이벤트
+      const fileInput = document.getElementById('map-file-input');
+      if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            handleMapImageUpload(e.target.files[0]);
+          }
+        });
+      }
+
+      // 실시간 온라인 지도로 복원 버튼
+      const restoreBtn = document.getElementById('btn-restore-online-map');
+      if (restoreBtn) {
+        restoreBtn.addEventListener('click', () => {
+          rawUploadedImage = null;
+          // 기존 7:4 비율의 평면으로 복원
+          mapPlane.geometry.dispose();
+          mapPlane.geometry = new THREE.PlaneGeometry(87.5, 50);
+          loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
+        });
+      }
+
+      // 기본 스튜디오 로고 화면으로 복귀 버튼
+      const logoBtn = document.getElementById('btn-show-logo-screen');
+      if (logoBtn) {
+        logoBtn.addEventListener('click', () => {
+          applyLogoScreenToMap();
+          showToast('기본 스튜디오 로고 화면으로 복귀했습니다.', 'info');
+        });
+      }
+    }
+
+    function createTextSprite(text, color = '#059669', fontSize = 38) {
+      if (!text || text.trim() === '') return null;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+      ctx.beginPath();
+      ctx.roundRect(16, 16, 480, 96, 24);
+      ctx.fill();
+
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.fillStyle = '#0f172a';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false
+      });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      const baseScale = fontSize / 38;
+      sprite.scale.set(4 * baseScale, 1 * baseScale, 1);
+      return sprite;
+    }
+
+    function initThreeScene() {
+      const container = document.getElementById('viewport-container');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color('#f1f5f9'); // 화사한 라이트 배경
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 55, 68);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.shadowMap.enabled = false; // 그림자 완전 제거
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = false; // 관성 제거: 즉각 정지
+      controls.maxPolarAngle = Math.PI / 2 - 0.05;
+      controls.minDistance = 5;
+      controls.maxDistance = 200;
+      controls.target.set(0, 0, 0);
+
+      controls.touches = {
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN
+      };
+
+      // 3D 오브젝트 전용 균일 조명
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambientLight);
+
+      dirLight = new THREE.DirectionalLight(0xffffff, 0.45);
+      dirLight.position.set(35, 65, 30);
+      dirLight.castShadow = false;
+      scene.add(dirLight);
+
+      // 지도 바닥판 (와이드 7:4 비율 = 87.5 x 50)
+      const planeGeo = new THREE.PlaneGeometry(87.5, 50);
+      const planeMat = new THREE.MeshBasicMaterial({
+        side: THREE.DoubleSide
+      });
+      mapPlane = new THREE.Mesh(planeGeo, planeMat);
+      mapPlane.rotation.x = -Math.PI / 2;
+      scene.add(mapPlane);
+
+      // 연회색 보조 격자
+      gridHelper = new THREE.GridHelper(100, 50, 0xd1d5db, 0x94a3b8);
+      gridHelper.position.y = 0.01;
+      if (gridHelper.material) {
+        gridHelper.material.opacity = 0.4;
+        gridHelper.material.transparent = true;
+      }
+      scene.add(gridHelper);
+
+      window.addEventListener('resize', onWindowResize);
+      container.addEventListener('pointerdown', onPointerDown);
+      container.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+
+      // 초기 실행 시 특정 지도가 아닌 스튜디오 로고 화면 표시
+      applyLogoScreenToMap();
+      updateObjectListUI();
+    }
+
+    function buildFreehandFlatRibbonMesh(points, colorHex, ribbonWidth = 0.5) {
+      if (!points || points.length < 2) return null;
+
+      // 3D 튜브 대신 지면에 수평으로 밀착되는 2D 평면 리본(Flat Ribbon) 지오메트리 생성
+      const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal', 0.5);
+      const sampleCount = Math.min(Math.max(points.length * 8, 30), 200);
+      const sampledPoints = curve.getPoints(sampleCount);
+
+      const positions = [];
+      const indices = [];
+      const halfWidth = Math.max(0.1, ribbonWidth * 0.4);
+      const groundY = 0.06; // 지면 바닥 바로 위에 밀착하여 z-fighting 방지
+
+      for (let i = 0; i < sampledPoints.length; i++) {
+        const pt = sampledPoints[i];
+        let tangent = new THREE.Vector3();
+
+        if (i < sampledPoints.length - 1) {
+          tangent.subVectors(sampledPoints[i + 1], pt).normalize();
+        } else {
+          tangent.subVectors(pt, sampledPoints[i - 1]).normalize();
+        }
+
+        // X-Z 평면 상에서 접선에 수직인 수평 방향 벡터 계산
+        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+        const pLeft = new THREE.Vector3(
+          pt.x + normal.x * halfWidth,
+          groundY,
+          pt.z + normal.z * halfWidth
+        );
+        const pRight = new THREE.Vector3(
+          pt.x - normal.x * halfWidth,
+          groundY,
+          pt.z - normal.z * halfWidth
+        );
+
+        positions.push(pLeft.x, pLeft.y, pLeft.z);
+        positions.push(pRight.x, pRight.y, pRight.z);
+
+        if (i < sampledPoints.length - 1) {
+          const base = i * 2;
+          // 2개의 삼각형으로 사각형 세그먼트 구성
+          indices.push(base, base + 1, base + 2);
+          indices.push(base + 1, base + 3, base + 2);
+        }
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+
+      const mat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.95
+      });
+
+      return new THREE.Mesh(geo, mat);
+    }
+
+    function build3DObject(type, colorHex, height = 4, width = 1, extra = {}) {
+      const group = new THREE.Group();
+      let mainMesh;
+
+      if (type === 'pin') {
+        const sphereGeo = new THREE.SphereGeometry(width * 0.8, 20, 20);
+        const sphereMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.2 });
+        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+        sphere.position.y = height + 0.5;
+        group.add(sphere);
+
+        const coneGeo = new THREE.ConeGeometry(width * 0.4, height, 16);
+        coneGeo.rotateX(Math.PI);
+        const coneMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.2 });
+        const cone = new THREE.Mesh(coneGeo, coneMat);
+        cone.position.y = height / 2;
+        group.add(cone);
+        mainMesh = sphere;
+
+      } else if (type === 'freehand') {
+        const points = extra.points || [
+          new THREE.Vector3(-4, 0.06, 0),
+          new THREE.Vector3(0, 0.06, 3),
+          new THREE.Vector3(4, 0.06, -1)
+        ];
+        const ribbonWidth = Math.max(0.3, width * 0.6);
+        mainMesh = buildFreehandFlatRibbonMesh(points, colorHex, ribbonWidth);
+        if (mainMesh) {
+          group.add(mainMesh);
+        } else {
+          const fallback = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.4), new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide }));
+          fallback.rotation.x = -Math.PI / 2;
+          fallback.position.y = 0.06;
+          group.add(fallback);
+          mainMesh = fallback;
+        }
+
+      } else if (type === 'building') {
+        // 단일 직육면체 메쉬
+        const boxGeo = new THREE.BoxGeometry(width * 3, height, width * 3);
+        const boxMat = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          roughness: 0.35,
+          metalness: 0.2
+        });
+        const box = new THREE.Mesh(boxGeo, boxMat);
+        box.position.y = height / 2;
+        group.add(box);
+        mainMesh = box;
+
+      } else if (type === 'cylinder') {
+        const cylGeo = new THREE.CylinderGeometry(width * 1.2, width * 1.5, height, 24);
+        const cylMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.3 });
+        const cylinder = new THREE.Mesh(cylGeo, cylMat);
+        cylinder.position.y = height / 2;
+        group.add(cylinder);
+        mainMesh = cylinder;
+
+      } else if (type === 'badge') {
+        const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, height, 12);
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
+        const pole = new THREE.Mesh(poleGeo, poleMat);
+        pole.position.y = height / 2;
+        group.add(pole);
+
+        const flagGeo = new THREE.BoxGeometry(width * 2, 1, 0.1);
+        const flagMat = new THREE.MeshStandardMaterial({ color: colorHex });
+        const flag = new THREE.Mesh(flagGeo, flagMat);
+        flag.position.set(width, height, 0);
+        group.add(flag);
+        mainMesh = flag;
+
+      } else if (type === 'line') {
+        // 입체 박스가 아닌 지면에 수평 밀착된 완전 2D 평면 직사각형 바
+        const lineLength = width * 6;
+        const lineThickness = Math.max(0.2, width * 0.7);
+        const lineGeo = new THREE.PlaneGeometry(lineLength, lineThickness);
+        lineGeo.rotateX(-Math.PI / 2); // 바닥 지면에 수평으로 눕힘
+        const lineMat = new THREE.MeshBasicMaterial({
+          color: colorHex,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.95
+        });
+        const lineMesh = new THREE.Mesh(lineGeo, lineMat);
+        lineMesh.position.y = 0.06; // 바닥 바로 위에 밀착하여 z-fighting 방지
+        group.add(lineMesh);
+        mainMesh = lineMesh;
+
+      } else if (type === 'circle') {
+        // 입체 기둥이 아닌 지면에 밀착된 완전 평면 2D 링 윤곽선
+        const outerRadius = width * 2.5;
+        const borderThickness = Math.max(0.2, width * 0.12);
+        const innerRadius = Math.max(0.1, outerRadius - borderThickness);
+        const ringGeo = new THREE.RingGeometry(innerRadius, outerRadius, 64);
+        ringGeo.rotateX(-Math.PI / 2); // 바닥 지면에 수평으로 눕힘
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: colorHex,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.95
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.y = 0.06; // 지면 바로 위에 밀착하여 z-fighting 방지
+        group.add(ringMesh);
+        mainMesh = ringMesh;
+
+      } else if (type === 'rect') {
+        // 높이 돌출(Extrude) 없는 지면에 밀착된 완전 평면 2D 사각형 윤곽선
+        const shape = new THREE.Shape();
+        const hw = (width * 4) / 2;
+        const hd = (width * 3) / 2;
+        const borderThickness = Math.max(0.2, width * 0.12);
+
+        // 외곽 사각형 경로
+        shape.moveTo(-hw, -hd);
+        shape.lineTo(hw, -hd);
+        shape.lineTo(hw, hd);
+        shape.lineTo(-hw, hd);
+        shape.closePath();
+
+        // 내부를 완전히 비우는 구멍(Hole) 경로 지정
+        const innerHole = new THREE.Path();
+        innerHole.moveTo(-(hw - borderThickness), -(hd - borderThickness));
+        innerHole.lineTo((hw - borderThickness), -(hd - borderThickness));
+        innerHole.lineTo((hw - borderThickness), (hd - borderThickness));
+        innerHole.lineTo(-(hw - borderThickness), (hd - borderThickness));
+        innerHole.closePath();
+        shape.holes.push(innerHole);
+
+        // 높이 돌출(Extrude) 없이 순수 2D 평면 메쉬 생성
+        const flatFrameGeo = new THREE.ShapeGeometry(shape);
+        flatFrameGeo.rotateX(-Math.PI / 2); // 바닥 지면에 수평 밀착
+        const frameMat = new THREE.MeshBasicMaterial({
+          color: colorHex,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.95
+        });
+        const frameMesh = new THREE.Mesh(flatFrameGeo, frameMat);
+        frameMesh.position.y = 0.06; // 바닥 바로 위에 밀착
+        group.add(frameMesh);
+        mainMesh = frameMesh;
+      }
+
+      return { group, mainMesh };
+    }
+
+    function addObjectToMap(pos, options = {}) {
+      const type = options.type || activePreset;
+      const label = options.label !== undefined ? options.label : (document.getElementById('input-new-label').value || '');
+      const color = options.color || document.getElementById('input-new-color').value || '#059669';
+      const height = options.height !== undefined ? options.height : 4.0;
+      const width = options.width !== undefined ? options.width : 1.2;
+      const fontSize = options.fontSize || parseInt(document.getElementById('input-new-font-size').value || 38);
+      const rotationY = options.rotationY || 0;
+
+      const { group, mainMesh } = build3DObject(type, color, height, width, { points: options.points });
+      group.position.set(pos.x, 0, pos.z);
+      group.rotation.y = rotationY;
+
+      let labelSprite = null;
+      if (label && label.trim() !== '') {
+        labelSprite = createTextSprite(label, color, fontSize);
+        if (labelSprite) {
+          const spriteOffset = (type === 'pin') ? 2.2 : (type === 'line' || type === 'freehand' || type === 'circle' || type === 'rect' ? 1.5 : 1.8);
+          labelSprite.position.y = height + spriteOffset;
+          group.add(labelSprite);
+        }
+      }
+
+      const itemData = {
+        id: nextObjectId++,
+        type,
+        label,
+        color,
+        height,
+        width,
+        fontSize,
+        rotationY,
+        points: options.points ? options.points.map(p => p.clone()) : null,
+        group,
+        mainMesh,
+        sprite: labelSprite
+      };
+
+      group.userData = { id: itemData.id };
+      mainMesh.userData = { id: itemData.id };
+
+      scene.add(group);
+      sceneObjects.push(itemData);
+
+      updateObjectListUI();
+      selectObject(itemData);
+      showToast(`'${label || type}' 오브젝트가 추가되었습니다.`, 'success');
+      return itemData;
+    }
+
+    function getPointerPos(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      return {
+        x: ((clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((clientY - rect.top) / rect.height) * 2 + 1
+      };
+    }
+
+    function getMapIntersectionPoint(pos) {
+      mouse.x = pos.x;
+      mouse.y = pos.y;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(mapPlane);
+      if (intersects.length > 0) return intersects[0].point;
+      return null;
+    }
+
+    function onPointerDown(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      mouseDownPos = { x: clientX, y: clientY };
+      hasMovedMouse = false;
+
+      const pos = getPointerPos(e);
+      mouse.x = pos.x;
+      mouse.y = pos.y;
+      raycaster.setFromCamera(mouse, camera);
+
+      if (activePreset === 'freehand') {
+        const hitPoint = getMapIntersectionPoint(pos);
+        if (hitPoint) {
+          isDrawingFreehand = true;
+          controls.enabled = false;
+          freehandRawPoints = [new THREE.Vector3(hitPoint.x, 0.06, hitPoint.z)];
+
+          const previewMat = new THREE.MeshBasicMaterial({
+            color: document.getElementById('input-new-color').value || '#f59e0b',
+            side: THREE.DoubleSide
+          });
+          const previewGeo = new THREE.CircleGeometry(0.3, 16);
+          previewGeo.rotateX(-Math.PI / 2);
+          activeDrawingMesh = new THREE.Mesh(previewGeo, previewMat);
+          activeDrawingMesh.position.set(hitPoint.x, 0.06, hitPoint.z);
+          scene.add(activeDrawingMesh);
+          return;
+        }
+      }
+
+      // 오브젝트 피킹 및 드래그 시작 검사
+      const interactiveMeshes = [];
+      sceneObjects.forEach(obj => {
+        obj.group.traverse(child => {
+          if (child.isMesh && child.name !== 'SelectionRing') {
+            interactiveMeshes.push(child);
+          }
+        });
+      });
+
+      const objIntersects = raycaster.intersectObjects(interactiveMeshes, false);
+      if (objIntersects.length > 0) {
+        let hit = objIntersects[0].object;
+        while (hit && (!hit.userData || !hit.userData.id) && hit.parent) {
+          hit = hit.parent;
+        }
+        if (hit && hit.userData && hit.userData.id) {
+          const target = sceneObjects.find(o => o.id === hit.userData.id);
+          if (target) {
+            isDraggingObject = true;
+            draggedObject = target;
+            controls.enabled = false;
+
+            if (raycaster.ray.intersectPlane(virtualGroundPlane, planeIntersectionPoint)) {
+              dragOffset.x = planeIntersectionPoint.x - target.group.position.x;
+              dragOffset.z = planeIntersectionPoint.z - target.group.position.z;
+            }
+            selectObject(target);
+            document.getElementById('viewport-container').style.cursor = 'grabbing';
+            return;
+          }
+        }
+      }
+    }
+
+    function onPointerMove(e) {
+      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+      const diffX = Math.abs(clientX - mouseDownPos.x);
+      const diffY = Math.abs(clientY - mouseDownPos.y);
+      if (diffX > 5 || diffY > 5) {
+        hasMovedMouse = true;
+      }
+
+      const pos = getPointerPos(e);
+
+      if (isDrawingFreehand) {
+        const hitPoint = getMapIntersectionPoint(pos);
+        if (hitPoint) {
+          const lastPt = freehandRawPoints[freehandRawPoints.length - 1];
+          if (!lastPt || lastPt.distanceTo(hitPoint) > 0.4) {
+            freehandRawPoints.push(new THREE.Vector3(hitPoint.x, 0.06, hitPoint.z));
+            if (freehandRawPoints.length >= 2) {
+              if (activeDrawingMesh) scene.remove(activeDrawingMesh);
+              const color = document.getElementById('input-new-color').value || '#f59e0b';
+              activeDrawingMesh = buildFreehandFlatRibbonMesh(freehandRawPoints, color, 0.6);
+              if (activeDrawingMesh) scene.add(activeDrawingMesh);
+            }
+          }
+        }
+        return;
+      }
+
+      if (isDraggingObject && draggedObject) {
+        mouse.x = pos.x;
+        mouse.y = pos.y;
+        raycaster.setFromCamera(mouse, camera);
+
+        if (raycaster.ray.intersectPlane(virtualGroundPlane, planeIntersectionPoint)) {
+          const newX = planeIntersectionPoint.x - dragOffset.x;
+          const newZ = planeIntersectionPoint.z - dragOffset.z;
+
+          draggedObject.group.position.x = newX;
+          draggedObject.group.position.z = newZ;
+
+          const inputX = document.getElementById('inspect-pos-x');
+          const inputZ = document.getElementById('inspect-pos-z');
+          if (inputX) inputX.value = newX.toFixed(1);
+          if (inputZ) inputZ.value = newZ.toFixed(1);
+        }
+      }
+    }
+
+    function onPointerUp(e) {
+      if (isDrawingFreehand) {
+        isDrawingFreehand = false;
+        controls.enabled = true;
+        if (activeDrawingMesh) {
+          scene.remove(activeDrawingMesh);
+          activeDrawingMesh = null;
+        }
+
+        if (freehandRawPoints.length >= 2) {
+          const label = document.getElementById('input-new-label').value || '자유 경로선';
+          const color = document.getElementById('input-new-color').value || '#f59e0b';
+          const fontSize = parseInt(document.getElementById('input-new-font-size').value || 38);
+
+          addObjectToMap({ x: 0, z: 0 }, {
+            type: 'freehand',
+            label,
+            color,
+            height: 1,
+            width: 1.5,
+            fontSize,
+            points: freehandRawPoints
+          });
+          showToast('자유 곡선 경로선이 생성되었습니다.', 'success');
+        } else {
+          showToast('선을 그리려면 드래그하세요.', 'info');
+        }
+        freehandRawPoints = [];
+        return;
+      }
+
+      if (isDraggingObject) {
+        isDraggingObject = false;
+        draggedObject = null;
+        controls.enabled = true;
+        document.getElementById('viewport-container').style.cursor = '';
+        if (hasMovedMouse) {
+          showToast('오브젝트 위치가 이동되었습니다.');
+          return;
+        }
+      }
+
+      if (!hasMovedMouse) {
+        const pos = getPointerPos(e);
+        mouse.x = pos.x;
+        mouse.y = pos.y;
+        raycaster.setFromCamera(mouse, camera);
+
+        const interactiveMeshes = [];
+        sceneObjects.forEach(obj => {
+          obj.group.traverse(child => {
+            if (child.isMesh && child.name !== 'SelectionRing') {
+              interactiveMeshes.push(child);
+            }
+          });
+        });
+
+        const objIntersects = raycaster.intersectObjects(interactiveMeshes, false);
+        if (objIntersects.length > 0) {
+          let hit = objIntersects[0].object;
+          while (hit && (!hit.userData || !hit.userData.id) && hit.parent) {
+            hit = hit.parent;
+          }
+          if (hit && hit.userData && hit.userData.id) {
+            const target = sceneObjects.find(o => o.id === hit.userData.id);
+            if (target) {
+              selectObject(target);
+              return;
+            }
+          }
+        }
+
+        const planeIntersects = raycaster.intersectObject(mapPlane);
+        if (planeIntersects.length > 0) {
+          const point = planeIntersects[0].point;
+          if (activePreset !== 'freehand' && activePreset !== 'select') {
+            addObjectToMap({ x: point.x, z: point.z });
+          } else if (activePreset === 'select') {
+            deselectObject();
+          }
+        } else {
+          deselectObject();
+        }
+      }
+    }
+
+    function deselectObject() {
+      if (selectedObject) {
+        const ring = selectedObject.group.getObjectByName('SelectionRing');
+        if (ring) {
+          selectedObject.group.remove(ring);
+          ring.geometry.dispose();
+          ring.material.dispose();
+        }
+        selectedObject = null;
+      }
+      const inspector = document.getElementById('inspector-panel');
+      if (inspector) inspector.classList.add('translate-x-[115%]');
+      updateObjectListSelection();
+    }
+
+    function selectObject(itemData) {
+      deselectObject();
+      selectedObject = itemData;
+
+      const ringRadius = Math.max(itemData.width * 1.5, 1.2);
+      const ringGeo = new THREE.RingGeometry(ringRadius, ringRadius + 0.35, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x059669, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.08;
+      ring.name = 'SelectionRing';
+      itemData.group.add(ring);
+
+      document.getElementById('inspect-label').value = itemData.label || '';
+      document.getElementById('inspect-fontsize').value = itemData.fontSize || 38;
+      document.getElementById('inspect-fontsize-val').textContent = `${itemData.fontSize || 38}px`;
+      document.getElementById('inspect-color').value = itemData.color;
+      document.getElementById('inspect-height').value = itemData.height;
+      document.getElementById('inspect-height-val').textContent = itemData.height.toFixed(1);
+      document.getElementById('inspect-width').value = itemData.width;
+      document.getElementById('inspect-width-val').textContent = itemData.width.toFixed(1);
+      document.getElementById('inspect-rot').value = Math.round(THREE.MathUtils.radToDeg(itemData.rotationY));
+      document.getElementById('inspect-rot-val').textContent = `${Math.round(THREE.MathUtils.radToDeg(itemData.rotationY))}°`;
+      document.getElementById('inspect-pos-x').value = itemData.group.position.x.toFixed(1);
+      document.getElementById('inspect-pos-z').value = itemData.group.position.z.toFixed(1);
+
+      const inspector = document.getElementById('inspector-panel');
+      inspector.classList.remove('translate-x-[115%]');
+
+      updateObjectListSelection();
+    }
+
+    function rebuildSelectedObjectMesh() {
+      if (!selectedObject) return;
+
+      const pos = selectedObject.group.position.clone();
+      const { id, type, label, color, height, width, fontSize, rotationY, points } = selectedObject;
+
+      scene.remove(selectedObject.group);
+
+      const { group, mainMesh } = build3DObject(type, color, height, width, { points });
+      group.position.copy(pos);
+      group.rotation.y = rotationY;
+
+      let labelSprite = null;
+      if (label && label.trim() !== '') {
+        labelSprite = createTextSprite(label, color, fontSize || 38);
+        if (labelSprite) {
+          const spriteOffset = (type === 'pin') ? 2.2 : (type === 'line' || type === 'freehand' || type === 'circle' || type === 'rect' ? 1.5 : 1.8);
+          labelSprite.position.y = height + spriteOffset;
+          group.add(labelSprite);
+        }
+      }
+
+      group.userData = { id };
+      mainMesh.userData = { id };
+
+      selectedObject.group = group;
+      selectedObject.mainMesh = mainMesh;
+      selectedObject.sprite = labelSprite;
+
+      scene.add(group);
+
+      const ringRadius = Math.max(width * 1.5, 1.2);
+      const ringGeo = new THREE.RingGeometry(ringRadius, ringRadius + 0.35, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x059669, side: THREE.DoubleSide });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.08;
+      ring.name = 'SelectionRing';
+      group.add(ring);
+
+      updateObjectListUI();
+    }
+
+    function updateObjectListUI() {
+      const container = document.getElementById('obj-list-container');
+      const countEl = document.getElementById('obj-count');
+      countEl.textContent = sceneObjects.length;
+
+      if (sceneObjects.length === 0) {
+        container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">배치된 오브젝트가 없습니다.</div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      sceneObjects.forEach(item => {
+        const div = document.createElement('div');
+        div.className = `flex items-center justify-between p-2 rounded-xl border cursor-pointer transition ${
+          selectedObject && selectedObject.id === item.id 
+            ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm' 
+            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 shadow-sm'
+        }`;
+        
+        let iconClass = 'fa-location-dot';
+        if (item.type === 'building') iconClass = 'fa-city';
+        if (item.type === 'cylinder') iconClass = 'fa-monument';
+        if (item.type === 'badge') iconClass = 'fa-tag';
+        if (item.type === 'freehand') iconClass = 'fa-signature';
+        if (item.type === 'line') iconClass = 'fa-arrows-left-right';
+        if (item.type === 'circle') iconClass = 'fa-circle-dot';
+        if (item.type === 'rect') iconClass = 'fa-square';
+
+        div.innerHTML = `
+          <div class="flex items-center gap-2 truncate">
+            <span class="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" style="background-color: ${item.color};"></span>
+            <i class="fa-solid ${iconClass} text-slate-400 text-xs"></i>
+            <span class="truncate font-semibold text-xs">${item.label || `(${item.type})`}</span>
+          </div>
+          <button class="delete-btn text-slate-400 hover:text-rose-600 px-1 py-0.5" title="삭제">
+            <i class="fa-solid fa-trash-can text-[11px]"></i>
+          </button>
+        `;
+
+        div.addEventListener('click', (e) => {
+          if (e.target.closest('.delete-btn')) {
+            deleteObject(item.id);
+            return;
+          }
+          selectObject(item);
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function updateObjectListSelection() {
+      const container = document.getElementById('obj-list-container');
+      if (!container) return;
+      const childNodes = container.children;
+      sceneObjects.forEach((item, idx) => {
+        const div = childNodes[idx];
+        if (!div) return;
+        if (selectedObject && selectedObject.id === item.id) {
+          div.className = 'flex items-center justify-between p-2 rounded-xl border cursor-pointer transition bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm';
+        } else {
+          div.className = 'flex items-center justify-between p-2 rounded-xl border cursor-pointer transition bg-white border-slate-200 text-slate-700 hover:border-slate-300 shadow-sm';
+        }
+      });
+    }
+
+    function deleteObject(id) {
+      const index = sceneObjects.findIndex(o => o.id === id);
+      if (index === -1) return;
+      const item = sceneObjects[index];
+
+      if (selectedObject && selectedObject.id === id) {
+        deselectObject();
+      }
+
+      scene.remove(item.group);
+      item.group.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+
+      sceneObjects.splice(index, 1);
+      updateObjectListUI();
+    }
+
+    async function searchLocation(query) {
+      if (!query || query.trim() === '') return;
+      const statusTag = document.getElementById('search-status-tag');
+      const resultsContainer = document.getElementById('search-results-list');
+      
+      statusTag.textContent = '검색 중...';
+      statusTag.className = 'text-[10px] text-amber-600 font-semibold';
+      resultsContainer.classList.remove('hidden');
+      resultsContainer.innerHTML = '<div class="text-center py-2 text-slate-400 text-xs">장소를 검색하고 있습니다...</div>';
+
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+        const res = await fetch(url, {
+          headers: { 'Accept-Language': 'ko,en' }
+        });
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          resultsContainer.innerHTML = '<div class="text-center py-2 text-slate-400 text-xs">검색 결과가 없습니다.</div>';
+          statusTag.textContent = '결과 없음';
+          statusTag.className = 'text-[10px] text-rose-600 font-semibold';
+          return;
+        }
+
+        resultsContainer.innerHTML = '';
+        data.forEach(item => {
+          const btn = document.createElement('button');
+          btn.className = 'w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-xs text-slate-700 transition flex items-start gap-2';
+          btn.innerHTML = `
+            <i class="fa-solid fa-location-dot text-emerald-600 mt-0.5"></i>
+            <div class="truncate flex-1">
+              <p class="font-bold text-slate-900 truncate">${item.display_name.split(',')[0]}</p>
+              <p class="text-[10px] text-slate-500 truncate">${item.display_name}</p>
+            </div>
+          `;
+          btn.addEventListener('click', () => {
+            const lat = parseFloat(item.lat);
+            const lon = parseFloat(item.lon);
+            const shortName = item.display_name.split(',')[0];
+            currentGeo.lat = lat;
+            currentGeo.lon = lon;
+            currentGeo.name = shortName;
+
+            resultsContainer.classList.add('hidden');
+            statusTag.textContent = '로드 완료';
+            statusTag.className = 'text-[10px] text-emerald-600 font-semibold';
+
+            loadOnlineMapTiles(lat, lon, currentGeo.zoom, currentGeo.provider);
+          });
+          resultsContainer.appendChild(btn);
+        });
+
+        statusTag.textContent = `${data.length}개 발견`;
+        statusTag.className = 'text-[10px] text-emerald-600 font-semibold';
+      } catch (err) {
+        resultsContainer.innerHTML = '<div class="text-center py-2 text-rose-500 text-xs">검색 중 오류가 발생했습니다.</div>';
+        statusTag.textContent = '오류';
+        statusTag.className = 'text-[10px] text-rose-600 font-semibold';
+      }
+    }
+
+    function setupDOMEvents() {
+      // 탭 전환
+      const tabLive = document.getElementById('tab-btn-livemap');
+      const tabAdd = document.getElementById('tab-btn-add');
+      const tabMap = document.getElementById('tab-btn-map');
+      const contentLive = document.getElementById('tab-content-livemap');
+      const contentAdd = document.getElementById('tab-content-add');
+      const contentMap = document.getElementById('tab-content-map');
+
+      function switchTab(activeBtn, activeContent) {
+        [tabLive, tabAdd, tabMap].forEach(b => {
+          b.className = 'flex-1 py-1.5 text-center rounded-lg text-slate-600 hover:text-slate-900 transition';
+        });
+        [contentLive, contentAdd, contentMap].forEach(c => c.classList.add('hidden'));
+
+        activeBtn.className = 'flex-1 py-1.5 text-center rounded-lg bg-white text-emerald-700 font-bold shadow-sm transition';
+        activeContent.classList.remove('hidden');
+      }
+
+      tabLive.addEventListener('click', () => switchTab(tabLive, contentLive));
+      tabAdd.addEventListener('click', () => switchTab(tabAdd, contentAdd));
+      tabMap.addEventListener('click', () => switchTab(tabMap, contentMap));
+
+      // 주소 검색 버튼 및 엔터키
+      const searchInput = document.getElementById('input-map-search');
+      const searchBtn = document.getElementById('btn-search-map');
+      searchBtn.addEventListener('click', () => searchLocation(searchInput.value));
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchLocation(searchInput.value);
+      });
+
+      // 추천 핫스팟 바로가기
+      document.querySelectorAll('.quick-loc-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const query = btn.getAttribute('data-query');
+          searchInput.value = query;
+          searchLocation(query);
+        });
+      });
+
+      // 지도 스타일 전환
+      const styleButtons = [
+        { id: 'btn-style-esri-sat', provider: 'esri_sat' },
+        { id: 'btn-style-sat-hybrid', provider: 'sat_hybrid' },
+        { id: 'btn-style-osm-hot', provider: 'osm_hot' },
+        { id: 'btn-style-osm-de', provider: 'osm_de' }
+      ];
+
+      function setTileProvider(provider) {
+        currentGeo.provider = provider;
+        styleButtons.forEach(item => {
+          const btn = document.getElementById(item.id);
+          if (!btn) return;
+          if (item.provider === provider) {
+            btn.className = 'tile-style-btn py-1.5 px-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-800 text-[11px] font-semibold text-center transition';
+          } else {
+            btn.className = 'tile-style-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-medium text-center hover:bg-slate-50 transition';
+          }
+        });
+        loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
+      }
+
+      styleButtons.forEach(item => {
+        const btn = document.getElementById(item.id);
+        if (btn) {
+          btn.addEventListener('click', () => setTileProvider(item.provider));
+        }
+      });
+
+      // 줌 슬라이더 및 새로고침
+      const rangeZoom = document.getElementById('range-live-zoom');
+      const labelZoom = document.getElementById('label-live-zoom');
+      rangeZoom.addEventListener('input', (e) => {
+        const z = parseInt(e.target.value);
+        currentGeo.zoom = z;
+        let desc = '동/도로 단위';
+        if (z <= 14) desc = '도시/구 단위';
+        if (z >= 17) desc = '골목/건물 단위';
+        labelZoom.textContent = `${z} (${desc})`;
+      });
+      document.getElementById('btn-reload-tiles').addEventListener('click', () => {
+        loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
+      });
+
+      // 사이드바 토글
+      const sidebar = document.getElementById('main-sidebar');
+      const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+      let isSidebarOpen = true;
+      btnToggleSidebar.addEventListener('click', () => {
+        isSidebarOpen = !isSidebarOpen;
+        if (isSidebarOpen) {
+          sidebar.classList.remove('-translate-x-[115%]');
+          btnToggleSidebar.classList.remove('bg-emerald-600', 'text-white');
+        } else {
+          sidebar.classList.add('-translate-x-[115%]');
+          btnToggleSidebar.classList.add('bg-emerald-600', 'text-white');
+          showToast('도구 패널이 접혔습니다.');
+        }
+      });
+
+      // 조작 가이드 모달 제어
+      const guideModal = document.getElementById('guide-modal');
+      const btnOpenGuide = document.getElementById('btn-open-guide');
+      const btnCloseGuide = document.getElementById('btn-close-guide');
+      const btnGuideConfirm = document.getElementById('btn-guide-confirm');
+      const quickGuideTrigger = document.getElementById('btn-quick-guide-trigger');
+
+      function openGuideModal() {
+        if (!guideModal) return;
+        guideModal.classList.remove('opacity-0', 'pointer-events-none');
+        guideModal.classList.add('opacity-100');
+      }
+
+      function closeGuideModal() {
+        if (!guideModal) return;
+        guideModal.classList.remove('opacity-100');
+        guideModal.classList.add('opacity-0', 'pointer-events-none');
+      }
+
+      if (btnOpenGuide) btnOpenGuide.addEventListener('click', openGuideModal);
+      if (quickGuideTrigger) quickGuideTrigger.addEventListener('click', openGuideModal);
+      if (btnCloseGuide) btnCloseGuide.addEventListener('click', closeGuideModal);
+      if (btnGuideConfirm) btnGuideConfirm.addEventListener('click', closeGuideModal);
+      if (guideModal) {
+        guideModal.addEventListener('click', (e) => {
+          if (e.target === guideModal) closeGuideModal();
+        });
+      }
+
+      // 오브젝트 프리셋 버튼
+      const presetButtons = document.querySelectorAll('.obj-preset-btn');
+      presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          presetButtons.forEach(b => {
+            b.classList.remove('border-2', 'border-emerald-500', 'bg-emerald-50/80', 'text-emerald-950');
+            b.classList.add('border', 'border-slate-200', 'bg-white', 'text-slate-700');
+          });
+          btn.classList.remove('border', 'border-slate-200', 'bg-white', 'text-slate-700');
+          btn.classList.add('border-2', 'border-emerald-500', 'bg-emerald-50/80', 'text-emerald-950');
+          activePreset = btn.getAttribute('data-type');
+        });
+      });
+
+      // 인스펙터 이벤트 바인딩
+      document.getElementById('btn-close-inspector').addEventListener('click', deselectObject);
+
+      document.getElementById('inspect-label').addEventListener('input', (e) => {
+        if (!selectedObject) return;
+        selectedObject.label = e.target.value;
+        if (selectedObject.sprite) {
+          selectedObject.group.remove(selectedObject.sprite);
+          selectedObject.sprite.geometry.dispose();
+          selectedObject.sprite.material.dispose();
+          selectedObject.sprite = null;
+        }
+        if (selectedObject.label && selectedObject.label.trim() !== '') {
+          selectedObject.sprite = createTextSprite(selectedObject.label, selectedObject.color, selectedObject.fontSize || 38);
+          if (selectedObject.sprite) {
+            const spriteOffset = (selectedObject.type === 'pin') ? 2.2 : 1.8;
+            selectedObject.sprite.position.y = selectedObject.height + spriteOffset;
+            selectedObject.group.add(selectedObject.sprite);
+          }
+        }
+        updateObjectListUI();
+      });
+
+      document.getElementById('inspect-fontsize').addEventListener('input', (e) => {
+        if (!selectedObject) return;
+        const size = parseInt(e.target.value);
+        document.getElementById('inspect-fontsize-val').textContent = `${size}px`;
+        selectedObject.fontSize = size;
+        if (selectedObject.sprite) {
+          selectedObject.group.remove(selectedObject.sprite);
+          selectedObject.sprite.geometry.dispose();
+          selectedObject.sprite.material.dispose();
+          selectedObject.sprite = null;
+        }
+        if (selectedObject.label && selectedObject.label.trim() !== '') {
+          selectedObject.sprite = createTextSprite(selectedObject.label, selectedObject.color, size);
+          if (selectedObject.sprite) {
+            const spriteOffset = (selectedObject.type === 'pin') ? 2.2 : 1.8;
+            selectedObject.sprite.position.y = selectedObject.height + spriteOffset;
+            selectedObject.group.add(selectedObject.sprite);
+          }
+        }
+      });
+
+      document.getElementById('inspect-color').addEventListener('input', (e) => {
+        if (!selectedObject) return;
+        selectedObject.color = e.target.value;
+        rebuildSelectedObjectMesh();
+      });
+
+      document.getElementById('inspect-height').addEventListener('input', (e) => {
+        if (!selectedObject) return;
+        selectedObject.height = parseFloat(e.target.value);
+        document.getElementById('inspect-height-val').textContent = selectedObject.height.toFixed(1);
+        rebuildSelectedObjectMesh();
+      });
+
+      document.getElementById('inspect-width').addEventListener('input', (e) => {
+        if (!selectedObject) return;
+        selectedObject.width = parseFloat(e.target.value);
+        document.getElementById('inspect-width-val').textContent = selectedObject.width.toFixed(1);
+        rebuildSelectedObjectMesh();
+      });
+
+      document.getElementById('inspect-rot').addEventListener('input', (e) => {
+        if (!selectedObject) return;
+        const deg = parseFloat(e.target.value);
+        document.getElementById('inspect-rot-val').textContent = `${deg}°`;
+        selectedObject.rotationY = THREE.MathUtils.degToRad(deg);
+        selectedObject.group.rotation.y = selectedObject.rotationY;
+      });
+
+      function rotateSelectedObjectBy(deltaDeg) {
+        if (!selectedObject) return;
+        let currentDeg = Math.round(THREE.MathUtils.radToDeg(selectedObject.rotationY));
+        let nextDeg = (currentDeg + deltaDeg) % 360;
+        if (nextDeg < 0) nextDeg += 360;
+        selectedObject.rotationY = THREE.MathUtils.degToRad(nextDeg);
+        selectedObject.group.rotation.y = selectedObject.rotationY;
+        document.getElementById('inspect-rot').value = nextDeg;
+        document.getElementById('inspect-rot-val').textContent = `${nextDeg}°`;
+      }
+
+      document.getElementById('btn-obj-rot-ccw').addEventListener('click', () => rotateSelectedObjectBy(-45));
+      document.getElementById('btn-obj-rot-cw').addEventListener('click', () => rotateSelectedObjectBy(45));
+      document.getElementById('btn-obj-rot-reset').addEventListener('click', () => {
+        if (!selectedObject) return;
+        selectedObject.rotationY = 0;
+        selectedObject.group.rotation.y = 0;
+        document.getElementById('inspect-rot').value = 0;
+        document.getElementById('inspect-rot-val').textContent = `0°`;
+      });
+
+      document.getElementById('inspect-pos-x').addEventListener('change', (e) => {
+        if (!selectedObject) return;
+        selectedObject.group.position.x = parseFloat(e.target.value) || 0;
+      });
+      document.getElementById('inspect-pos-z').addEventListener('change', (e) => {
+        if (!selectedObject) return;
+        selectedObject.group.position.z = parseFloat(e.target.value) || 0;
+      });
+
+      document.getElementById('btn-duplicate-obj').addEventListener('click', () => {
+        if (!selectedObject) return;
+        addObjectToMap(
+          { x: selectedObject.group.position.x + 2, z: selectedObject.group.position.z + 2 },
+          {
+            type: selectedObject.type,
+            label: `${selectedObject.label} (복사본)`,
+            color: selectedObject.color,
+            height: selectedObject.height,
+            width: selectedObject.width,
+            fontSize: selectedObject.fontSize || 38,
+            rotationY: selectedObject.rotationY
+          }
+        );
+      });
+
+      document.getElementById('btn-delete-obj').addEventListener('click', () => {
+        if (selectedObject) deleteObject(selectedObject.id);
+      });
+
+      document.getElementById('btn-clear-all').addEventListener('click', () => {
+        if (sceneObjects.length === 0) return;
+        while (sceneObjects.length > 0) {
+          deleteObject(sceneObjects[0].id);
+        }
+        showToast('모든 오브젝트가 삭제되었습니다.');
+      });
+
+      // 키보드 Del 키 삭제
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === 'Delete' || e.key === 'Del') {
+          if (selectedObject) {
+            const targetName = selectedObject.label || selectedObject.type;
+            deleteObject(selectedObject.id);
+            showToast(`'${targetName}' 오브젝트가 삭제되었습니다.`, 'info');
+          }
+        }
+      });
+
+      // 지도 화질 조절
+      const rangeContrast = document.getElementById('range-map-contrast');
+      const labelContrast = document.getElementById('label-map-contrast');
+      rangeContrast.addEventListener('input', (e) => {
+        labelContrast.textContent = `${e.target.value}%`;
+        renderProcessedLiveTexture();
+      });
+
+      const rangeBrightness = document.getElementById('range-map-brightness');
+      const labelBrightness = document.getElementById('label-map-brightness');
+      rangeBrightness.addEventListener('input', (e) => {
+        labelBrightness.textContent = `${e.target.value}%`;
+        renderProcessedLiveTexture();
+      });
+
+      // 지도 회전 조절
+      const rangeMapRot = document.getElementById('range-map-rot');
+      const labelMapRot = document.getElementById('label-map-rot');
+      function setMapRotationDeg(deg) {
+        deg = (deg % 360 + 360) % 360;
+        mapPlane.rotation.z = THREE.MathUtils.degToRad(deg);
+        rangeMapRot.value = deg;
+        labelMapRot.textContent = `${deg}°`;
+      }
+      rangeMapRot.addEventListener('input', (e) => setMapRotationDeg(parseInt(e.target.value)));
+      document.getElementById('btn-map-rot-ccw').addEventListener('click', () => {
+        setMapRotationDeg(parseInt(rangeMapRot.value || 0) - 90);
+        showToast('지도가 -90° 회전되었습니다.');
+      });
+      document.getElementById('btn-map-rot-cw').addEventListener('click', () => {
+        setMapRotationDeg(parseInt(rangeMapRot.value || 0) + 90);
+        showToast('지도가 +90° 회전되었습니다.');
+      });
+      document.getElementById('btn-map-rot-reset').addEventListener('click', () => {
+        setMapRotationDeg(0);
+        showToast('지도 회전각이 0°로 초기화되었습니다.');
+      });
+
+      // 지도 스케일
+      document.getElementById('range-map-scale').addEventListener('input', (e) => {
+        const scale = e.target.value / 70;
+        mapPlane.scale.set(scale, scale, scale);
+        document.getElementById('label-map-scale').textContent = `${Math.round(e.target.value * (100 / 70))}%`;
+      });
+
+      // 화면 폭 와이드 제어
+      const appWrapper = document.getElementById('app-wrapper');
+      const rangeCanvasWidth = document.getElementById('range-canvas-width');
+      const labelCanvasWidth = document.getElementById('label-canvas-width');
+      const btnScreenWide = document.getElementById('btn-screen-wide');
+      const screenWidthTag = document.getElementById('screen-width-tag');
+      let currentCanvasWidth = 100;
+
+      function setAppWidth(percent) {
+        currentCanvasWidth = percent;
+        appWrapper.style.width = `${percent}%`;
+        rangeCanvasWidth.value = percent;
+        labelCanvasWidth.textContent = `${percent}%`;
+        screenWidthTag.textContent = `화면 폭: ${percent}%`;
+
+        if (percent > 100) {
+          btnScreenWide.classList.add('bg-emerald-600', 'text-white');
+          btnScreenWide.classList.remove('bg-emerald-50', 'text-emerald-700');
+        } else {
+          btnScreenWide.classList.remove('bg-emerald-600', 'text-white');
+          btnScreenWide.classList.add('bg-emerald-50', 'text-emerald-700');
+        }
+        setTimeout(onWindowResize, 50);
+      }
+
+      btnScreenWide.addEventListener('click', () => {
+        if (currentCanvasWidth === 100) {
+          setAppWidth(175);
+          showToast('화면 가로폭이 175% 와이드 모드로 확장되었습니다.', 'success');
+        } else {
+          setAppWidth(100);
+          showToast('화면 가로폭이 기본 100%로 복원되었습니다.');
+        }
+      });
+      rangeCanvasWidth.addEventListener('input', (e) => setAppWidth(parseInt(e.target.value)));
+
+      // 뷰포트 프리셋
+      document.getElementById('btn-view-iso').addEventListener('click', () => {
+        controls.target.set(0, 0, 0);
+        camera.position.set(45, 45, 45);
+        controls.update();
+      });
+      document.getElementById('btn-view-top').addEventListener('click', () => {
+        controls.target.set(0, 0, 0);
+        camera.position.set(0, 75, 0.1);
+        controls.update();
+      });
+      document.getElementById('btn-reset-cam').addEventListener('click', () => {
+        controls.target.set(0, 0, 0);
+        camera.position.set(0, 55, 68);
+        controls.update();
+      });
+
+      // 전체화면
+      const btnFullscreen = document.getElementById('btn-fullscreen');
+      btnFullscreen.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+          btnFullscreen.innerHTML = '<i class="fa-solid fa-compress"></i>';
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+            btnFullscreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
+          }
+        }
+      });
+
+      // 그리드 토글
+      document.getElementById('toggle-grid').addEventListener('change', (e) => {
+        gridHelper.visible = e.target.checked;
+      });
+
+      // 스크린샷 이미지 저장
+      document.getElementById('btn-screenshot').addEventListener('click', () => {
+        deselectObject();
+        renderer.render(scene, camera);
+        const dataURL = renderer.domElement.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `3D-Live-Map-${currentGeo.name}-${Date.now()}.png`;
+        link.href = dataURL;
+        link.click();
+        showToast('고화질 3D 지도 스크린샷이 저장되었습니다.', 'success');
+      });
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('viewport-container');
+      if (!container || !renderer || !camera) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+
+      const time = performance.now() * 0.002;
+      sceneObjects.forEach((obj, idx) => {
+        if (obj.sprite) {
+          const bounce = Math.sin(time + idx) * 0.12;
+          const baseHeight = obj.height + (obj.type === 'pin' ? 2.2 : 1.8);
+          obj.sprite.position.y = baseHeight + bounce;
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function() {
+      initThreeScene();
+      setupDOMEvents();
+      setupClipboardPaste();
+      animate();
+    };
+  </script>
+</body>
+</html>
