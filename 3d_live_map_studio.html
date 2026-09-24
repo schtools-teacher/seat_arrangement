@@ -18,7 +18,8 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
       font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f8fafc;
       touch-action: none;
@@ -26,33 +27,9 @@
     #app-wrapper {
       position: relative;
       width: 100%;
-      height: calc(100vh - 3.5rem);
-      display: flex;
-      overflow-x: auto;
-      overflow-y: hidden;
+      height: 100%;
+      min-width: 100%;
       transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    #main-sidebar {
-      width: 320px;
-      min-width: 320px;
-      height: 100%;
-      background: #ffffff;
-      border-right: 1px solid #e2e8f0;
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
-      z-index: 20;
-    }
-    #main-sidebar.collapsed {
-      margin-left: -320px;
-      opacity: 0;
-      pointer-events: none;
-    }
-    #viewport-wrapper {
-      flex: 1;
-      position: relative;
-      height: 100%;
-      min-width: 0;
-      overflow: hidden;
-      background-color: #f1f5f9;
     }
     #viewport-container {
       position: absolute;
@@ -93,69 +70,68 @@
     }
   </style>
 </head>
-<body class="text-slate-800 select-none bg-slate-100 flex flex-col h-screen w-screen overflow-hidden">
+<body class="text-slate-800 select-none bg-slate-50">
 
-  <!-- 상단 공통 네비게이션 헤더 바 -->
-  <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 flex-shrink-0 shadow-sm">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-600/20">
-        <i class="fa-solid fa-earth-asia text-base"></i>
-      </div>
-      <div>
-        <h1 class="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          3D Live Map Studio
-          <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">LIVE TILES</span>
-        </h1>
-        <p class="text-[11px] text-slate-500 hidden sm:block">실시간 글로벌 타일 맵 3차원 인터랙티브 스튜디오</p>
-      </div>
-    </div>
+  <div id="app-wrapper">
+    <div id="viewport-container" class="cursor-grab active:cursor-grabbing"></div>
 
-    <!-- 상단 컨트롤 버튼 그룹 -->
-    <div class="flex items-center gap-2">
-      <div class="bg-slate-100/80 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shadow-sm">
-        <button id="btn-toggle-sidebar" title="패널 열기/닫기" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5">
-          <i class="fa-solid fa-table-columns"></i><span>패널 토글</span>
-        </button>
-        <button id="btn-screen-wide" title="화면 가로폭 175% 와이드 모드" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-arrows-left-right-to-line"></i>
-          <span id="screen-width-tag" class="font-semibold">화면 폭: 100%</span>
-        </button>
-        <button id="btn-fullscreen" title="전체화면" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition">
-          <i class="fa-solid fa-expand"></i>
-        </button>
+    <!-- 상단 헤더 -->
+    <header class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
+      <div class="flex items-center gap-3 glass-panel px-4 py-2.5 rounded-xl pointer-events-auto shadow-md">
+        <div class="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-md shadow-emerald-600/20">
+          <i class="fa-solid fa-earth-asia text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-slate-900 flex items-center gap-2">
+            3D Live Map Studio
+            <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">1:1 SQUARE TILES</span>
+          </h1>
+          <p class="text-[11px] text-slate-500">실시간 글로벌 타일 맵 3차원 인터랙티브 스튜디오</p>
+        </div>
       </div>
 
-      <div class="bg-slate-100/80 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shadow-sm">
-        <button id="btn-view-iso" title="입체각 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-shapes text-emerald-600"></i><span class="hidden md:inline">입체각</span>
-        </button>
-        <button id="btn-view-top" title="평면 탑다운 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-arrows-to-dot text-emerald-600"></i><span class="hidden md:inline">평면</span>
-        </button>
-        <button id="btn-reset-cam" title="시점 초기화" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition">
-          <i class="fa-solid fa-arrow-rotate-left"></i>
-        </button>
+      <!-- 상단 컨트롤 버튼 그룹 -->
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
+          <button id="btn-screen-wide" title="화면 가로폭 175% 와이드 모드" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-left-right-to-line"></i>
+            <span id="screen-width-tag" class="font-semibold">화면 폭: 100%</span>
+          </button>
+          <button id="btn-fullscreen" title="전체화면" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+        </div>
+
+        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
+          <button id="btn-toggle-sidebar" title="패널 열기/닫기" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-table-columns text-emerald-600"></i><span class="hidden sm:inline">패널</span>
+          </button>
+          <button id="btn-view-iso" title="입체각 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-shapes text-emerald-600"></i><span class="hidden sm:inline">입체각</span>
+          </button>
+          <button id="btn-view-top" title="평면 탑다운 뷰" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrows-to-dot text-emerald-600"></i><span class="hidden sm:inline">평면</span>
+          </button>
+          <button id="btn-reset-cam" title="시점 초기화" class="px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-100 text-slate-700 transition">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+          </button>
+        </div>
+
+        <div class="glass-panel p-1 rounded-xl flex items-center gap-1 shadow-sm">
+          <button id="btn-open-guide" title="터치 및 마우스 조작 안내" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-circle-question text-emerald-600 hover:text-inherit"></i>
+            <span>조작 가이드</span>
+          </button>
+          <button id="btn-screenshot" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm shadow-emerald-500/20">
+            <i class="fa-solid fa-camera"></i>
+            <span>이미지 저장</span>
+          </button>
+        </div>
       </div>
+    </header>
 
-      <div class="bg-slate-100/80 border border-slate-200 p-1 rounded-xl flex items-center gap-1 shadow-sm">
-        <!-- 조작 가이드 모달 열기 버튼 (녹색 강조) -->
-        <button id="btn-open-guide" title="터치 및 마우스 조작 안내" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-circle-question text-emerald-600 hover:text-inherit"></i>
-          <span class="hidden sm:inline">조작 가이드</span>
-        </button>
-        <button id="btn-screenshot" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm shadow-emerald-500/20">
-          <i class="fa-solid fa-camera"></i>
-          <span class="hidden sm:inline">이미지 저장</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- 메인 작업 영역 (좌측 사이드바 + 우측 3D 지도 캔버스) -->
-  <div id="app-wrapper" class="flex-1 flex w-full relative overflow-x-auto overflow-y-hidden">
-
-    <!-- 좌측 사이드바: 3D 지도 화면 외부에 독립 위치 -->
-    <aside id="main-sidebar" class="w-80 flex-shrink-0 bg-white border-r border-slate-200 p-4 flex flex-col gap-3.5 z-20 transition-all duration-300 overflow-y-auto h-full shadow-sm">
+    <!-- 좌측 사이드바 -->
+    <aside id="main-sidebar" style="width: 320px;" class="absolute top-20 left-3 bottom-3 w-80 max-w-[calc(100vw-24px)] glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transition-transform duration-300 overflow-x-hidden">
       <!-- 상단 탭 전환 -->
       <div class="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-medium">
         <button id="tab-btn-livemap" class="flex-1 py-1.5 text-center rounded-lg bg-white text-emerald-700 font-bold shadow-sm transition">
@@ -328,7 +304,6 @@
 
       <!-- 탭 3: 지도 화면 및 화질 조절 -->
       <div id="tab-content-map" class="hidden flex-1 flex flex-col gap-4 overflow-y-auto pr-1">
-        <!-- 캡처 이미지 파일 열기 및 클립보드 붙여넣기 섹션 추가 -->
         <div class="space-y-2 bg-slate-50/80 p-3 rounded-xl border border-slate-200">
           <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">캡처 지도 직접 적용</label>
           <div class="flex flex-col gap-2">
@@ -397,7 +372,7 @@
               <span class="text-slate-600 font-medium">지도 전체 크기 배율</span>
               <span id="label-map-scale" class="text-emerald-600 font-mono font-bold">100%</span>
             </div>
-            <input id="range-map-scale" type="range" min="40" max="180" value="100" class="w-full accent-emerald-600">
+            <input id="range-map-scale" type="range" min="40" max="160" value="70" class="w-full accent-emerald-600">
           </div>
           <div>
             <div class="flex justify-between text-xs mb-1">
@@ -418,103 +393,88 @@
       </div>
     </aside>
 
-    <!-- 우측 3D 지도 화면 영역: 좌측 패널과 겹치지 않는 독립 캔버스 공간 -->
-    <main id="viewport-wrapper" class="flex-1 relative h-full min-w-0 overflow-hidden bg-slate-100">
-      <div id="viewport-container" class="w-full h-full cursor-grab active:cursor-grabbing outline-none"></div>
+    <!-- 우측 인스펙터 속성 편집기 -->
+    <div id="inspector-panel" class="absolute top-20 right-3 w-80 glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transform translate-x-[115%] transition-transform duration-300">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+          <i class="fa-solid fa-sliders text-emerald-600"></i> 속성 편집기
+        </h3>
+        <button id="btn-close-inspector" class="text-slate-400 hover:text-slate-700 text-xs p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
 
-      <!-- 우측 인스펙터 속성 편집기 -->
-      <div id="inspector-panel" class="absolute top-4 right-4 w-80 glass-panel rounded-2xl p-4 flex flex-col gap-3.5 z-20 pointer-events-auto transform translate-x-[125%] transition-transform duration-300">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-          <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-            <i class="fa-solid fa-sliders text-emerald-600"></i> 속성 편집기
-          </h3>
-          <button id="btn-close-inspector" class="text-slate-400 hover:text-slate-700 text-xs p-1">
-            <i class="fa-solid fa-xmark"></i>
+      <div class="space-y-3 text-xs overflow-y-auto max-h-[calc(100vh-170px)] pr-1">
+        <div>
+          <label class="text-slate-600 font-medium block mb-1">라벨 텍스트</label>
+          <input id="inspect-label" type="text" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">글자 크기</span>
+            <span id="inspect-fontsize-val" class="text-emerald-600 font-mono font-bold">38px</span>
+          </div>
+          <input id="inspect-fontsize" type="range" min="16" max="72" value="38" class="w-full accent-emerald-600">
+        </div>
+        <div>
+          <label class="text-slate-600 font-medium block mb-1">오브젝트 색상</label>
+          <div class="flex items-center gap-2">
+            <input id="inspect-color" type="color" class="w-9 h-8 rounded border border-slate-300 bg-transparent cursor-pointer shadow-sm">
+            <span class="text-slate-500 text-[11px]">클릭하여 색상 교체</span>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">높이 / 굵기</span>
+            <span id="inspect-height-val" class="text-emerald-600 font-mono font-bold">4.0</span>
+          </div>
+          <input id="inspect-height" type="range" min="0.5" max="15" step="0.5" value="4" class="w-full accent-emerald-600">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">폭 / 반경</span>
+            <span id="inspect-width-val" class="text-emerald-600 font-mono font-bold">1.0</span>
+          </div>
+          <input id="inspect-width" type="range" min="0.4" max="18" step="0.2" value="1" class="w-full accent-emerald-600">
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="text-slate-600 font-medium">Y축 회전각</span>
+            <span id="inspect-rot-val" class="text-emerald-600 font-mono font-bold">0°</span>
+          </div>
+          <input id="inspect-rot" type="range" min="0" max="360" value="0" class="w-full accent-emerald-600">
+          <div class="grid grid-cols-3 gap-1.5 mt-1.5">
+            <button type="button" id="btn-obj-rot-ccw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+              <i class="fa-solid fa-rotate-left mr-0.5"></i> -45°
+            </button>
+            <button type="button" id="btn-obj-rot-cw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+              <i class="fa-solid fa-rotate-right mr-0.5"></i> +45°
+            </button>
+            <button type="button" id="btn-obj-rot-reset" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
+              0° 초기화
+            </button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-slate-600 font-medium block mb-1">위치 X</label>
+            <input id="inspect-pos-x" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
+          </div>
+          <div>
+            <label class="text-slate-600 font-medium block mb-1">위치 Z</label>
+            <input id="inspect-pos-z" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
+          </div>
+        </div>
+        <div class="pt-2 flex items-center gap-2">
+          <button id="btn-duplicate-obj" class="flex-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-semibold transition shadow-sm">
+            <i class="fa-solid fa-clone mr-1"></i> 복제
+          </button>
+          <button id="btn-delete-obj" class="flex-1 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold transition shadow-sm">
+            <i class="fa-solid fa-trash mr-1"></i> 삭제
           </button>
         </div>
-
-        <div class="space-y-3 text-xs overflow-y-auto max-h-[calc(100vh-170px)] pr-1">
-          <div>
-            <label class="text-slate-600 font-medium block mb-1">라벨 텍스트</label>
-            <input id="inspect-label" type="text" class="w-full px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-800 focus:outline-none focus:border-emerald-500 shadow-sm">
-          </div>
-          <div>
-            <div class="flex justify-between mb-1">
-              <span class="text-slate-600 font-medium">글자 크기</span>
-              <span id="inspect-fontsize-val" class="text-emerald-600 font-mono font-bold">38px</span>
-            </div>
-            <input id="inspect-fontsize" type="range" min="16" max="72" value="38" class="w-full accent-emerald-600">
-          </div>
-          <div>
-            <label class="text-slate-600 font-medium block mb-1">오브젝트 색상</label>
-            <div class="flex items-center gap-2">
-              <input id="inspect-color" type="color" class="w-9 h-8 rounded border border-slate-300 bg-transparent cursor-pointer shadow-sm">
-              <span class="text-slate-500 text-[11px]">클릭하여 색상 교체</span>
-            </div>
-          </div>
-          <div>
-            <div class="flex justify-between mb-1">
-              <span class="text-slate-600 font-medium">높이 / 굵기</span>
-              <span id="inspect-height-val" class="text-emerald-600 font-mono font-bold">4.0</span>
-            </div>
-            <input id="inspect-height" type="range" min="0.5" max="15" step="0.5" value="4" class="w-full accent-emerald-600">
-          </div>
-          <div>
-            <div class="flex justify-between mb-1">
-              <span class="text-slate-600 font-medium">폭 / 반경</span>
-              <span id="inspect-width-val" class="text-emerald-600 font-mono font-bold">1.0</span>
-            </div>
-            <!-- 최대값을 기존 6에서 3배인 18로 확장 -->
-            <input id="inspect-width" type="range" min="0.4" max="18" step="0.2" value="1" class="w-full accent-emerald-600">
-          </div>
-          <div>
-            <div class="flex justify-between mb-1">
-              <span class="text-slate-600 font-medium">Y축 회전각</span>
-              <span id="inspect-rot-val" class="text-emerald-600 font-mono font-bold">0°</span>
-            </div>
-            <input id="inspect-rot" type="range" min="0" max="360" value="0" class="w-full accent-emerald-600">
-            <div class="grid grid-cols-3 gap-1.5 mt-1.5">
-              <button type="button" id="btn-obj-rot-ccw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
-                <i class="fa-solid fa-rotate-left mr-0.5"></i> -45°
-              </button>
-              <button type="button" id="btn-obj-rot-cw" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
-                <i class="fa-solid fa-rotate-right mr-0.5"></i> +45°
-              </button>
-              <button type="button" id="btn-obj-rot-reset" class="py-1 px-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] hover:bg-slate-50 transition shadow-sm font-medium">
-                0° 초기화
-              </button>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="text-slate-600 font-medium block mb-1">위치 X</label>
-              <input id="inspect-pos-x" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
-            </div>
-            <div>
-              <label class="text-slate-600 font-medium block mb-1">위치 Z</label>
-              <input id="inspect-pos-z" type="number" step="0.5" class="w-full px-2 py-1 rounded bg-white border border-slate-300 text-slate-800 font-mono shadow-sm">
-            </div>
-          </div>
-          <div class="pt-2 flex items-center gap-2">
-            <button id="btn-duplicate-obj" class="flex-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 font-semibold transition shadow-sm">
-              <i class="fa-solid fa-clone mr-1"></i> 복제
-            </button>
-            <button id="btn-delete-obj" class="flex-1 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold transition shadow-sm">
-              <i class="fa-solid fa-trash mr-1"></i> 삭제
-            </button>
-          </div>
-        </div>
       </div>
-
-      <!-- 하단 터치 조작 팁 바 (클릭 시 전체 가이드 모달 열림) -->
-      <div id="btn-quick-guide-trigger" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-[11px] text-slate-700 flex items-center gap-3 z-20 cursor-pointer hover:bg-emerald-50/90 border border-emerald-300 shadow-md transition pointer-events-auto">
-        <span class="flex items-center gap-1 text-emerald-700 font-bold"><i class="fa-solid fa-hand-pointer text-xs"></i> 터치 조작 팁</span>
-        <span class="text-slate-300">|</span>
-        <span><strong>1손가락:</strong> 3D 회전</span>
-        <span><strong>2손가락:</strong> 줌(Pinch) & 이동</span>
-        <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold">전체 보기</span>
-      </div>
-    </main>
+    </div>
 
     <!-- 하단 토스트 메시지 -->
     <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2.5 px-4 py-3 rounded-xl glass-panel text-slate-800 text-xs shadow-xl border border-emerald-200">
@@ -522,10 +482,18 @@
       <span id="toast-text" class="font-medium">알림 메시지</span>
     </div>
 
-    <!-- 상세 조작 가이드 모달 (터치스크린 집중 설명) -->
+    <!-- 하단 터치 조작 팁 바 -->
+    <div id="btn-quick-guide-trigger" class="absolute bottom-3 left-1/2 transform -translate-x-1/2 glass-panel px-4 py-2 rounded-full text-[11px] text-slate-700 flex items-center gap-3 z-20 cursor-pointer hover:bg-emerald-50/90 border border-emerald-300 shadow-md transition pointer-events-auto">
+      <span class="flex items-center gap-1 text-emerald-700 font-bold"><i class="fa-solid fa-hand-pointer text-xs"></i> 터치 조작 팁</span>
+      <span class="text-slate-300">|</span>
+      <span><strong>1손가락:</strong> 3D 회전</span>
+      <span><strong>2손가락:</strong> 줌(Pinch) & 이동</span>
+      <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-semibold">전체 보기</span>
+    </div>
+
+    <!-- 상세 조작 가이드 모달 -->
     <div id="guide-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 opacity-0 pointer-events-none">
       <div class="glass-panel w-full max-w-lg rounded-2xl p-5 shadow-2xl border border-emerald-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-        <!-- 모달 헤더 -->
         <div class="flex items-center justify-between border-b border-slate-200 pb-3">
           <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-base font-bold">
@@ -541,7 +509,6 @@
           </button>
         </div>
 
-        <!-- 모달 내용: 터치스크린 조작 섹션 -->
         <div class="space-y-2.5">
           <h4 class="text-xs font-bold text-emerald-700 flex items-center gap-1.5 uppercase tracking-wide">
             <i class="fa-solid fa-mobile-screen-button"></i> 터치스크린 (스마트폰 / 태블릿)
@@ -578,7 +545,6 @@
           </div>
         </div>
 
-        <!-- 모달 내용: PC 및 단축키 섹션 -->
         <div class="space-y-2.5">
           <h4 class="text-xs font-bold text-slate-700 flex items-center gap-1.5 uppercase tracking-wide">
             <i class="fa-solid fa-keyboard"></i> PC 마우스 & 키보드 단축키
@@ -599,7 +565,6 @@
           </div>
         </div>
 
-        <!-- 모달 하단 닫기 버튼 -->
         <div class="pt-2 border-t border-slate-200 flex justify-end">
           <button id="btn-guide-confirm" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition">
             확인했습니다
@@ -614,1813 +579,39 @@
         <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full loader-spin"></div>
         <div class="text-center">
           <p class="text-xs font-bold text-slate-800" id="loading-main-text">온라인 타일 지도를 합성하는 중...</p>
-          <p class="text-[11px] text-slate-500 mt-0.5" id="loading-sub-text">고해상도 타일을 다운로드하여 3D 평면에 매핑합니다</p>
+          <p class="text-[11px] text-slate-500 mt-0.5" id="loading-sub-text">7x7 고해상도 타일을 다운로드하여 1:1 정사각형 평면에 매핑합니다</p>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    /* ----------------------------------------------------
-       전역 변수 및 상태 정의
-    ---------------------------------------------------- */
-    let scene, camera, renderer, controls;
-    let mapPlane, gridHelper, dirLight;
-    let currentTexture = null;
-    let rawComposedCanvas = null;
-    let rawUploadedImage = null; // 업로드/붙여넣은 캡처 이미지 저장용
-
-    let sceneObjects = [];
-    let selectedObject = null;
-    let nextObjectId = 1;
-
-    let activePreset = 'select';
-    let isDrawingFreehand = false;
-    let freehandRawPoints = [];
-    let activeDrawingMesh = null;
-
-    let isDraggingObject = false;
-    let draggedObject = null;
-    let dragOffset = new THREE.Vector3();
-    const virtualGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const planeIntersectionPoint = new THREE.Vector3();
-
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    let mouseDownPos = { x: 0, y: 0 };
-    let hasMovedMouse = false;
-
-    // 현재 로드된 지도 지리정보 (기본값: 대한민국 김포시 라베니체 금빛수로 일대)
-    let currentGeo = {
-      lat: 37.6433,
-      lon: 126.6775,
-      zoom: 16,
-      name: '대한민국 경기도 김포시 장기동 (라베니체)',
-      provider: 'osm_hot' // 기본 스타일: 선명 일반 도로 (HOT)
-    };
-
-    function showToast(text, type = 'info') {
-      const toast = document.getElementById('toast-box');
-      const toastText = document.getElementById('toast-text');
-      const toastIcon = document.getElementById('toast-icon');
-
-      toastText.textContent = text;
-      if (type === 'success') {
-        toastIcon.className = "fa-solid fa-circle-check text-emerald-600 text-base";
-      } else if (type === 'warn') {
-        toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-600 text-base";
-      } else {
-        toastIcon.className = "fa-solid fa-circle-info text-emerald-600 text-base";
+/* [Protected by School Tools Deploy Shield - Option 1] */
+(function(){
+  try {
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); return false; }, true);
+    document.addEventListener('keydown', function(e){
+      if (e.keyCode === 123 || 
+          (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || 
+          (e.ctrlKey && (e.keyCode === 85 || e.keyCode === 83))) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
       }
-
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-
-      clearTimeout(window._toastTimer);
-      window._toastTimer = setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-        toast.classList.remove('translate-y-0', 'opacity-100');
-      }, 2600);
-    }
-
-    function showLoading(show, title = '온라인 지도를 불러오는 중...') {
-      const overlay = document.getElementById('tile-loading-overlay');
-      const titleEl = document.getElementById('loading-main-text');
-      if (titleEl) titleEl.textContent = title;
-      if (show) {
-        overlay.classList.remove('opacity-0', 'pointer-events-none');
-        overlay.classList.add('opacity-100');
-      } else {
-        overlay.classList.remove('opacity-100');
-        overlay.classList.add('opacity-0', 'pointer-events-none');
-      }
-    }
-
-    function lon2tile(lon, zoom) {
-      return Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
-    }
-    function lat2tile(lat, zoom) {
-      const rad = lat * Math.PI / 180;
-      return Math.floor((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * Math.pow(2, zoom));
-    }
-
-    // CORS 및 브라우저 Canvas 출력이 100% 검증된 무료 타일 URL 생성
-    function getTileUrls(x, y, z, provider = 'osm_hot') {
-      if (provider === 'osm_hot') {
-        // OSM Humanitarian 타일: Access-Control-Allow-Origin: * 보장 및 한글 지명 지원
-        return {
-          base: `https://tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`,
-          overlay: null,
-          fallback: `https://tile.openstreetmap.de/${z}/${x}/${y}.png`
-        };
-      }
-      if (provider === 'osm_de') {
-        // 독일 OSM 오픈 미러: CORS 허용
-        return {
-          base: `https://tile.openstreetmap.de/${z}/${x}/${y}.png`,
-          overlay: null,
-          fallback: `https://tile.openstreetmap.fr/hot/${z}/${x}/${y}.png`
-        };
-      }
-      if (provider === 'sat_hybrid') {
-        // 고해상도 위성 사진 + 위에 선명한 도로선 및 지명 라벨 2단 복합 합성
-        return {
-          base: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
-          overlay: `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${z}/${y}/${x}`,
-          overlayRoads: `https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/${z}/${y}/${x}`
-        };
-      }
-      // 기본값: 이미 100% 정상 로드 확인된 고화질 실제 위성 사진 (World Imagery)
-      return {
-        base: `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`,
-        overlay: null
-      };
-    }
-
-    // 단일 타일 이미지 로더 (CORS 및 대체 Fallback 처리)
-    function loadSingleTile(url, fallbackUrl = null) {
-      return new Promise((resolve) => {
-        if (!url) return resolve(null);
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = () => {
-          if (fallbackUrl) {
-            const fbImg = new Image();
-            fbImg.crossOrigin = 'anonymous';
-            fbImg.onload = () => resolve(fbImg);
-            fbImg.onerror = () => resolve(null);
-            fbImg.src = fallbackUrl;
-          } else {
-            resolve(null);
-          }
-        };
-        img.src = url;
-      });
-    }
-
-    /* ----------------------------------------------------
-       초기 기본 로고 텍스처 생성기 (20% 가로 확장 와이드 절차적 Canvas 렌더링)
-    ---------------------------------------------------- */
-    function generateStudioLogoTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 2150;
-      canvas.height = 1024;
-      const ctx = canvas.getContext('2d');
-
-      // 밝은 베이스 및 부드러운 방사형 그라데이션 (확장된 캔버스 중앙 기준)
-      const cx = 1075;
-      const grad = ctx.createRadialGradient(cx, 512, 120, cx, 512, 1100);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.65, '#f8fafc');
-      grad.addColorStop(1, '#e2e8f0');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // 세련된 테크니컬 서브 그리드 라인
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 2;
-      const step = 64;
-      for (let x = step; x < canvas.width; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-      for (let y = step; y < canvas.height; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
-
-      // 외곽 프레임 코너 마크
-      ctx.strokeStyle = '#059669';
-      ctx.lineWidth = 4;
-      const m = 40, cl = 50;
-      // 좌상, 우상, 좌하, 우하 코너
-      [[m, m, 1, 1], [canvas.width - m, m, -1, 1], [m, canvas.height - m, 1, -1], [canvas.width - m, canvas.height - m, -1, -1]].forEach(([cxCoord, cyCoord, dx, dy]) => {
-        ctx.beginPath();
-        ctx.moveTo(cxCoord, cyCoord + dy * cl);
-        ctx.lineTo(cxCoord, cyCoord);
-        ctx.lineTo(cxCoord + dx * cl, cyCoord);
-        ctx.stroke();
-      });
-
-      // 중앙 로고 아이콘 심볼 (입체 큐브 & 핀 융합 마크)
-      const cy = 370;
-
-      // 글로우 원형 백그라운드
-      ctx.beginPath();
-      ctx.arc(cx, cy, 110, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
-      ctx.stroke();
-
-      // 육각형 입체 큐브 심볼
-      ctx.save();
-      ctx.translate(cx, cy);
-      const r = 68;
-      const p1 = [0, -r];
-      const p2 = [r * 0.866, -r * 0.5];
-      const p3 = [r * 0.866, r * 0.5];
-      const p4 = [0, r];
-      const p5 = [-r * 0.866, r * 0.5];
-      const p6 = [-r * 0.866, -r * 0.5];
-      const center = [0, 0];
-
-      // 상단면
-      ctx.fillStyle = '#34d399';
-      ctx.beginPath();
-      ctx.moveTo(p1[0], p1[1]);
-      ctx.lineTo(p2[0], p2[1]);
-      ctx.lineTo(center[0], center[1]);
-      ctx.lineTo(p6[0], p6[1]);
-      ctx.closePath();
-      ctx.fill();
-
-      // 우측면
-      ctx.fillStyle = '#059669';
-      ctx.beginPath();
-      ctx.moveTo(center[0], center[1]);
-      ctx.lineTo(p2[0], p2[1]);
-      ctx.lineTo(p3[0], p3[1]);
-      ctx.lineTo(p4[0], p4[1]);
-      ctx.closePath();
-      ctx.fill();
-
-      // 좌측면
-      ctx.fillStyle = '#047857';
-      ctx.beginPath();
-      ctx.moveTo(p1[0], p1[1]);
-      ctx.lineTo(center[0], center[1]);
-      ctx.lineTo(p4[0], p4[1]);
-      ctx.lineTo(p5[0], p5[1]);
-      ctx.lineTo(p6[0], p6[1]);
-      ctx.closePath();
-      ctx.fill();
-
-      // 큐브 테두리 선
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      ctx.restore();
-
-      // 메인 타이틀 텍스트
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      ctx.font = '900 48px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#0f172a';
-      ctx.fillText('3D LIVE MAP STUDIO', cx, 545);
-
-      // 서브타이틀 텍스트
-      ctx.font = '600 22px system-ui, -apple-system, sans-serif';
-      ctx.fillStyle = '#64748b';
-      ctx.fillText('실시간 온라인 타일 지도 & 캡처 맵 3차원 인터랙티브 에디터', cx, 605);
-
-      // 하단 시작 가이드 카드 3개
-      const cards = [
-        { icon: '🔍', title: '실시간 검색', desc: '좌측 창에서 원하는 주소/지명 검색' },
-        { icon: '📋', title: 'Ctrl + V 붙여넣기', desc: '캡처한 지도 이미지를 즉시 3D로 전환' },
-        { icon: '✏️', title: '오브젝트 배치', desc: '3D 핀, 빌딩, 프리핸드 경로선 드로잉' }
-      ];
-
-      const cardW = 380;
-      const cardH = 95;
-      const gap = 35;
-      const startCardX = Math.floor((2150 - (cardW * 3 + gap * 2)) / 2);
-      const cardY = 705;
-
-      cards.forEach((card, idx) => {
-        const x = startCardX + idx * (cardW + gap);
-        // 카드 배경
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.roundRect(x, cardY, cardW, cardH, 16);
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.stroke();
-
-        // 카드 아이콘 및 텍스트
-        ctx.textAlign = 'left';
-        ctx.font = '32px system-ui, sans-serif';
-        ctx.fillText(card.icon, x + 24, cardY + 48);
-
-        ctx.font = 'bold 18px system-ui, sans-serif';
-        ctx.fillStyle = '#0f172a';
-        ctx.fillText(card.title, x + 76, cardY + 36);
-
-        ctx.font = '14px system-ui, sans-serif';
-        ctx.fillStyle = '#64748b';
-        ctx.fillText(card.desc, x + 76, cardY + 64);
-      });
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.encoding = THREE.sRGBEncoding;
-      texture.anisotropy = 8;
-      return texture;
-    }
-
-    function applyLogoScreenToMap() {
-      rawUploadedImage = null;
-      rawComposedCanvas = null;
-
-      mapPlane.geometry.dispose();
-      // 가로 20% 확장된 2.1:1 와이드 비율 (105 x 50)
-      mapPlane.geometry = new THREE.PlaneGeometry(105, 50);
-
-      const logoTexture = generateStudioLogoTexture();
-      if (mapPlane.material.map) mapPlane.material.map.dispose();
-      mapPlane.material.map = logoTexture;
-      mapPlane.material.needsUpdate = true;
-      currentTexture = logoTexture;
-
-      document.getElementById('current-latlng-tag').textContent = '대기 중 (기본 화면)';
-      document.getElementById('current-placename-tag').textContent = '장소를 검색하거나 캡처 지도를 붙여넣으세요';
-    }
-
-    async function loadOnlineMapTiles(lat, lon, zoom = 16, provider = 'esri_sat') {
-      showLoading(true, `위도 ${lat.toFixed(4)}, 경도 ${lon.toFixed(4)} 지도 생성 중...`);
-
-      const centerTileX = lon2tile(lon, zoom);
-      const centerTileY = lat2tile(lat, zoom);
-
-      // 3D 씬 가로 20% 확장 와이드 비율(105x50)에 맞게 9x4 그리드 타일 구성 (총 36개 고화질 타일 합성)
-      const cols = 9;
-      const rows = 4;
-      const startX = centerTileX - Math.floor(cols / 2);
-      const startY = centerTileY - Math.floor(rows / 2);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = cols * 256;
-      canvas.height = rows * 256;
-      const ctx = canvas.getContext('2d');
-
-      // 밝은 베이스 배경
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const tileTasks = [];
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const tileX = startX + c;
-          const tileY = startY + r;
-          const tileInfo = getTileUrls(tileX, tileY, zoom, provider);
-
-          const task = (async () => {
-            const baseImg = await loadSingleTile(tileInfo.base, tileInfo.fallback);
-            if (baseImg) {
-              ctx.drawImage(baseImg, c * 256, r * 256, 256, 256);
-            } else {
-              // 다운로드 실패 시 밝은 격자 플레이스홀더 렌더
-              ctx.fillStyle = '#e2e8f0';
-              ctx.fillRect(c * 256, r * 256, 256, 256);
-              ctx.strokeStyle = '#cbd5e1';
-              ctx.strokeRect(c * 256, r * 256, 256, 256);
-            }
-
-            // 하이브리드 도로망 오버레이가 있는 경우 추가 합성
-            if (tileInfo.overlayRoads) {
-              const roadImg = await loadSingleTile(tileInfo.overlayRoads);
-              if (roadImg) ctx.drawImage(roadImg, c * 256, r * 256, 256, 256);
-            }
-
-            // 지명 및 경계선 오버레이가 있는 경우 추가 합성
-            if (tileInfo.overlay) {
-              const overlayImg = await loadSingleTile(tileInfo.overlay);
-              if (overlayImg) ctx.drawImage(overlayImg, c * 256, r * 256, 256, 256);
-            }
-          })();
-
-          tileTasks.push(task);
-        }
-      }
-
-      await Promise.all(tileTasks);
-      rawComposedCanvas = canvas;
-
-      renderProcessedLiveTexture();
-      showLoading(false);
-      showToast(`'${currentGeo.name}' 지도가 정상 로드되었습니다!`, 'success');
-
-      document.getElementById('current-latlng-tag').textContent = `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-      document.getElementById('current-placename-tag').textContent = currentGeo.name;
-    }
-
-    function renderProcessedLiveTexture() {
-      // 업로드된 캡처 이미지가 있으면 캡처 이미지 기준으로 렌더링, 없으면 합성된 타일 캔버스 기준 렌더링
-      const sourceImage = rawUploadedImage || rawComposedCanvas;
-      if (!sourceImage) return;
-
-      const contrast = document.getElementById('range-map-contrast') ? document.getElementById('range-map-contrast').value : 115;
-      const brightness = document.getElementById('range-map-brightness') ? document.getElementById('range-map-brightness').value : 100;
-
-      const filterCanvas = document.createElement('canvas');
-      filterCanvas.width = sourceImage.width;
-      filterCanvas.height = sourceImage.height;
-      const fCtx = filterCanvas.getContext('2d');
-
-      fCtx.filter = `contrast(${contrast}%) brightness(${brightness}%)`;
-      fCtx.drawImage(sourceImage, 0, 0);
-
-      const texture = new THREE.CanvasTexture(filterCanvas);
-      texture.encoding = THREE.sRGBEncoding;
-      texture.anisotropy = 8;
-
-      if (mapPlane.material.map) mapPlane.material.map.dispose();
-      mapPlane.material.map = texture;
-      mapPlane.material.needsUpdate = true;
-      currentTexture = texture;
-    }
-
-    function applyUploadedImageToMap(imageSrc) {
-      const img = new Image();
-      img.onload = function() {
-        rawUploadedImage = img;
-
-        // 원본 이미지 비율에 맞춰 3D 평면 크기 재조정
-        const aspect = img.width / img.height;
-        const baseH = 50;
-        const baseW = baseH * aspect;
-
-        mapPlane.geometry.dispose();
-        mapPlane.geometry = new THREE.PlaneGeometry(baseW, baseH);
-
-        renderProcessedLiveTexture();
-        showToast('캡처 지도 이미지가 3D 바닥에 성공적으로 적용되었습니다!', 'success');
-      };
-      img.src = imageSrc;
-    }
-
-    function handleMapImageUpload(file) {
-      if (!file || !file.type.startsWith('image/')) {
-        showToast('올바른 이미지 파일(PNG, JPG, WebP)을 선택해주세요.', 'warn');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        applyUploadedImageToMap(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function setupClipboardPaste() {
-      // 단축키 Ctrl+V / Cmd+V 붙여넣기
-      window.addEventListener('paste', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        const items = (e.clipboardData || e.originalEvent.clipboardData)?.items;
-        if (!items) return;
-        let imageFound = false;
-        for (let i = 0; i < items.length; i++) {
-          if (items[i].type.indexOf('image') !== -1) {
-            const blob = items[i].getAsFile();
-            handleMapImageUpload(blob);
-            imageFound = true;
-            break;
-          }
-        }
-        if (imageFound) {
-          showToast('클립보드에서 캡처 이미지를 읽어와 지도에 적용했습니다.', 'success');
-        }
-      });
-
-      // 클립보드 붙여넣기 버튼 클릭 핸들러
-      const pasteDropzone = document.getElementById('paste-dropzone');
-      if (pasteDropzone) {
-        pasteDropzone.addEventListener('click', async () => {
-          try {
-            if (navigator.clipboard && navigator.clipboard.read) {
-              const clipboardItems = await navigator.clipboard.read();
-              let imageFound = false;
-              for (const item of clipboardItems) {
-                const imageType = item.types.find(type => type.startsWith('image/'));
-                if (imageType) {
-                  const blob = await item.getType(imageType);
-                  handleMapImageUpload(blob);
-                  imageFound = true;
-                  showToast('클립보드 이미지를 성공적으로 가져왔습니다.', 'success');
-                  break;
-                }
-              }
-              if (!imageFound) {
-                showToast('클립보드에 복사된 이미지가 없습니다.', 'warn');
-              }
-            } else {
-              showToast('Ctrl+V 키를 눌러 캡처 이미지를 붙여넣으세요.', 'info');
-            }
-          } catch (err) {
-            showToast('클립보드 권한이 필요합니다. 지도를 복사한 후 Ctrl + V를 눌러주세요.', 'info');
-          }
-        });
-      }
-
-      // 파일 업로드 이벤트
-      const fileInput = document.getElementById('map-file-input');
-      if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
-          if (e.target.files && e.target.files.length > 0) {
-            handleMapImageUpload(e.target.files[0]);
-          }
-        });
-      }
-
-      // 실시간 온라인 지도로 복원 버튼
-      const restoreBtn = document.getElementById('btn-restore-online-map');
-      if (restoreBtn) {
-        restoreBtn.addEventListener('click', () => {
-          rawUploadedImage = null;
-          // 20% 가로 확장된 와이드 2.1:1 비율 평면으로 복원
-          mapPlane.geometry.dispose();
-          mapPlane.geometry = new THREE.PlaneGeometry(105, 50);
-          loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
-        });
-      }
-
-      // 기본 스튜디오 로고 화면으로 복귀 버튼
-      const logoBtn = document.getElementById('btn-show-logo-screen');
-      if (logoBtn) {
-        logoBtn.addEventListener('click', () => {
-          applyLogoScreenToMap();
-          showToast('기본 스튜디오 로고 화면으로 복귀했습니다.', 'info');
-        });
-      }
-    }
-
-    function createTextSprite(text, color = '#059669', fontSize = 38) {
-      if (!text || text.trim() === '') return null;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-      ctx.beginPath();
-      ctx.roundRect(16, 16, 480, 96, 24);
-      ctx.fill();
-
-      ctx.lineWidth = 6;
-      ctx.strokeStyle = color;
-      ctx.stroke();
-
-      ctx.font = `bold ${fontSize}px sans-serif`;
-      ctx.fillStyle = '#0f172a';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, 256, 64);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMaterial = new THREE.SpriteMaterial({
-        map: texture,
-        transparent: true,
-        depthTest: false
-      });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      const baseScale = fontSize / 38;
-      sprite.scale.set(4 * baseScale, 1 * baseScale, 1);
-      return sprite;
-    }
-
-    function initThreeScene() {
-      const container = document.getElementById('viewport-container');
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color('#f1f5f9'); // 화사한 라이트 배경
-
-      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-      camera.position.set(0, 58, 70);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.outputEncoding = THREE.sRGBEncoding;
-      renderer.shadowMap.enabled = false; // 그림자 완전 제거
-      container.appendChild(renderer.domElement);
-
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = false; // 관성 제거: 즉각 정지
-      controls.maxPolarAngle = Math.PI / 2 - 0.05;
-      controls.minDistance = 5;
-      controls.maxDistance = 200;
-      controls.target.set(0, 0, 0);
-
-      controls.touches = {
-        ONE: THREE.TOUCH.ROTATE,
-        TWO: THREE.TOUCH.DOLLY_PAN
-      };
-
-      // 3D 오브젝트 전용 균일 조명
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
-      scene.add(ambientLight);
-
-      dirLight = new THREE.DirectionalLight(0xffffff, 0.45);
-      dirLight.position.set(35, 65, 30);
-      dirLight.castShadow = false;
-      scene.add(dirLight);
-
-      // 지도 바닥판 (가로 20% 확장된 와이드 2.1:1 비율 = 105 x 50)
-      const planeGeo = new THREE.PlaneGeometry(105, 50);
-      const planeMat = new THREE.MeshBasicMaterial({
-        side: THREE.DoubleSide
-      });
-      mapPlane = new THREE.Mesh(planeGeo, planeMat);
-      mapPlane.rotation.x = -Math.PI / 2;
-      scene.add(mapPlane);
-
-      // 연회색 보조 격자 (확장된 바닥판에 맞게 120 x 60으로 매핑)
-      gridHelper = new THREE.GridHelper(120, 60, 0xd1d5db, 0x94a3b8);
-      gridHelper.position.y = 0.01;
-      if (gridHelper.material) {
-        gridHelper.material.opacity = 0.4;
-        gridHelper.material.transparent = true;
-      }
-      scene.add(gridHelper);
-
-      window.addEventListener('resize', onWindowResize);
-      container.addEventListener('pointerdown', onPointerDown);
-      container.addEventListener('pointermove', onPointerMove);
-      window.addEventListener('pointerup', onPointerUp);
-
-      // 초기 실행 시 특정 지도가 아닌 스튜디오 로고 화면 표시
-      applyLogoScreenToMap();
-      updateObjectListUI();
-    }
-
-    function buildFreehandFlatRibbonMesh(points, colorHex, ribbonWidth = 0.5) {
-      if (!points || points.length < 2) return null;
-
-      // 3D 튜브 대신 지면에 수평으로 밀착되는 2D 평면 리본(Flat Ribbon) 지오메트리 생성
-      const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal', 0.5);
-      const sampleCount = Math.min(Math.max(points.length * 8, 30), 200);
-      const sampledPoints = curve.getPoints(sampleCount);
-
-      const positions = [];
-      const indices = [];
-      const halfWidth = Math.max(0.1, ribbonWidth * 0.4);
-      const groundY = 0.06; // 지면 바닥 바로 위에 밀착하여 z-fighting 방지
-
-      for (let i = 0; i < sampledPoints.length; i++) {
-        const pt = sampledPoints[i];
-        let tangent = new THREE.Vector3();
-
-        if (i < sampledPoints.length - 1) {
-          tangent.subVectors(sampledPoints[i + 1], pt).normalize();
-        } else {
-          tangent.subVectors(pt, sampledPoints[i - 1]).normalize();
-        }
-
-        // X-Z 평면 상에서 접선에 수직인 수평 방향 벡터 계산
-        const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-
-        const pLeft = new THREE.Vector3(
-          pt.x + normal.x * halfWidth,
-          groundY,
-          pt.z + normal.z * halfWidth
-        );
-        const pRight = new THREE.Vector3(
-          pt.x - normal.x * halfWidth,
-          groundY,
-          pt.z - normal.z * halfWidth
-        );
-
-        positions.push(pLeft.x, pLeft.y, pLeft.z);
-        positions.push(pRight.x, pRight.y, pRight.z);
-
-        if (i < sampledPoints.length - 1) {
-          const base = i * 2;
-          // 2개의 삼각형으로 사각형 세그먼트 구성
-          indices.push(base, base + 1, base + 2);
-          indices.push(base + 1, base + 3, base + 2);
-        }
-      }
-
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geo.setIndex(indices);
-      geo.computeVertexNormals();
-
-      const mat = new THREE.MeshBasicMaterial({
-        color: colorHex,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.95
-      });
-
-      return new THREE.Mesh(geo, mat);
-    }
-
-    function build3DObject(type, colorHex, height = 4, width = 1, extra = {}) {
-      const group = new THREE.Group();
-      let mainMesh;
-
-      if (type === 'pin') {
-        const sphereGeo = new THREE.SphereGeometry(width * 0.8, 20, 20);
-        const sphereMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.2 });
-        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-        sphere.position.y = height + 0.5;
-        group.add(sphere);
-
-        const coneGeo = new THREE.ConeGeometry(width * 0.4, height, 16);
-        coneGeo.rotateX(Math.PI);
-        const coneMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.2 });
-        const cone = new THREE.Mesh(coneGeo, coneMat);
-        cone.position.y = height / 2;
-        group.add(cone);
-        mainMesh = sphere;
-
-      } else if (type === 'freehand') {
-        const points = extra.points || [
-          new THREE.Vector3(-4, 0.06, 0),
-          new THREE.Vector3(0, 0.06, 3),
-          new THREE.Vector3(4, 0.06, -1)
-        ];
-        const ribbonWidth = Math.max(0.3, width * 0.6);
-        mainMesh = buildFreehandFlatRibbonMesh(points, colorHex, ribbonWidth);
-        if (mainMesh) {
-          group.add(mainMesh);
-        } else {
-          const fallback = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.4), new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide }));
-          fallback.rotation.x = -Math.PI / 2;
-          fallback.position.y = 0.06;
-          group.add(fallback);
-          mainMesh = fallback;
-        }
-
-      } else if (type === 'building') {
-        // 단일 직육면체 메쉬
-        const boxGeo = new THREE.BoxGeometry(width * 3, height, width * 3);
-        const boxMat = new THREE.MeshStandardMaterial({
-          color: colorHex,
-          roughness: 0.35,
-          metalness: 0.2
-        });
-        const box = new THREE.Mesh(boxGeo, boxMat);
-        box.position.y = height / 2;
-        group.add(box);
-        mainMesh = box;
-
-      } else if (type === 'cylinder') {
-        const cylGeo = new THREE.CylinderGeometry(width * 1.2, width * 1.5, height, 24);
-        const cylMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.3 });
-        const cylinder = new THREE.Mesh(cylGeo, cylMat);
-        cylinder.position.y = height / 2;
-        group.add(cylinder);
-        mainMesh = cylinder;
-
-      } else if (type === 'badge') {
-        const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, height, 12);
-        const poleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
-        const pole = new THREE.Mesh(poleGeo, poleMat);
-        pole.position.y = height / 2;
-        group.add(pole);
-
-        const flagGeo = new THREE.BoxGeometry(width * 2, 1, 0.1);
-        const flagMat = new THREE.MeshStandardMaterial({ color: colorHex });
-        const flag = new THREE.Mesh(flagGeo, flagMat);
-        flag.position.set(width, height, 0);
-        group.add(flag);
-        mainMesh = flag;
-
-      } else if (type === 'line') {
-        // 입체 박스가 아닌 지면에 수평 밀착된 완전 2D 평면 직사각형 바
-        const lineLength = width * 6;
-        const lineThickness = Math.max(0.2, width * 0.7);
-        const lineGeo = new THREE.PlaneGeometry(lineLength, lineThickness);
-        lineGeo.rotateX(-Math.PI / 2); // 바닥 지면에 수평으로 눕힘
-        const lineMat = new THREE.MeshBasicMaterial({
-          color: colorHex,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.95
-        });
-        const lineMesh = new THREE.Mesh(lineGeo, lineMat);
-        lineMesh.position.y = 0.06; // 바닥 바로 위에 밀착하여 z-fighting 방지
-        group.add(lineMesh);
-        mainMesh = lineMesh;
-
-      } else if (type === 'circle') {
-        // 입체 기둥이 아닌 지면에 밀착된 완전 평면 2D 링 윤곽선
-        const outerRadius = width * 2.5;
-        const borderThickness = Math.max(0.2, width * 0.12);
-        const innerRadius = Math.max(0.1, outerRadius - borderThickness);
-        const ringGeo = new THREE.RingGeometry(innerRadius, outerRadius, 64);
-        ringGeo.rotateX(-Math.PI / 2); // 바닥 지면에 수평으로 눕힘
-        const ringMat = new THREE.MeshBasicMaterial({
-          color: colorHex,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.95
-        });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.y = 0.06; // 지면 바로 위에 밀착하여 z-fighting 방지
-        group.add(ringMesh);
-        mainMesh = ringMesh;
-
-      } else if (type === 'rect') {
-        // 높이 돌출(Extrude) 없는 지면에 밀착된 완전 평면 2D 사각형 윤곽선
-        const shape = new THREE.Shape();
-        const hw = (width * 4) / 2;
-        const hd = (width * 3) / 2;
-        const borderThickness = Math.max(0.2, width * 0.12);
-
-        // 외곽 사각형 경로
-        shape.moveTo(-hw, -hd);
-        shape.lineTo(hw, -hd);
-        shape.lineTo(hw, hd);
-        shape.lineTo(-hw, hd);
-        shape.closePath();
-
-        // 내부를 완전히 비우는 구멍(Hole) 경로 지정
-        const innerHole = new THREE.Path();
-        innerHole.moveTo(-(hw - borderThickness), -(hd - borderThickness));
-        innerHole.lineTo((hw - borderThickness), -(hd - borderThickness));
-        innerHole.lineTo((hw - borderThickness), (hd - borderThickness));
-        innerHole.lineTo(-(hw - borderThickness), (hd - borderThickness));
-        innerHole.closePath();
-        shape.holes.push(innerHole);
-
-        // 높이 돌출(Extrude) 없이 순수 2D 평면 메쉬 생성
-        const flatFrameGeo = new THREE.ShapeGeometry(shape);
-        flatFrameGeo.rotateX(-Math.PI / 2); // 바닥 지면에 수평 밀착
-        const frameMat = new THREE.MeshBasicMaterial({
-          color: colorHex,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.95
-        });
-        const frameMesh = new THREE.Mesh(flatFrameGeo, frameMat);
-        frameMesh.position.y = 0.06; // 바닥 바로 위에 밀착
-        group.add(frameMesh);
-        mainMesh = frameMesh;
-      }
-
-      return { group, mainMesh };
-    }
-
-    function addObjectToMap(pos, options = {}) {
-      const type = options.type || activePreset;
-      const label = options.label !== undefined ? options.label : (document.getElementById('input-new-label').value || '');
-      const color = options.color || document.getElementById('input-new-color').value || '#059669';
-      const height = options.height !== undefined ? options.height : 4.0;
-      const width = options.width !== undefined ? options.width : 1.2;
-      const fontSize = options.fontSize || parseInt(document.getElementById('input-new-font-size').value || 38);
-      const rotationY = options.rotationY || 0;
-
-      const { group, mainMesh } = build3DObject(type, color, height, width, { points: options.points });
-      group.position.set(pos.x, 0, pos.z);
-      group.rotation.y = rotationY;
-
-      let labelSprite = null;
-      if (label && label.trim() !== '') {
-        labelSprite = createTextSprite(label, color, fontSize);
-        if (labelSprite) {
-          const spriteOffset = (type === 'pin') ? 2.2 : (type === 'line' || type === 'freehand' || type === 'circle' || type === 'rect' ? 1.5 : 1.8);
-          labelSprite.position.y = height + spriteOffset;
-          group.add(labelSprite);
-        }
-      }
-
-      const itemData = {
-        id: nextObjectId++,
-        type,
-        label,
-        color,
-        height,
-        width,
-        fontSize,
-        rotationY,
-        points: options.points ? options.points.map(p => p.clone()) : null,
-        group,
-        mainMesh,
-        sprite: labelSprite
-      };
-
-      group.userData = { id: itemData.id };
-      mainMesh.userData = { id: itemData.id };
-
-      scene.add(group);
-      sceneObjects.push(itemData);
-
-      updateObjectListUI();
-      selectObject(itemData);
-      showToast(`'${label || type}' 오브젝트가 추가되었습니다.`, 'success');
-      return itemData;
-    }
-
-    function getPointerPos(e) {
-      const rect = renderer.domElement.getBoundingClientRect();
-      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-      return {
-        x: ((clientX - rect.left) / rect.width) * 2 - 1,
-        y: -((clientY - rect.top) / rect.height) * 2 + 1
-      };
-    }
-
-    function getMapIntersectionPoint(pos) {
-      mouse.x = pos.x;
-      mouse.y = pos.y;
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObject(mapPlane);
-      if (intersects.length > 0) return intersects[0].point;
-      return null;
-    }
-
-    function onPointerDown(e) {
-      if (e.button !== undefined && e.button !== 0) return;
-      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-      mouseDownPos = { x: clientX, y: clientY };
-      hasMovedMouse = false;
-
-      const pos = getPointerPos(e);
-      mouse.x = pos.x;
-      mouse.y = pos.y;
-      raycaster.setFromCamera(mouse, camera);
-
-      if (activePreset === 'freehand') {
-        const hitPoint = getMapIntersectionPoint(pos);
-        if (hitPoint) {
-          isDrawingFreehand = true;
-          controls.enabled = false;
-          freehandRawPoints = [new THREE.Vector3(hitPoint.x, 0.06, hitPoint.z)];
-
-          const previewMat = new THREE.MeshBasicMaterial({
-            color: document.getElementById('input-new-color').value || '#f59e0b',
-            side: THREE.DoubleSide
-          });
-          const previewGeo = new THREE.CircleGeometry(0.3, 16);
-          previewGeo.rotateX(-Math.PI / 2);
-          activeDrawingMesh = new THREE.Mesh(previewGeo, previewMat);
-          activeDrawingMesh.position.set(hitPoint.x, 0.06, hitPoint.z);
-          scene.add(activeDrawingMesh);
-          return;
-        }
-      }
-
-      // 오브젝트 피킹 및 드래그 시작 검사
-      const interactiveMeshes = [];
-      sceneObjects.forEach(obj => {
-        obj.group.traverse(child => {
-          if (child.isMesh && child.name !== 'SelectionRing') {
-            interactiveMeshes.push(child);
-          }
-        });
-      });
-
-      const objIntersects = raycaster.intersectObjects(interactiveMeshes, false);
-      if (objIntersects.length > 0) {
-        let hit = objIntersects[0].object;
-        while (hit && (!hit.userData || !hit.userData.id) && hit.parent) {
-          hit = hit.parent;
-        }
-        if (hit && hit.userData && hit.userData.id) {
-          const target = sceneObjects.find(o => o.id === hit.userData.id);
-          if (target) {
-            isDraggingObject = true;
-            draggedObject = target;
-            controls.enabled = false;
-
-            if (raycaster.ray.intersectPlane(virtualGroundPlane, planeIntersectionPoint)) {
-              dragOffset.x = planeIntersectionPoint.x - target.group.position.x;
-              dragOffset.z = planeIntersectionPoint.z - target.group.position.z;
-            }
-            selectObject(target);
-            document.getElementById('viewport-container').style.cursor = 'grabbing';
-            return;
-          }
-        }
-      }
-    }
-
-    function onPointerMove(e) {
-      const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-      const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
-      const diffX = Math.abs(clientX - mouseDownPos.x);
-      const diffY = Math.abs(clientY - mouseDownPos.y);
-      if (diffX > 5 || diffY > 5) {
-        hasMovedMouse = true;
-      }
-
-      const pos = getPointerPos(e);
-
-      if (isDrawingFreehand) {
-        const hitPoint = getMapIntersectionPoint(pos);
-        if (hitPoint) {
-          const lastPt = freehandRawPoints[freehandRawPoints.length - 1];
-          if (!lastPt || lastPt.distanceTo(hitPoint) > 0.4) {
-            freehandRawPoints.push(new THREE.Vector3(hitPoint.x, 0.06, hitPoint.z));
-            if (freehandRawPoints.length >= 2) {
-              if (activeDrawingMesh) scene.remove(activeDrawingMesh);
-              const color = document.getElementById('input-new-color').value || '#f59e0b';
-              activeDrawingMesh = buildFreehandFlatRibbonMesh(freehandRawPoints, color, 0.6);
-              if (activeDrawingMesh) scene.add(activeDrawingMesh);
-            }
-          }
-        }
-        return;
-      }
-
-      if (isDraggingObject && draggedObject) {
-        mouse.x = pos.x;
-        mouse.y = pos.y;
-        raycaster.setFromCamera(mouse, camera);
-
-        if (raycaster.ray.intersectPlane(virtualGroundPlane, planeIntersectionPoint)) {
-          const newX = planeIntersectionPoint.x - dragOffset.x;
-          const newZ = planeIntersectionPoint.z - dragOffset.z;
-
-          draggedObject.group.position.x = newX;
-          draggedObject.group.position.z = newZ;
-
-          const inputX = document.getElementById('inspect-pos-x');
-          const inputZ = document.getElementById('inspect-pos-z');
-          if (inputX) inputX.value = newX.toFixed(1);
-          if (inputZ) inputZ.value = newZ.toFixed(1);
-        }
-      }
-    }
-
-    function onPointerUp(e) {
-      if (isDrawingFreehand) {
-        isDrawingFreehand = false;
-        controls.enabled = true;
-        if (activeDrawingMesh) {
-          scene.remove(activeDrawingMesh);
-          activeDrawingMesh = null;
-        }
-
-        if (freehandRawPoints.length >= 2) {
-          const label = document.getElementById('input-new-label').value || '자유 경로선';
-          const color = document.getElementById('input-new-color').value || '#f59e0b';
-          const fontSize = parseInt(document.getElementById('input-new-font-size').value || 38);
-
-          addObjectToMap({ x: 0, z: 0 }, {
-            type: 'freehand',
-            label,
-            color,
-            height: 1,
-            width: 1.5,
-            fontSize,
-            points: freehandRawPoints
-          });
-          showToast('자유 곡선 경로선이 생성되었습니다.', 'success');
-        } else {
-          showToast('선을 그리려면 드래그하세요.', 'info');
-        }
-        freehandRawPoints = [];
-        return;
-      }
-
-      if (isDraggingObject) {
-        isDraggingObject = false;
-        draggedObject = null;
-        controls.enabled = true;
-        document.getElementById('viewport-container').style.cursor = '';
-        if (hasMovedMouse) {
-          showToast('오브젝트 위치가 이동되었습니다.');
-          return;
-        }
-      }
-
-      if (!hasMovedMouse) {
-        const pos = getPointerPos(e);
-        mouse.x = pos.x;
-        mouse.y = pos.y;
-        raycaster.setFromCamera(mouse, camera);
-
-        const interactiveMeshes = [];
-        sceneObjects.forEach(obj => {
-          obj.group.traverse(child => {
-            if (child.isMesh && child.name !== 'SelectionRing') {
-              interactiveMeshes.push(child);
-            }
-          });
-        });
-
-        const objIntersects = raycaster.intersectObjects(interactiveMeshes, false);
-        if (objIntersects.length > 0) {
-          let hit = objIntersects[0].object;
-          while (hit && (!hit.userData || !hit.userData.id) && hit.parent) {
-            hit = hit.parent;
-          }
-          if (hit && hit.userData && hit.userData.id) {
-            const target = sceneObjects.find(o => o.id === hit.userData.id);
-            if (target) {
-              selectObject(target);
-              return;
-            }
-          }
-        }
-
-        const planeIntersects = raycaster.intersectObject(mapPlane);
-        if (planeIntersects.length > 0) {
-          const point = planeIntersects[0].point;
-          if (activePreset !== 'freehand' && activePreset !== 'select') {
-            addObjectToMap({ x: point.x, z: point.z });
-          } else if (activePreset === 'select') {
-            deselectObject();
-          }
-        } else {
-          deselectObject();
-        }
-      }
-    }
-
-    function deselectObject() {
-      if (selectedObject) {
-        const ring = selectedObject.group.getObjectByName('SelectionRing');
-        if (ring) {
-          selectedObject.group.remove(ring);
-          ring.geometry.dispose();
-          ring.material.dispose();
-        }
-        selectedObject = null;
-      }
-      const inspector = document.getElementById('inspector-panel');
-      if (inspector) inspector.classList.add('translate-x-[115%]');
-      updateObjectListSelection();
-    }
-
-    function selectObject(itemData) {
-      deselectObject();
-      selectedObject = itemData;
-
-      const ringRadius = Math.max(itemData.width * 1.5, 1.2);
-      const ringGeo = new THREE.RingGeometry(ringRadius, ringRadius + 0.35, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x059669, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.08;
-      ring.name = 'SelectionRing';
-      itemData.group.add(ring);
-
-      document.getElementById('inspect-label').value = itemData.label || '';
-      document.getElementById('inspect-fontsize').value = itemData.fontSize || 38;
-      document.getElementById('inspect-fontsize-val').textContent = `${itemData.fontSize || 38}px`;
-      document.getElementById('inspect-color').value = itemData.color;
-      document.getElementById('inspect-height').value = itemData.height;
-      document.getElementById('inspect-height-val').textContent = itemData.height.toFixed(1);
-      document.getElementById('inspect-width').value = itemData.width;
-      document.getElementById('inspect-width-val').textContent = itemData.width.toFixed(1);
-      document.getElementById('inspect-rot').value = Math.round(THREE.MathUtils.radToDeg(itemData.rotationY));
-      document.getElementById('inspect-rot-val').textContent = `${Math.round(THREE.MathUtils.radToDeg(itemData.rotationY))}°`;
-      document.getElementById('inspect-pos-x').value = itemData.group.position.x.toFixed(1);
-      document.getElementById('inspect-pos-z').value = itemData.group.position.z.toFixed(1);
-
-      const inspector = document.getElementById('inspector-panel');
-      inspector.classList.remove('translate-x-[115%]');
-
-      updateObjectListSelection();
-    }
-
-    function rebuildSelectedObjectMesh() {
-      if (!selectedObject) return;
-
-      const pos = selectedObject.group.position.clone();
-      const { id, type, label, color, height, width, fontSize, rotationY, points } = selectedObject;
-
-      scene.remove(selectedObject.group);
-
-      const { group, mainMesh } = build3DObject(type, color, height, width, { points });
-      group.position.copy(pos);
-      group.rotation.y = rotationY;
-
-      let labelSprite = null;
-      if (label && label.trim() !== '') {
-        labelSprite = createTextSprite(label, color, fontSize || 38);
-        if (labelSprite) {
-          const spriteOffset = (type === 'pin') ? 2.2 : (type === 'line' || type === 'freehand' || type === 'circle' || type === 'rect' ? 1.5 : 1.8);
-          labelSprite.position.y = height + spriteOffset;
-          group.add(labelSprite);
-        }
-      }
-
-      group.userData = { id };
-      mainMesh.userData = { id };
-
-      selectedObject.group = group;
-      selectedObject.mainMesh = mainMesh;
-      selectedObject.sprite = labelSprite;
-
-      scene.add(group);
-
-      const ringRadius = Math.max(width * 1.5, 1.2);
-      const ringGeo = new THREE.RingGeometry(ringRadius, ringRadius + 0.35, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x059669, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.08;
-      ring.name = 'SelectionRing';
-      group.add(ring);
-
-      updateObjectListUI();
-    }
-
-    function updateObjectListUI() {
-      const container = document.getElementById('obj-list-container');
-      const countEl = document.getElementById('obj-count');
-      countEl.textContent = sceneObjects.length;
-
-      if (sceneObjects.length === 0) {
-        container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs">배치된 오브젝트가 없습니다.</div>`;
-        return;
-      }
-
-      container.innerHTML = '';
-      sceneObjects.forEach(item => {
-        const div = document.createElement('div');
-        div.className = `flex items-center justify-between p-2 rounded-xl border cursor-pointer transition ${
-          selectedObject && selectedObject.id === item.id 
-            ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm' 
-            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 shadow-sm'
-        }`;
-        
-        let iconClass = 'fa-location-dot';
-        if (item.type === 'building') iconClass = 'fa-city';
-        if (item.type === 'cylinder') iconClass = 'fa-monument';
-        if (item.type === 'badge') iconClass = 'fa-tag';
-        if (item.type === 'freehand') iconClass = 'fa-signature';
-        if (item.type === 'line') iconClass = 'fa-arrows-left-right';
-        if (item.type === 'circle') iconClass = 'fa-circle-dot';
-        if (item.type === 'rect') iconClass = 'fa-square';
-
-        div.innerHTML = `
-          <div class="flex items-center gap-2 truncate">
-            <span class="w-3 h-3 rounded-full flex-shrink-0 shadow-sm" style="background-color: ${item.color};"></span>
-            <i class="fa-solid ${iconClass} text-slate-400 text-xs"></i>
-            <span class="truncate font-semibold text-xs">${item.label || `(${item.type})`}</span>
-          </div>
-          <button class="delete-btn text-slate-400 hover:text-rose-600 px-1 py-0.5" title="삭제">
-            <i class="fa-solid fa-trash-can text-[11px]"></i>
-          </button>
-        `;
-
-        div.addEventListener('click', (e) => {
-          if (e.target.closest('.delete-btn')) {
-            deleteObject(item.id);
-            return;
-          }
-          selectObject(item);
-        });
-
-        container.appendChild(div);
-      });
-    }
-
-    function updateObjectListSelection() {
-      const container = document.getElementById('obj-list-container');
-      if (!container) return;
-      const childNodes = container.children;
-      sceneObjects.forEach((item, idx) => {
-        const div = childNodes[idx];
-        if (!div) return;
-        if (selectedObject && selectedObject.id === item.id) {
-          div.className = 'flex items-center justify-between p-2 rounded-xl border cursor-pointer transition bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm';
-        } else {
-          div.className = 'flex items-center justify-between p-2 rounded-xl border cursor-pointer transition bg-white border-slate-200 text-slate-700 hover:border-slate-300 shadow-sm';
-        }
-      });
-    }
-
-    function deleteObject(id) {
-      const index = sceneObjects.findIndex(o => o.id === id);
-      if (index === -1) return;
-      const item = sceneObjects[index];
-
-      if (selectedObject && selectedObject.id === id) {
-        deselectObject();
-      }
-
-      scene.remove(item.group);
-      item.group.traverse(child => {
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) {
-          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-          else child.material.dispose();
-        }
-      });
-
-      sceneObjects.splice(index, 1);
-      updateObjectListUI();
-    }
-
-    async function searchLocation(query) {
-      if (!query || query.trim() === '') return;
-      const statusTag = document.getElementById('search-status-tag');
-      const resultsContainer = document.getElementById('search-results-list');
-      
-      statusTag.textContent = '검색 중...';
-      statusTag.className = 'text-[10px] text-amber-600 font-semibold';
-      resultsContainer.classList.remove('hidden');
-      resultsContainer.innerHTML = '<div class="text-center py-2 text-slate-400 text-xs">장소를 검색하고 있습니다...</div>';
-
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
-        const res = await fetch(url, {
-          headers: { 'Accept-Language': 'ko,en' }
-        });
-        const data = await res.json();
-
-        if (!data || data.length === 0) {
-          resultsContainer.innerHTML = '<div class="text-center py-2 text-slate-400 text-xs">검색 결과가 없습니다.</div>';
-          statusTag.textContent = '결과 없음';
-          statusTag.className = 'text-[10px] text-rose-600 font-semibold';
-          return;
-        }
-
-        resultsContainer.innerHTML = '';
-        data.forEach(item => {
-          const btn = document.createElement('button');
-          btn.className = 'w-full text-left p-2 rounded-lg bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-xs text-slate-700 transition flex items-start gap-2';
-          btn.innerHTML = `
-            <i class="fa-solid fa-location-dot text-emerald-600 mt-0.5"></i>
-            <div class="truncate flex-1">
-              <p class="font-bold text-slate-900 truncate">${item.display_name.split(',')[0]}</p>
-              <p class="text-[10px] text-slate-500 truncate">${item.display_name}</p>
-            </div>
-          `;
-          btn.addEventListener('click', () => {
-            const lat = parseFloat(item.lat);
-            const lon = parseFloat(item.lon);
-            const shortName = item.display_name.split(',')[0];
-            currentGeo.lat = lat;
-            currentGeo.lon = lon;
-            currentGeo.name = shortName;
-
-            resultsContainer.classList.add('hidden');
-            statusTag.textContent = '로드 완료';
-            statusTag.className = 'text-[10px] text-emerald-600 font-semibold';
-
-            loadOnlineMapTiles(lat, lon, currentGeo.zoom, currentGeo.provider);
-          });
-          resultsContainer.appendChild(btn);
-        });
-
-        statusTag.textContent = `${data.length}개 발견`;
-        statusTag.className = 'text-[10px] text-emerald-600 font-semibold';
-      } catch (err) {
-        resultsContainer.innerHTML = '<div class="text-center py-2 text-rose-500 text-xs">검색 중 오류가 발생했습니다.</div>';
-        statusTag.textContent = '오류';
-        statusTag.className = 'text-[10px] text-rose-600 font-semibold';
-      }
-    }
-
-    function setupDOMEvents() {
-      // 탭 전환
-      const tabLive = document.getElementById('tab-btn-livemap');
-      const tabAdd = document.getElementById('tab-btn-add');
-      const tabMap = document.getElementById('tab-btn-map');
-      const contentLive = document.getElementById('tab-content-livemap');
-      const contentAdd = document.getElementById('tab-content-add');
-      const contentMap = document.getElementById('tab-content-map');
-
-      function switchTab(activeBtn, activeContent) {
-        [tabLive, tabAdd, tabMap].forEach(b => {
-          b.className = 'flex-1 py-1.5 text-center rounded-lg text-slate-600 hover:text-slate-900 transition';
-        });
-        [contentLive, contentAdd, contentMap].forEach(c => c.classList.add('hidden'));
-
-        activeBtn.className = 'flex-1 py-1.5 text-center rounded-lg bg-white text-emerald-700 font-bold shadow-sm transition';
-        activeContent.classList.remove('hidden');
-      }
-
-      tabLive.addEventListener('click', () => switchTab(tabLive, contentLive));
-      tabAdd.addEventListener('click', () => switchTab(tabAdd, contentAdd));
-      tabMap.addEventListener('click', () => switchTab(tabMap, contentMap));
-
-      // 주소 검색 버튼 및 엔터키
-      const searchInput = document.getElementById('input-map-search');
-      const searchBtn = document.getElementById('btn-search-map');
-      searchBtn.addEventListener('click', () => searchLocation(searchInput.value));
-      searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') searchLocation(searchInput.value);
-      });
-
-      // 추천 핫스팟 바로가기
-      document.querySelectorAll('.quick-loc-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const query = btn.getAttribute('data-query');
-          searchInput.value = query;
-          searchLocation(query);
-        });
-      });
-
-      // 지도 스타일 전환
-      const styleButtons = [
-        { id: 'btn-style-esri-sat', provider: 'esri_sat' },
-        { id: 'btn-style-sat-hybrid', provider: 'sat_hybrid' },
-        { id: 'btn-style-osm-hot', provider: 'osm_hot' },
-        { id: 'btn-style-osm-de', provider: 'osm_de' }
-      ];
-
-      function setTileProvider(provider) {
-        currentGeo.provider = provider;
-        styleButtons.forEach(item => {
-          const btn = document.getElementById(item.id);
-          if (!btn) return;
-          if (item.provider === provider) {
-            btn.className = 'tile-style-btn py-1.5 px-2 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-emerald-800 text-[11px] font-semibold text-center transition';
-          } else {
-            btn.className = 'tile-style-btn py-1.5 px-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-[11px] font-medium text-center hover:bg-slate-50 transition';
-          }
-        });
-        loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
-      }
-
-      styleButtons.forEach(item => {
-        const btn = document.getElementById(item.id);
-        if (btn) {
-          btn.addEventListener('click', () => setTileProvider(item.provider));
-        }
-      });
-
-      // 줌 슬라이더 및 새로고침
-      const rangeZoom = document.getElementById('range-live-zoom');
-      const labelZoom = document.getElementById('label-live-zoom');
-      rangeZoom.addEventListener('input', (e) => {
-        const z = parseInt(e.target.value);
-        currentGeo.zoom = z;
-        let desc = '동/도로 단위';
-        if (z <= 14) desc = '도시/구 단위';
-        if (z >= 17) desc = '골목/건물 단위';
-        labelZoom.textContent = `${z} (${desc})`;
-      });
-      document.getElementById('btn-reload-tiles').addEventListener('click', () => {
-        loadOnlineMapTiles(currentGeo.lat, currentGeo.lon, currentGeo.zoom, currentGeo.provider);
-      });
-
-      // 사이드바 토글 (지도 외부 독립 패널 접기/펼치기)
-      const sidebar = document.getElementById('main-sidebar');
-      const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
-      let isSidebarOpen = true;
-      btnToggleSidebar.addEventListener('click', () => {
-        isSidebarOpen = !isSidebarOpen;
-        if (isSidebarOpen) {
-          sidebar.classList.remove('collapsed');
-          btnToggleSidebar.className = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5';
-        } else {
-          sidebar.classList.add('collapsed');
-          btnToggleSidebar.className = 'px-2.5 py-1.5 rounded-lg text-xs font-medium hover:bg-white text-slate-700 transition flex items-center gap-1.5';
-          showToast('도구 패널이 접혔습니다. (지도 전체 화면)', 'info');
-        }
-        setTimeout(onWindowResize, 60);
-        setTimeout(onWindowResize, 320);
-      });
-
-      // 조작 가이드 모달 제어
-      const guideModal = document.getElementById('guide-modal');
-      const btnOpenGuide = document.getElementById('btn-open-guide');
-      const btnCloseGuide = document.getElementById('btn-close-guide');
-      const btnGuideConfirm = document.getElementById('btn-guide-confirm');
-      const quickGuideTrigger = document.getElementById('btn-quick-guide-trigger');
-
-      function openGuideModal() {
-        if (!guideModal) return;
-        guideModal.classList.remove('opacity-0', 'pointer-events-none');
-        guideModal.classList.add('opacity-100');
-      }
-
-      function closeGuideModal() {
-        if (!guideModal) return;
-        guideModal.classList.remove('opacity-100');
-        guideModal.classList.add('opacity-0', 'pointer-events-none');
-      }
-
-      if (btnOpenGuide) btnOpenGuide.addEventListener('click', openGuideModal);
-      if (quickGuideTrigger) quickGuideTrigger.addEventListener('click', openGuideModal);
-      if (btnCloseGuide) btnCloseGuide.addEventListener('click', closeGuideModal);
-      if (btnGuideConfirm) btnGuideConfirm.addEventListener('click', closeGuideModal);
-      if (guideModal) {
-        guideModal.addEventListener('click', (e) => {
-          if (e.target === guideModal) closeGuideModal();
-        });
-      }
-
-      // 오브젝트 프리셋 버튼
-      const presetButtons = document.querySelectorAll('.obj-preset-btn');
-      presetButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          presetButtons.forEach(b => {
-            b.classList.remove('border-2', 'border-emerald-500', 'bg-emerald-50/80', 'text-emerald-950');
-            b.classList.add('border', 'border-slate-200', 'bg-white', 'text-slate-700');
-          });
-          btn.classList.remove('border', 'border-slate-200', 'bg-white', 'text-slate-700');
-          btn.classList.add('border-2', 'border-emerald-500', 'bg-emerald-50/80', 'text-emerald-950');
-          activePreset = btn.getAttribute('data-type');
-        });
-      });
-
-      // 인스펙터 이벤트 바인딩
-      document.getElementById('btn-close-inspector').addEventListener('click', deselectObject);
-
-      document.getElementById('inspect-label').addEventListener('input', (e) => {
-        if (!selectedObject) return;
-        selectedObject.label = e.target.value;
-        if (selectedObject.sprite) {
-          selectedObject.group.remove(selectedObject.sprite);
-          selectedObject.sprite.geometry.dispose();
-          selectedObject.sprite.material.dispose();
-          selectedObject.sprite = null;
-        }
-        if (selectedObject.label && selectedObject.label.trim() !== '') {
-          selectedObject.sprite = createTextSprite(selectedObject.label, selectedObject.color, selectedObject.fontSize || 38);
-          if (selectedObject.sprite) {
-            const spriteOffset = (selectedObject.type === 'pin') ? 2.2 : 1.8;
-            selectedObject.sprite.position.y = selectedObject.height + spriteOffset;
-            selectedObject.group.add(selectedObject.sprite);
-          }
-        }
-        updateObjectListUI();
-      });
-
-      document.getElementById('inspect-fontsize').addEventListener('input', (e) => {
-        if (!selectedObject) return;
-        const size = parseInt(e.target.value);
-        document.getElementById('inspect-fontsize-val').textContent = `${size}px`;
-        selectedObject.fontSize = size;
-        if (selectedObject.sprite) {
-          selectedObject.group.remove(selectedObject.sprite);
-          selectedObject.sprite.geometry.dispose();
-          selectedObject.sprite.material.dispose();
-          selectedObject.sprite = null;
-        }
-        if (selectedObject.label && selectedObject.label.trim() !== '') {
-          selectedObject.sprite = createTextSprite(selectedObject.label, selectedObject.color, size);
-          if (selectedObject.sprite) {
-            const spriteOffset = (selectedObject.type === 'pin') ? 2.2 : 1.8;
-            selectedObject.sprite.position.y = selectedObject.height + spriteOffset;
-            selectedObject.group.add(selectedObject.sprite);
-          }
-        }
-      });
-
-      document.getElementById('inspect-color').addEventListener('input', (e) => {
-        if (!selectedObject) return;
-        selectedObject.color = e.target.value;
-        rebuildSelectedObjectMesh();
-      });
-
-      document.getElementById('inspect-height').addEventListener('input', (e) => {
-        if (!selectedObject) return;
-        selectedObject.height = parseFloat(e.target.value);
-        document.getElementById('inspect-height-val').textContent = selectedObject.height.toFixed(1);
-        rebuildSelectedObjectMesh();
-      });
-
-      document.getElementById('inspect-width').addEventListener('input', (e) => {
-        if (!selectedObject) return;
-        selectedObject.width = parseFloat(e.target.value);
-        document.getElementById('inspect-width-val').textContent = selectedObject.width.toFixed(1);
-        rebuildSelectedObjectMesh();
-      });
-
-      document.getElementById('inspect-rot').addEventListener('input', (e) => {
-        if (!selectedObject) return;
-        const deg = parseFloat(e.target.value);
-        document.getElementById('inspect-rot-val').textContent = `${deg}°`;
-        selectedObject.rotationY = THREE.MathUtils.degToRad(deg);
-        selectedObject.group.rotation.y = selectedObject.rotationY;
-      });
-
-      function rotateSelectedObjectBy(deltaDeg) {
-        if (!selectedObject) return;
-        let currentDeg = Math.round(THREE.MathUtils.radToDeg(selectedObject.rotationY));
-        let nextDeg = (currentDeg + deltaDeg) % 360;
-        if (nextDeg < 0) nextDeg += 360;
-        selectedObject.rotationY = THREE.MathUtils.degToRad(nextDeg);
-        selectedObject.group.rotation.y = selectedObject.rotationY;
-        document.getElementById('inspect-rot').value = nextDeg;
-        document.getElementById('inspect-rot-val').textContent = `${nextDeg}°`;
-      }
-
-      document.getElementById('btn-obj-rot-ccw').addEventListener('click', () => rotateSelectedObjectBy(-45));
-      document.getElementById('btn-obj-rot-cw').addEventListener('click', () => rotateSelectedObjectBy(45));
-      document.getElementById('btn-obj-rot-reset').addEventListener('click', () => {
-        if (!selectedObject) return;
-        selectedObject.rotationY = 0;
-        selectedObject.group.rotation.y = 0;
-        document.getElementById('inspect-rot').value = 0;
-        document.getElementById('inspect-rot-val').textContent = `0°`;
-      });
-
-      document.getElementById('inspect-pos-x').addEventListener('change', (e) => {
-        if (!selectedObject) return;
-        selectedObject.group.position.x = parseFloat(e.target.value) || 0;
-      });
-      document.getElementById('inspect-pos-z').addEventListener('change', (e) => {
-        if (!selectedObject) return;
-        selectedObject.group.position.z = parseFloat(e.target.value) || 0;
-      });
-
-      document.getElementById('btn-duplicate-obj').addEventListener('click', () => {
-        if (!selectedObject) return;
-        addObjectToMap(
-          { x: selectedObject.group.position.x + 2, z: selectedObject.group.position.z + 2 },
-          {
-            type: selectedObject.type,
-            label: `${selectedObject.label} (복사본)`,
-            color: selectedObject.color,
-            height: selectedObject.height,
-            width: selectedObject.width,
-            fontSize: selectedObject.fontSize || 38,
-            rotationY: selectedObject.rotationY
-          }
-        );
-      });
-
-      document.getElementById('btn-delete-obj').addEventListener('click', () => {
-        if (selectedObject) deleteObject(selectedObject.id);
-      });
-
-      document.getElementById('btn-clear-all').addEventListener('click', () => {
-        if (sceneObjects.length === 0) return;
-        while (sceneObjects.length > 0) {
-          deleteObject(sceneObjects[0].id);
-        }
-        showToast('모든 오브젝트가 삭제되었습니다.');
-      });
-
-      // 키보드 Del 키 삭제
-      window.addEventListener('keydown', (e) => {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        if (e.key === 'Delete' || e.key === 'Del') {
-          if (selectedObject) {
-            const targetName = selectedObject.label || selectedObject.type;
-            deleteObject(selectedObject.id);
-            showToast(`'${targetName}' 오브젝트가 삭제되었습니다.`, 'info');
-          }
-        }
-      });
-
-      // 지도 화질 조절
-      const rangeContrast = document.getElementById('range-map-contrast');
-      const labelContrast = document.getElementById('label-map-contrast');
-      rangeContrast.addEventListener('input', (e) => {
-        labelContrast.textContent = `${e.target.value}%`;
-        renderProcessedLiveTexture();
-      });
-
-      const rangeBrightness = document.getElementById('range-map-brightness');
-      const labelBrightness = document.getElementById('label-map-brightness');
-      rangeBrightness.addEventListener('input', (e) => {
-        labelBrightness.textContent = `${e.target.value}%`;
-        renderProcessedLiveTexture();
-      });
-
-      // 지도 회전 조절
-      const rangeMapRot = document.getElementById('range-map-rot');
-      const labelMapRot = document.getElementById('label-map-rot');
-      function setMapRotationDeg(deg) {
-        deg = (deg % 360 + 360) % 360;
-        mapPlane.rotation.z = THREE.MathUtils.degToRad(deg);
-        rangeMapRot.value = deg;
-        labelMapRot.textContent = `${deg}°`;
-      }
-      rangeMapRot.addEventListener('input', (e) => setMapRotationDeg(parseInt(e.target.value)));
-      document.getElementById('btn-map-rot-ccw').addEventListener('click', () => {
-        setMapRotationDeg(parseInt(rangeMapRot.value || 0) - 90);
-        showToast('지도가 -90° 회전되었습니다.');
-      });
-      document.getElementById('btn-map-rot-cw').addEventListener('click', () => {
-        setMapRotationDeg(parseInt(rangeMapRot.value || 0) + 90);
-        showToast('지도가 +90° 회전되었습니다.');
-      });
-      document.getElementById('btn-map-rot-reset').addEventListener('click', () => {
-        setMapRotationDeg(0);
-        showToast('지도 회전각이 0°로 초기화되었습니다.');
-      });
-
-      // 지도 스케일
-      document.getElementById('range-map-scale').addEventListener('input', (e) => {
-        const scale = e.target.value / 100;
-        mapPlane.scale.set(scale, scale, scale);
-        document.getElementById('label-map-scale').textContent = `${e.target.value}%`;
-      });
-
-      // 화면 폭 와이드 제어
-      const appWrapper = document.getElementById('app-wrapper');
-      const rangeCanvasWidth = document.getElementById('range-canvas-width');
-      const labelCanvasWidth = document.getElementById('label-canvas-width');
-      const btnScreenWide = document.getElementById('btn-screen-wide');
-      const screenWidthTag = document.getElementById('screen-width-tag');
-      let currentCanvasWidth = 100;
-
-      function setAppWidth(percent) {
-        currentCanvasWidth = percent;
-        appWrapper.style.width = `${percent}%`;
-        rangeCanvasWidth.value = percent;
-        labelCanvasWidth.textContent = `${percent}%`;
-        screenWidthTag.textContent = `화면 폭: ${percent}%`;
-
-        if (percent > 100) {
-          btnScreenWide.classList.add('bg-emerald-600', 'text-white');
-          btnScreenWide.classList.remove('bg-emerald-50', 'text-emerald-700');
-        } else {
-          btnScreenWide.classList.remove('bg-emerald-600', 'text-white');
-          btnScreenWide.classList.add('bg-emerald-50', 'text-emerald-700');
-        }
-        setTimeout(onWindowResize, 50);
-      }
-
-      btnScreenWide.addEventListener('click', () => {
-        if (currentCanvasWidth === 100) {
-          setAppWidth(175);
-          showToast('화면 가로폭이 175% 와이드 모드로 확장되었습니다.', 'success');
-        } else {
-          setAppWidth(100);
-          showToast('화면 가로폭이 기본 100%로 복원되었습니다.');
-        }
-      });
-      rangeCanvasWidth.addEventListener('input', (e) => setAppWidth(parseInt(e.target.value)));
-
-      // 뷰포트 프리셋 (가로 20% 확장된 와이드 2.1:1 화면에 최적화된 시점)
-      document.getElementById('btn-view-iso').addEventListener('click', () => {
-        controls.target.set(0, 0, 0);
-        camera.position.set(52, 48, 52);
-        controls.update();
-      });
-      document.getElementById('btn-view-top').addEventListener('click', () => {
-        controls.target.set(0, 0, 0);
-        camera.position.set(0, 80, 0.1);
-        controls.update();
-      });
-      document.getElementById('btn-reset-cam').addEventListener('click', () => {
-        controls.target.set(0, 0, 0);
-        camera.position.set(0, 58, 70);
-        controls.update();
-      });
-
-      // 전체화면
-      const btnFullscreen = document.getElementById('btn-fullscreen');
-      btnFullscreen.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
-          btnFullscreen.innerHTML = '<i class="fa-solid fa-compress"></i>';
-        } else {
-          if (document.exitFullscreen) {
-            document.exitFullscreen();
-            btnFullscreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
-          }
-        }
-      });
-
-      // 그리드 토글
-      document.getElementById('toggle-grid').addEventListener('change', (e) => {
-        gridHelper.visible = e.target.checked;
-      });
-
-      // 스크린샷 이미지 저장
-      document.getElementById('btn-screenshot').addEventListener('click', () => {
-        deselectObject();
-        renderer.render(scene, camera);
-        const dataURL = renderer.domElement.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `3D-Live-Map-${currentGeo.name}-${Date.now()}.png`;
-        link.href = dataURL;
-        link.click();
-        showToast('고화질 3D 지도 스크린샷이 저장되었습니다.', 'success');
-      });
-    }
-
-    function onWindowResize() {
-      const container = document.getElementById('viewport-container');
-      if (!container || !renderer || !camera) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    }
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-
-      const time = performance.now() * 0.002;
-      sceneObjects.forEach((obj, idx) => {
-        if (obj.sprite) {
-          const bounce = Math.sin(time + idx) * 0.12;
-          const baseHeight = obj.height + (obj.type === 'pin' ? 2.2 : 1.8);
-          obj.sprite.position.y = baseHeight + bounce;
-        }
-      });
-
-      renderer.render(scene, camera);
-    }
-
-    window.onload = function() {
-      initThreeScene();
-      setupDOMEvents();
-      setupClipboardPaste();
-      animate();
-    };
-  </script>
+    }, true);
+  } catch(_e){}
+
+  var _d = "ICAgIGxldCBzY2VuZSwgY2FtZXJhLCByZW5kZXJlciwgY29udHJvbHM7CiAgICBsZXQgbWFwUGxhbmUsIGdyaWRIZWxwZXIsIGRpckxpZ2h0OwogICAgbGV0IGN1cnJlbnRUZXh0dXJlID0gbnVsbDsKICAgIGxldCByYXdDb21wb3NlZENhbnZhcyA9IG51bGw7CiAgICBsZXQgcmF3VXBsb2FkZWRJbWFnZSA9IG51bGw7CiAgICBsZXQgc2NlbmVPYmplY3RzID0gW107CiAgICBsZXQgc2VsZWN0ZWRPYmplY3QgPSBudWxsOwogICAgbGV0IG5leHRPYmplY3RJZCA9IDE7CiAgICBsZXQgYWN0aXZlUHJlc2V0ID0gJ3NlbGVjdCc7CiAgICBsZXQgaXNEcmF3aW5nRnJlZWhhbmQgPSBmYWxzZTsKICAgIGxldCBmcmVlaGFuZFJhd1BvaW50cyA9IFtdOwogICAgbGV0IGFjdGl2ZURyYXdpbmdNZXNoID0gbnVsbDsKICAgIGxldCBpc0RyYWdnaW5nT2JqZWN0ID0gZmFsc2U7CiAgICBsZXQgZHJhZ2dlZE9iamVjdCA9IG51bGw7CiAgICBsZXQgZHJhZ09mZnNldCA9IG5ldyBUSFJFRS5WZWN0b3IzKCk7CiAgICBjb25zdCB2aXJ0dWFsR3JvdW5kUGxhbmUgPSBuZXcgVEhSRUUuUGxhbmUobmV3IFRIUkVFLlZlY3RvcjMoMCwgMSwgMCksIDApOwogICAgY29uc3QgcGxhbmVJbnRlcnNlY3Rpb25Qb2ludCA9IG5ldyBUSFJFRS5WZWN0b3IzKCk7CiAgICBjb25zdCByYXljYXN0ZXIgPSBuZXcgVEhSRUUuUmF5Y2FzdGVyKCk7CiAgICBjb25zdCBtb3VzZSA9IG5ldyBUSFJFRS5WZWN0b3IyKCk7CiAgICBsZXQgbW91c2VEb3duUG9zID0geyB4OiAwLCB5OiAwIH07CiAgICBsZXQgaGFzTW92ZWRNb3VzZSA9IGZhbHNlOwogICAgbGV0IGN1cnJlbnRHZW8gPSB7CiAgICAgIGxhdDogMzcuNjQzMywKICAgICAgbG9uOiAxMjYuNjc3NSwKICAgICAgem9vbTogMTYsCiAgICAgIG5hbWU6ICfrjIDtlZzrr7zqta0g6rK96riw64+EIOq5gO2PrOyLnCDsnqXquLDrj5kgKOudvOuyoOuLiOyytCknLAogICAgICBwcm92aWRlcjogJ29zbV9ob3QnCiAgICB9OwogICAgZnVuY3Rpb24gc2hvd1RvYXN0KHRleHQsIHR5cGUgPSAnaW5mbycpIHsKICAgICAgY29uc3QgdG9hc3QgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndG9hc3QtYm94Jyk7CiAgICAgIGNvbnN0IHRvYXN0VGV4dCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0b2FzdC10ZXh0Jyk7CiAgICAgIGNvbnN0IHRvYXN0SWNvbiA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0b2FzdC1pY29uJyk7CiAgICAgIHRvYXN0VGV4dC50ZXh0Q29udGVudCA9IHRleHQ7CiAgICAgIGlmICh0eXBlID09PSAnc3VjY2VzcycpIHsKICAgICAgICB0b2FzdEljb24uY2xhc3NOYW1lID0gImZhLXNvbGlkIGZhLWNpcmNsZS1jaGVjayB0ZXh0LWVtZXJhbGQtNjAwIHRleHQtYmFzZSI7CiAgICAgIH0gZWxzZSBpZiAodHlwZSA9PT0gJ3dhcm4nKSB7CiAgICAgICAgdG9hc3RJY29uLmNsYXNzTmFtZSA9ICJmYS1zb2xpZCBmYS10cmlhbmdsZS1leGNsYW1hdGlvbiB0ZXh0LWFtYmVyLTYwMCB0ZXh0LWJhc2UiOwogICAgICB9IGVsc2UgewogICAgICAgIHRvYXN0SWNvbi5jbGFzc05hbWUgPSAiZmEtc29saWQgZmEtY2lyY2xlLWluZm8gdGV4dC1lbWVyYWxkLTYwMCB0ZXh0LWJhc2UiOwogICAgICB9CiAgICAgIHRvYXN0LmNsYXNzTGlzdC5yZW1vdmUoJ3RyYW5zbGF0ZS15LTIwJywgJ29wYWNpdHktMCcpOwogICAgICB0b2FzdC5jbGFzc0xpc3QuYWRkKCd0cmFuc2xhdGUteS0wJywgJ29wYWNpdHktMTAwJyk7CiAgICAgIGNsZWFyVGltZW91dCh3aW5kb3cuX3RvYXN0VGltZXIpOwogICAgICB3aW5kb3cuX3RvYXN0VGltZXIgPSBzZXRUaW1lb3V0KCgpID0+IHsKICAgICAgICB0b2FzdC5jbGFzc0xpc3QuYWRkKCd0cmFuc2xhdGUteS0yMCcsICdvcGFjaXR5LTAnKTsKICAgICAgICB0b2FzdC5jbGFzc0xpc3QucmVtb3ZlKCd0cmFuc2xhdGUteS0wJywgJ29wYWNpdHktMTAwJyk7CiAgICAgIH0sIDI2MDApOwogICAgfQogICAgZnVuY3Rpb24gc2hvd0xvYWRpbmcoc2hvdywgdGl0bGUgPSAn7Jio65287J24IOyngOuPhOulvCDrtojrn6zsmKTripQg7KSRLi4uJykgewogICAgICBjb25zdCBvdmVybGF5ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RpbGUtbG9hZGluZy1vdmVybGF5Jyk7CiAgICAgIGNvbnN0IHRpdGxlRWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbG9hZGluZy1tYWluLXRleHQnKTsKICAgICAgaWYgKHRpdGxlRWwpIHRpdGxlRWwudGV4dENvbnRlbnQgPSB0aXRsZTsKICAgICAgaWYgKHNob3cpIHsKICAgICAgICBvdmVybGF5LmNsYXNzTGlzdC5yZW1vdmUoJ29wYWNpdHktMCcsICdwb2ludGVyLWV2ZW50cy1ub25lJyk7CiAgICAgICAgb3ZlcmxheS5jbGFzc0xpc3QuYWRkKCdvcGFjaXR5LTEwMCcpOwogICAgICB9IGVsc2UgewogICAgICAgIG92ZXJsYXkuY2xhc3NMaXN0LnJlbW92ZSgnb3BhY2l0eS0xMDAnKTsKICAgICAgICBvdmVybGF5LmNsYXNzTGlzdC5hZGQoJ29wYWNpdHktMCcsICdwb2ludGVyLWV2ZW50cy1ub25lJyk7CiAgICAgIH0KICAgIH0KICAgIGZ1bmN0aW9uIGxvbjJ0aWxlKGxvbiwgem9vbSkgewogICAgICByZXR1cm4gTWF0aC5mbG9vcigobG9uICsgMTgwKSAvIDM2MCAqIE1hdGgucG93KDIsIHpvb20pKTsKICAgIH0KICAgIGZ1bmN0aW9uIGxhdDJ0aWxlKGxhdCwgem9vbSkgewogICAgICBjb25zdCByYWQgPSBsYXQgKiBNYXRoLlBJIC8gMTgwOwogICAgICByZXR1cm4gTWF0aC5mbG9vcigoMSAtIE1hdGgubG9nKE1hdGgudGFuKHJhZCkgKyAxIC8gTWF0aC5jb3MocmFkKSkgLyBNYXRoLlBJKSAvIDIgKiBNYXRoLnBvdygyLCB6b29tKSk7CiAgICB9CiAgICBmdW5jdGlvbiBnZXRUaWxlVXJscyh4LCB5LCB6LCBwcm92aWRlciA9ICdvc21faG90JykgewogICAgICBpZiAocHJvdmlkZXIgPT09ICdvc21faG90JykgewogICAgICAgIHJldHVybiB7CiAgICAgICAgICBiYXNlOiBgaHR0cHM6Ly90aWxlLm9wZW5zdHJlZXRtYXAuZnIvaG90LyR7en0vJHt4fS8ke3l9LnBuZ2AsCiAgICAgICAgICBvdmVybGF5OiBudWxsLAogICAgICAgICAgZmFsbGJhY2s6IGBodHRwczovL3RpbGUub3BlbnN0cmVldG1hcC5kZS8ke3p9LyR7eH0vJHt5fS5wbmdgCiAgICAgICAgfTsKICAgICAgfQogICAgICBpZiAocHJvdmlkZXIgPT09ICdvc21fZGUnKSB7CiAgICAgICAgcmV0dXJuIHsKICAgICAgICAgIGJhc2U6IGBodHRwczovL3RpbGUub3BlbnN0cmVldG1hcC5kZS8ke3p9LyR7eH0vJHt5fS5wbmdgLAogICAgICAgICAgb3ZlcmxheTogbnVsbCwKICAgICAgICAgIGZhbGxiYWNrOiBgaHR0cHM6Ly90aWxlLm9wZW5zdHJlZXRtYXAuZnIvaG90LyR7en0vJHt4fS8ke3l9LnBuZ2AKICAgICAgICB9OwogICAgICB9CiAgICAgIGlmIChwcm92aWRlciA9PT0gJ3NhdF9oeWJyaWQnKSB7CiAgICAgICAgcmV0dXJuIHsKICAgICAgICAgIGJhc2U6IGBodHRwczovL3NlcnZlci5hcmNnaXNvbmxpbmUuY29tL0FyY0dJUy9yZXN0L3NlcnZpY2VzL1dvcmxkX0ltYWdlcnkvTWFwU2VydmVyL3RpbGUvJHt6fS8ke3l9LyR7eH1gLAogICAgICAgICAgb3ZlcmxheTogYGh0dHBzOi8vc2VydmVyLmFyY2dpc29ubGluZS5jb20vQXJjR0lTL3Jlc3Qvc2VydmljZXMvUmVmZXJlbmNlL1dvcmxkX0JvdW5kYXJpZXNfYW5kX1BsYWNlcy9NYXBTZXJ2ZXIvdGlsZS8ke3p9LyR7eX0vJHt4fWAsCiAgICAgICAgICBvdmVybGF5Um9hZHM6IGBodHRwczovL3NlcnZlci5hcmNnaXNvbmxpbmUuY29tL0FyY0dJUy9yZXN0L3NlcnZpY2VzL1JlZmVyZW5jZS9Xb3JsZF9UcmFuc3BvcnRhdGlvbi9NYXBTZXJ2ZXIvdGlsZS8ke3p9LyR7eX0vJHt4fWAKICAgICAgICB9OwogICAgICB9CiAgICAgIHJldHVybiB7CiAgICAgICAgYmFzZTogYGh0dHBzOi8vc2VydmVyLmFyY2dpc29ubGluZS5jb20vQXJjR0lTL3Jlc3Qvc2VydmljZXMvV29ybGRfSW1hZ2VyeS9NYXBTZXJ2ZXIvdGlsZS8ke3p9LyR7eX0vJHt4fWAsCiAgICAgICAgb3ZlcmxheTogbnVsbAogICAgICB9OwogICAgfQogICAgZnVuY3Rpb24gbG9hZFNpbmdsZVRpbGUodXJsLCBmYWxsYmFja1VybCA9IG51bGwpIHsKICAgICAgcmV0dXJuIG5ldyBQcm9taXNlKChyZXNvbHZlKSA9PiB7CiAgICAgICAgaWYgKCF1cmwpIHJldHVybiByZXNvbHZlKG51bGwpOwogICAgICAgIGNvbnN0IGltZyA9IG5ldyBJbWFnZSgpOwogICAgICAgIGltZy5jcm9zc09yaWdpbiA9ICdhbm9ueW1vdXMnOwogICAgICAgIGltZy5vbmxvYWQgPSAoKSA9PiByZXNvbHZlKGltZyk7CiAgICAgICAgaW1nLm9uZXJyb3IgPSAoKSA9PiB7CiAgICAgICAgICBpZiAoZmFsbGJhY2tVcmwpIHsKICAgICAgICAgICAgY29uc3QgZmJJbWcgPSBuZXcgSW1hZ2UoKTsKICAgICAgICAgICAgZmJJbWcuY3Jvc3NPcmlnaW4gPSAnYW5vbnltb3VzJzsKICAgICAgICAgICAgZmJJbWcub25sb2FkID0gKCkgPT4gcmVzb2x2ZShmYkltZyk7CiAgICAgICAgICAgIGZiSW1nLm9uZXJyb3IgPSAoKSA9PiByZXNvbHZlKG51bGwpOwogICAgICAgICAgICBmYkltZy5zcmMgPSBmYWxsYmFja1VybDsKICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgIHJlc29sdmUobnVsbCk7CiAgICAgICAgICB9CiAgICAgICAgfTsKICAgICAgICBpbWcuc3JjID0gdXJsOwogICAgICB9KTsKICAgIH0KICAgIGZ1bmN0aW9uIGdlbmVyYXRlU3R1ZGlvTG9nb1RleHR1cmUoKSB7CiAgICAgIGNvbnN0IGNhbnZhcyA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2NhbnZhcycpOwogICAgICBjYW52YXMud2lkdGggPSAxNTM2OwogICAgICBjYW52YXMuaGVpZ2h0ID0gMTUzNjsKICAgICAgY29uc3QgY3R4ID0gY2FudmFzLmdldENvbnRleHQoJzJkJyk7CiAgICAgIGNvbnN0IGdyYWQgPSBjdHguY3JlYXRlUmFkaWFsR3JhZGllbnQoNzY4LCA3NjgsIDEyMCwgNzY4LCA3NjgsIDkwMCk7CiAgICAgIGdyYWQuYWRkQ29sb3JTdG9wKDAsICcjZmZmZmZmJyk7CiAgICAgIGdyYWQuYWRkQ29sb3JTdG9wKDAuNjUsICcjZjhmYWZjJyk7CiAgICAgIGdyYWQuYWRkQ29sb3JTdG9wKDEsICcjZTJlOGYwJyk7CiAgICAgIGN0eC5maWxsU3R5bGUgPSBncmFkOwogICAgICBjdHguZmlsbFJlY3QoMCwgMCwgY2FudmFzLndpZHRoLCBjYW52YXMuaGVpZ2h0KTsKICAgICAgY3R4LnN0cm9rZVN0eWxlID0gJyNlMmU4ZjAnOwogICAgICBjdHgubGluZVdpZHRoID0gMjsKICAgICAgY29uc3Qgc3RlcCA9IDY0OwogICAgICBmb3IgKGxldCB4ID0gc3RlcDsgeCA8IGNhbnZhcy53aWR0aDsgeCArPSBzdGVwKSB7CiAgICAgICAgY3R4LmJlZ2luUGF0aCgpOwogICAgICAgIGN0eC5tb3ZlVG8oeCwgMCk7CiAgICAgICAgY3R4LmxpbmVUbyh4LCBjYW52YXMuaGVpZ2h0KTsKICAgICAgICBjdHguc3Ryb2tlKCk7CiAgICAgIH0KICAgICAgZm9yIChsZXQgeSA9IHN0ZXA7IHkgPCBjYW52YXMuaGVpZ2h0OyB5ICs9IHN0ZXApIHsKICAgICAgICBjdHguYmVnaW5QYXRoKCk7CiAgICAgICAgY3R4Lm1vdmVUbygwLCB5KTsKICAgICAgICBjdHgubGluZVRvKGNhbnZhcy53aWR0aCwgeSk7CiAgICAgICAgY3R4LnN0cm9rZSgpOwogICAgICB9CiAgICAgIGN0eC5zdHJva2VTdHlsZSA9ICcjMDU5NjY5JzsKICAgICAgY3R4LmxpbmVXaWR0aCA9IDU7CiAgICAgIGNvbnN0IG0gPSA0OCwgY2wgPSA2MDsKICAgICAgW1ttLCBtLCAxLCAxXSwgW2NhbnZhcy53aWR0aCAtIG0sIG0sIC0xLCAxXSwgW20sIGNhbnZhcy5oZWlnaHQgLSBtLCAxLCAtMV0sIFtjYW52YXMud2lkdGggLSBtLCBjYW52YXMuaGVpZ2h0IC0gbSwgLTEsIC0xXV0uZm9yRWFjaCgoW2N4LCBjeSwgZHgsIGR5XSkgPT4gewogICAgICAgIGN0eC5iZWdpblBhdGgoKTsKICAgICAgICBjdHgubW92ZVRvKGN4LCBjeSArIGR5ICogY2wpOwogICAgICAgIGN0eC5saW5lVG8oY3gsIGN5KTsKICAgICAgICBjdHgubGluZVRvKGN4ICsgZHggKiBjbCwgY3kpOwogICAgICAgIGN0eC5zdHJva2UoKTsKICAgICAgfSk7CiAgICAgIGNvbnN0IGN4ID0gNzY4OwogICAgICBjb25zdCBjeSA9IDUyMDsKICAgICAgY3R4LmJlZ2luUGF0aCgpOwogICAgICBjdHguYXJjKGN4LCBjeSwgMTQwLCAwLCBNYXRoLlBJICogMik7CiAgICAgIGN0eC5maWxsU3R5bGUgPSAncmdiYSgxNiwgMTg1LCAxMjksIDAuMDgpJzsKICAgICAgY3R4LmZpbGwoKTsKICAgICAgY3R4LmxpbmVXaWR0aCA9IDM7CiAgICAgIGN0eC5zdHJva2VTdHlsZSA9ICdyZ2JhKDE2LCAxODUsIDEyOSwgMC4zKSc7CiAgICAgIGN0eC5zdHJva2UoKTsKICAgICAgY3R4LnNhdmUoKTsKICAgICAgY3R4LnRyYW5zbGF0ZShjeCwgY3kpOwogICAgICBjb25zdCByID0gODg7CiAgICAgIGNvbnN0IHAxID0gWzAsIC1yXTsKICAgICAgY29uc3QgcDIgPSBbciAqIDAuODY2LCAtciAqIDAuNV07CiAgICAgIGNvbnN0IHAzID0gW3IgKiAwLjg2NiwgciAqIDAuNV07CiAgICAgIGNvbnN0IHA0ID0gWzAsIHJdOwogICAgICBjb25zdCBwNSA9IFstciAqIDAuODY2LCByICogMC41XTsKICAgICAgY29uc3QgcDYgPSBbLXIgKiAwLjg2NiwgLXIgKiAwLjVdOwogICAgICBjb25zdCBjZW50ZXIgPSBbMCwgMF07CiAgICAgIGN0eC5maWxsU3R5bGUgPSAnIzM0ZDM5OSc7CiAgICAgIGN0eC5iZWdpblBhdGgoKTsKICAgICAgY3R4Lm1vdmVUbyhwMVswXSwgcDFbMV0pOwogICAgICBjdHgubGluZVRvKHAyWzBdLCBwMlsxXSk7CiAgICAgIGN0eC5saW5lVG8oY2VudGVyWzBdLCBjZW50ZXJbMV0pOwogICAgICBjdHgubGluZVRvKHA2WzBdLCBwNlsxXSk7CiAgICAgIGN0eC5jbG9zZVBhdGgoKTsKICAgICAgY3R4LmZpbGwoKTsKICAgICAgY3R4LmZpbGxTdHlsZSA9ICcjMDU5NjY5JzsKICAgICAgY3R4LmJlZ2luUGF0aCgpOwogICAgICBjdHgubW92ZVRvKGNlbnRlclswXSwgY2VudGVyWzFdKTsKICAgICAgY3R4LmxpbmVUbyhwMlswXSwgcDJbMV0pOwogICAgICBjdHgubGluZVRvKHAzWzBdLCBwM1sxXSk7CiAgICAgIGN0eC5saW5lVG8ocDRbMF0sIHA0WzFdKTsKICAgICAgY3R4LmNsb3NlUGF0aCgpOwogICAgICBjdHguZmlsbCgpOwogICAgICBjdHguZmlsbFN0eWxlID0gJyMwNDc4NTcnOwogICAgICBjdHguYmVnaW5QYXRoKCk7CiAgICAgIGN0eC5tb3ZlVG8ocDFbMF0sIHAxWzFdKTsKICAgICAgY3R4LmxpbmVUbyhjZW50ZXJbMF0sIGNlbnRlclsxXSk7CiAgICAgIGN0eC5saW5lVG8ocDRbMF0sIHA0WzFdKTsKICAgICAgY3R4LmxpbmVUbyhwNVswXSwgcDVbMV0pOwogICAgICBjdHgubGluZVRvKHA2WzBdLCBwNlsxXSk7CiAgICAgIGN0eC5jbG9zZVBhdGgoKTsKICAgICAgY3R4LmZpbGwoKTsKICAgICAgY3R4LnN0cm9rZVN0eWxlID0gJyNmZmZmZmYnOwogICAgICBjdHgubGluZVdpZHRoID0gNDsKICAgICAgY3R4LnN0cm9rZSgpOwogICAgICBjdHgucmVzdG9yZSgpOwogICAgICBjdHgudGV4dEFsaWduID0gJ2NlbnRlcic7CiAgICAgIGN0eC50ZXh0QmFzZWxpbmUgPSAnbWlkZGxlJzsKICAgICAgY3R4LmZvbnQgPSAnOTAwIDU0cHggc3lzdGVtLXVpLCAtYXBwbGUtc3lzdGVtLCBzYW5zLXNlcmlmJzsKICAgICAgY3R4LmZpbGxTdHlsZSA9ICcjMGYxNzJhJzsKICAgICAgY3R4LmZpbGxUZXh0KCczRCBMSVZFIE1BUCBTVFVESU8nLCA3NjgsIDc0MCk7CiAgICAgIGN0eC5mb250ID0gJzYwMCAyNHB4IHN5c3RlbS11aSwgLWFwcGxlLXN5c3RlbSwgc2Fucy1zZXJpZic7CiAgICAgIGN0eC5maWxsU3R5bGUgPSAnIzY0NzQ4Yic7CiAgICAgIGN0eC5maWxsVGV4dCgnMToxIOygleyCrOqwge2YlSDrnbzsnbTruIwg7YOA7J28IOyngOuPhCAmIOy6oeyymCDrp7UgM+ywqOybkCDsl5DrlJTthLAnLCA3NjgsIDgwNSk7CiAgICAgIGNvbnN0IGNhcmRzID0gWwogICAgICAgIHsgaWNvbjogJ/CflI0nLCB0aXRsZTogJ+yLpOyLnOqwhCDqsoDsg4knLCBkZXNjOiAn7KKM7LihIO2DreyXkOyEnCDsm5DtlZjripQg7KO87IaML+yngOuqhSDqsoDsg4knIH0sCiAgICAgICAgeyBpY29uOiAn8J+TiycsIHRpdGxlOiAnQ3RybCArIFYg67aZ7Jes64Sj6riwJywgZGVzYzogJ+q1kOyerC/tlZnsirXsp4Ag7KeA64+E66W8IDNEIO2PieuptOyXkCDsponsi5wg66ek7ZWRJyB9LAogICAgICAgIHsgaWNvbjogJ+Kcj++4jycsIHRpdGxlOiAn7Jik67iM7KCd7Yq4IOuwsOy5mCcsIGRlc2M6ICfsnITsuZgg7ZWALCDqsbTrrLwsIO2UhOumrO2VuOuTnCDqsr3roZzshKAg7ZGc7IucJyB9CiAgICAgIF07CiAgICAgIGNvbnN0IHN0YXJ0Q2FyZFkgPSA5MjA7CiAgICAgIGNvbnN0IGNhcmRXID0gNTQwOwogICAgICBjb25zdCBjYXJkSCA9IDkyOwogICAgICBjb25zdCBnYXAgPSAyNDsKICAgICAgY2FyZHMuZm9yRWFjaCgoY2FyZCwgaWR4KSA9PiB7CiAgICAgICAgY29uc3QgeCA9IDc2OCAtIGNhcmRXIC8gMjsKICAgICAgICBjb25zdCB5ID0gc3RhcnRDYXJkWSArIGlkeCAqIChjYXJkSCArIGdhcCk7CiAgICAgICAgY3R4LmZpbGxTdHlsZSA9ICcjZmZmZmZmJzsKICAgICAgICBjdHguYmVnaW5QYXRoKCk7CiAgICAgICAgY3R4LnJvdW5kUmVjdCh4LCB5LCBjYXJkVywgY2FyZEgsIDE2KTsKICAgICAgICBjdHguZmlsbCgpOwogICAgICAgIGN0eC5saW5lV2lkdGggPSAyOwogICAgICAgIGN0eC5zdHJva2VTdHlsZSA9ICcjY2JkNWUxJzsKICAgICAgICBjdHguc3Ryb2tlKCk7CiAgICAgICAgY3R4LnRleHRBbGlnbiA9ICdsZWZ0JzsKICAgICAgICBjdHguZm9udCA9ICczNHB4IHN5c3RlbS11aSwgc2Fucy1zZXJpZic7CiAgICAgICAgY3R4LmZpbGxUZXh0KGNhcmQuaWNvbiwgeCArIDI0LCB5ICsgNDYpOwogICAgICAgIGN0eC5mb250ID0gJ2JvbGQgMjBweCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYnOwogICAgICAgIGN0eC5maWxsU3R5bGUgPSAnIzBmMTcyYSc7CiAgICAgICAgY3R4LmZpbGxUZXh0KGNhcmQudGl0bGUsIHggKyA4MCwgeSArIDM1KTsKICAgICAgICBjdHguZm9udCA9ICcxNXB4IHN5c3RlbS11aSwgc2Fucy1zZXJpZic7CiAgICAgICAgY3R4LmZpbGxTdHlsZSA9ICcjNjQ3NDhiJzsKICAgICAgICBjdHguZmlsbFRleHQoY2FyZC5kZXNjLCB4ICsgODAsIHkgKyA2NCk7CiAgICAgIH0pOwogICAgICBjb25zdCB0ZXh0dXJlID0gbmV3IFRIUkVFLkNhbnZhc1RleHR1cmUoY2FudmFzKTsKICAgICAgdGV4dHVyZS5lbmNvZGluZyA9IFRIUkVFLnNSR0JFbmNvZGluZzsKICAgICAgdGV4dHVyZS5hbmlzb3Ryb3B5ID0gODsKICAgICAgcmV0dXJuIHRleHR1cmU7CiAgICB9CiAgICBmdW5jdGlvbiBhcHBseUxvZ29TY3JlZW5Ub01hcCgpIHsKICAgICAgcmF3VXBsb2FkZWRJbWFnZSA9IG51bGw7CiAgICAgIHJhd0NvbXBvc2VkQ2FudmFzID0gbnVsbDsKICAgICAgbWFwUGxhbmUuZ2VvbWV0cnkuZGlzcG9zZSgpOwogICAgICBtYXBQbGFuZS5nZW9tZXRyeSA9IG5ldyBUSFJFRS5QbGFuZUdlb21ldHJ5KDg3LjUsIDg3LjUpOwogICAgICBjb25zdCBsb2dvVGV4dHVyZSA9IGdlbmVyYXRlU3R1ZGlvTG9nb1RleHR1cmUoKTsKICAgICAgaWYgKG1hcFBsYW5lLm1hdGVyaWFsLm1hcCkgbWFwUGxhbmUubWF0ZXJpYWwubWFwLmRpc3Bvc2UoKTsKICAgICAgbWFwUGxhbmUubWF0ZXJpYWwubWFwID0gbG9nb1RleHR1cmU7CiAgICAgIG1hcFBsYW5lLm1hdGVyaWFsLm5lZWRzVXBkYXRlID0gdHJ1ZTsKICAgICAgY3VycmVudFRleHR1cmUgPSBsb2dvVGV4dHVyZTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2N1cnJlbnQtbGF0bG5nLXRhZycpLnRleHRDb250ZW50ID0gJ+uMgOq4sCDspJEgKOq4sOuzuCDtmZTrqbQpJzsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2N1cnJlbnQtcGxhY2VuYW1lLXRhZycpLnRleHRDb250ZW50ID0gJ+yepeyGjOulvCDqsoDsg4ntlZjqsbDrgpgg7Lqh7LKYIOyngOuPhOulvCDrtpnsl6zrhKPsnLzshLjsmpQnOwogICAgfQogICAgYXN5bmMgZnVuY3Rpb24gbG9hZE9ubGluZU1hcFRpbGVzKGxhdCwgbG9uLCB6b29tID0gMTYsIHByb3ZpZGVyID0gJ29zbV9ob3QnKSB7CiAgICAgIHNob3dMb2FkaW5nKHRydWUsIGDsnITrj4QgJHtsYXQudG9GaXhlZCg0KX0sIOqyveuPhCAke2xvbi50b0ZpeGVkKDQpfSDsp4Drj4Qg7IOd7ISxIOykkS4uLmApOwogICAgICBjb25zdCBjZW50ZXJUaWxlWCA9IGxvbjJ0aWxlKGxvbiwgem9vbSk7CiAgICAgIGNvbnN0IGNlbnRlclRpbGVZID0gbGF0MnRpbGUobGF0LCB6b29tKTsKICAgICAgY29uc3QgY29scyA9IDc7CiAgICAgIGNvbnN0IHJvd3MgPSA3OwogICAgICBjb25zdCBzdGFydFggPSBjZW50ZXJUaWxlWCAtIE1hdGguZmxvb3IoY29scyAvIDIpOwogICAgICBjb25zdCBzdGFydFkgPSBjZW50ZXJUaWxlWSAtIE1hdGguZmxvb3Iocm93cyAvIDIpOwogICAgICBjb25zdCBjYW52YXMgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdjYW52YXMnKTsKICAgICAgY2FudmFzLndpZHRoID0gY29scyAqIDI1NjsKICAgICAgY2FudmFzLmhlaWdodCA9IHJvd3MgKiAyNTY7CiAgICAgIGNvbnN0IGN0eCA9IGNhbnZhcy5nZXRDb250ZXh0KCcyZCcpOwogICAgICBjdHguZmlsbFN0eWxlID0gJyNmOGZhZmMnOwogICAgICBjdHguZmlsbFJlY3QoMCwgMCwgY2FudmFzLndpZHRoLCBjYW52YXMuaGVpZ2h0KTsKICAgICAgY29uc3QgdGlsZVRhc2tzID0gW107CiAgICAgIGZvciAobGV0IHIgPSAwOyByIDwgcm93czsgcisrKSB7CiAgICAgICAgZm9yIChsZXQgYyA9IDA7IGMgPCBjb2xzOyBjKyspIHsKICAgICAgICAgIGNvbnN0IHRpbGVYID0gc3RhcnRYICsgYzsKICAgICAgICAgIGNvbnN0IHRpbGVZID0gc3RhcnRZICsgcjsKICAgICAgICAgIGNvbnN0IHRpbGVJbmZvID0gZ2V0VGlsZVVybHModGlsZVgsIHRpbGVZLCB6b29tLCBwcm92aWRlcik7CiAgICAgICAgICBjb25zdCB0YXNrID0gKGFzeW5jICgpID0+IHsKICAgICAgICAgICAgY29uc3QgYmFzZUltZyA9IGF3YWl0IGxvYWRTaW5nbGVUaWxlKHRpbGVJbmZvLmJhc2UsIHRpbGVJbmZvLmZhbGxiYWNrKTsKICAgICAgICAgICAgaWYgKGJhc2VJbWcpIHsKICAgICAgICAgICAgICBjdHguZHJhd0ltYWdlKGJhc2VJbWcsIGMgKiAyNTYsIHIgKiAyNTYsIDI1NiwgMjU2KTsKICAgICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgICBjdHguZmlsbFN0eWxlID0gJyNlMmU4ZjAnOwogICAgICAgICAgICAgIGN0eC5maWxsUmVjdChjICogMjU2LCByICogMjU2LCAyNTYsIDI1Nik7CiAgICAgICAgICAgICAgY3R4LnN0cm9rZVN0eWxlID0gJyNjYmQ1ZTEnOwogICAgICAgICAgICAgIGN0eC5zdHJva2VSZWN0KGMgKiAyNTYsIHIgKiAyNTYsIDI1NiwgMjU2KTsKICAgICAgICAgICAgfQogICAgICAgICAgICBpZiAodGlsZUluZm8ub3ZlcmxheVJvYWRzKSB7CiAgICAgICAgICAgICAgY29uc3Qgcm9hZEltZyA9IGF3YWl0IGxvYWRTaW5nbGVUaWxlKHRpbGVJbmZvLm92ZXJsYXlSb2Fkcyk7CiAgICAgICAgICAgICAgaWYgKHJvYWRJbWcpIGN0eC5kcmF3SW1hZ2Uocm9hZEltZywgYyAqIDI1NiwgciAqIDI1NiwgMjU2LCAyNTYpOwogICAgICAgICAgICB9CiAgICAgICAgICAgIGlmICh0aWxlSW5mby5vdmVybGF5KSB7CiAgICAgICAgICAgICAgY29uc3Qgb3ZlcmxheUltZyA9IGF3YWl0IGxvYWRTaW5nbGVUaWxlKHRpbGVJbmZvLm92ZXJsYXkpOwogICAgICAgICAgICAgIGlmIChvdmVybGF5SW1nKSBjdHguZHJhd0ltYWdlKG92ZXJsYXlJbWcsIGMgKiAyNTYsIHIgKiAyNTYsIDI1NiwgMjU2KTsKICAgICAgICAgICAgfQogICAgICAgICAgfSkoKTsKICAgICAgICAgIHRpbGVUYXNrcy5wdXNoKHRhc2spOwogICAgICAgIH0KICAgICAgfQogICAgICBhd2FpdCBQcm9taXNlLmFsbCh0aWxlVGFza3MpOwogICAgICByYXdDb21wb3NlZENhbnZhcyA9IGNhbnZhczsKICAgICAgbWFwUGxhbmUuZ2VvbWV0cnkuZGlzcG9zZSgpOwogICAgICBtYXBQbGFuZS5nZW9tZXRyeSA9IG5ldyBUSFJFRS5QbGFuZUdlb21ldHJ5KDg3LjUsIDg3LjUpOwogICAgICByZW5kZXJQcm9jZXNzZWRMaXZlVGV4dHVyZSgpOwogICAgICBzaG93TG9hZGluZyhmYWxzZSk7CiAgICAgIHNob3dUb2FzdChgJyR7Y3VycmVudEdlby5uYW1lfScg7KCV7IKs6rCB7ZiVIOyngOuPhOqwgCDroZzrk5zrkJjsl4jsirXri4jri6QhYCwgJ3N1Y2Nlc3MnKTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2N1cnJlbnQtbGF0bG5nLXRhZycpLnRleHRDb250ZW50ID0gYCR7bGF0LnRvRml4ZWQoNCl9LCAke2xvbi50b0ZpeGVkKDQpfWA7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdjdXJyZW50LXBsYWNlbmFtZS10YWcnKS50ZXh0Q29udGVudCA9IGN1cnJlbnRHZW8ubmFtZTsKICAgIH0KICAgIGZ1bmN0aW9uIHJlbmRlclByb2Nlc3NlZExpdmVUZXh0dXJlKCkgewogICAgICBjb25zdCBzb3VyY2VJbWFnZSA9IHJhd1VwbG9hZGVkSW1hZ2UgfHwgcmF3Q29tcG9zZWRDYW52YXM7CiAgICAgIGlmICghc291cmNlSW1hZ2UpIHJldHVybjsKICAgICAgY29uc3QgY29udHJhc3QgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncmFuZ2UtbWFwLWNvbnRyYXN0JykgPyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncmFuZ2UtbWFwLWNvbnRyYXN0JykudmFsdWUgOiAxMTU7CiAgICAgIGNvbnN0IGJyaWdodG5lc3MgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncmFuZ2UtbWFwLWJyaWdodG5lc3MnKSA/IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdyYW5nZS1tYXAtYnJpZ2h0bmVzcycpLnZhbHVlIDogMTAwOwogICAgICBjb25zdCBmaWx0ZXJDYW52YXMgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdjYW52YXMnKTsKICAgICAgZmlsdGVyQ2FudmFzLndpZHRoID0gc291cmNlSW1hZ2Uud2lkdGg7CiAgICAgIGZpbHRlckNhbnZhcy5oZWlnaHQgPSBzb3VyY2VJbWFnZS5oZWlnaHQ7CiAgICAgIGNvbnN0IGZDdHggPSBmaWx0ZXJDYW52YXMuZ2V0Q29udGV4dCgnMmQnKTsKICAgICAgZkN0eC5maWx0ZXIgPSBgY29udHJhc3QoJHtjb250cmFzdH0lKSBicmlnaHRuZXNzKCR7YnJpZ2h0bmVzc30lKWA7CiAgICAgIGZDdHguZHJhd0ltYWdlKHNvdXJjZUltYWdlLCAwLCAwKTsKICAgICAgY29uc3QgdGV4dHVyZSA9IG5ldyBUSFJFRS5DYW52YXNUZXh0dXJlKGZpbHRlckNhbnZhcyk7CiAgICAgIHRleHR1cmUuZW5jb2RpbmcgPSBUSFJFRS5zUkdCRW5jb2Rpbmc7CiAgICAgIHRleHR1cmUuYW5pc290cm9weSA9IDg7CiAgICAgIGlmIChtYXBQbGFuZS5tYXRlcmlhbC5tYXApIG1hcFBsYW5lLm1hdGVyaWFsLm1hcC5kaXNwb3NlKCk7CiAgICAgIG1hcFBsYW5lLm1hdGVyaWFsLm1hcCA9IHRleHR1cmU7CiAgICAgIG1hcFBsYW5lLm1hdGVyaWFsLm5lZWRzVXBkYXRlID0gdHJ1ZTsKICAgICAgY3VycmVudFRleHR1cmUgPSB0ZXh0dXJlOwogICAgfQogICAgZnVuY3Rpb24gYXBwbHlVcGxvYWRlZEltYWdlVG9NYXAoaW1hZ2VTcmMpIHsKICAgICAgY29uc3QgaW1nID0gbmV3IEltYWdlKCk7CiAgICAgIGltZy5vbmxvYWQgPSBmdW5jdGlvbigpIHsKICAgICAgICByYXdVcGxvYWRlZEltYWdlID0gaW1nOwogICAgICAgIGNvbnN0IGFzcGVjdCA9IGltZy53aWR0aCAvIGltZy5oZWlnaHQ7CiAgICAgICAgY29uc3QgYmFzZUggPSA4Ny41OwogICAgICAgIGNvbnN0IGJhc2VXID0gYmFzZUggKiBhc3BlY3Q7CiAgICAgICAgbWFwUGxhbmUuZ2VvbWV0cnkuZGlzcG9zZSgpOwogICAgICAgIG1hcFBsYW5lLmdlb21ldHJ5ID0gbmV3IFRIUkVFLlBsYW5lR2VvbWV0cnkoYmFzZVcsIGJhc2VIKTsKICAgICAgICByZW5kZXJQcm9jZXNzZWRMaXZlVGV4dHVyZSgpOwogICAgICAgIHNob3dUb2FzdCgn7Lqh7LKYIOyngOuPhCDsnbTrr7jsp4DqsIAgM0Qg67CU64ul7JeQIOyEseqzteyggeycvOuhnCDsoIHsmqnrkJjsl4jsirXri4jri6QhJywgJ3N1Y2Nlc3MnKTsKICAgICAgfTsKICAgICAgaW1nLnNyYyA9IGltYWdlU3JjOwogICAgfQogICAgZnVuY3Rpb24gaGFuZGxlTWFwSW1hZ2VVcGxvYWQoZmlsZSkgewogICAgICBpZiAoIWZpbGUgfHwgIWZpbGUudHlwZS5zdGFydHNXaXRoKCdpbWFnZS8nKSkgewogICAgICAgIHNob3dUb2FzdCgn7Jis67CU66W4IOydtOuvuOyngCDtjIzsnbwoUE5HLCBKUEcsIFdlYlAp7J2EIOyEoO2Dne2VtOyjvOyEuOyalC4nLCAnd2FybicpOwogICAgICAgIHJldHVybjsKICAgICAgfQogICAgICBjb25zdCByZWFkZXIgPSBuZXcgRmlsZVJlYWRlcigpOwogICAgICByZWFkZXIub25sb2FkID0gZnVuY3Rpb24oZSkgewogICAgICAgIGFwcGx5VXBsb2FkZWRJbWFnZVRvTWFwKGUudGFyZ2V0LnJlc3VsdCk7CiAgICAgIH07CiAgICAgIHJlYWRlci5yZWFkQXNEYXRhVVJMKGZpbGUpOwogICAgfQogICAgZnVuY3Rpb24gc2V0dXBDbGlwYm9hcmRQYXN0ZSgpIHsKICAgICAgd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ3Bhc3RlJywgKGUpID0+IHsKICAgICAgICBpZiAoZS50YXJnZXQudGFnTmFtZSA9PT0gJ0lOUFVUJyB8fCBlLnRhcmdldC50YWdOYW1lID09PSAnVEVYVEFSRUEnKSByZXR1cm47CiAgICAgICAgY29uc3QgaXRlbXMgPSAoZS5jbGlwYm9hcmREYXRhIHx8IGUub3JpZ2luYWxFdmVudC5jbGlwYm9hcmREYXRhKT8uaXRlbXM7CiAgICAgICAgaWYgKCFpdGVtcykgcmV0dXJuOwogICAgICAgIGxldCBpbWFnZUZvdW5kID0gZmFsc2U7CiAgICAgICAgZm9yIChsZXQgaSA9IDA7IGkgPCBpdGVtcy5sZW5ndGg7IGkrKykgewogICAgICAgICAgaWYgKGl0ZW1zW2ldLnR5cGUuaW5kZXhPZignaW1hZ2UnKSAhPT0gLTEpIHsKICAgICAgICAgICAgY29uc3QgYmxvYiA9IGl0ZW1zW2ldLmdldEFzRmlsZSgpOwogICAgICAgICAgICBoYW5kbGVNYXBJbWFnZVVwbG9hZChibG9iKTsKICAgICAgICAgICAgaW1hZ2VGb3VuZCA9IHRydWU7CiAgICAgICAgICAgIGJyZWFrOwogICAgICAgICAgfQogICAgICAgIH0KICAgICAgICBpZiAoaW1hZ2VGb3VuZCkgewogICAgICAgICAgc2hvd1RvYXN0KCftgbTrpr3rs7Trk5zsl5DshJwg7Lqh7LKYIOydtOuvuOyngOulvCDsnb3slrTsmYAg7KeA64+E7JeQIOyggeyaqe2WiOyKteuLiOuLpC4nLCAnc3VjY2VzcycpOwogICAgICAgIH0KICAgICAgfSk7CiAgICAgIGNvbnN0IHBhc3RlRHJvcHpvbmUgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncGFzdGUtZHJvcHpvbmUnKTsKICAgICAgaWYgKHBhc3RlRHJvcHpvbmUpIHsKICAgICAgICBwYXN0ZURyb3B6b25lLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgYXN5bmMgKCkgPT4gewogICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgaWYgKG5hdmlnYXRvci5jbGlwYm9hcmQgJiYgbmF2aWdhdG9yLmNsaXBib2FyZC5yZWFkKSB7CiAgICAgICAgICAgICAgY29uc3QgY2xpcGJvYXJkSXRlbXMgPSBhd2FpdCBuYXZpZ2F0b3IuY2xpcGJvYXJkLnJlYWQoKTsKICAgICAgICAgICAgICBsZXQgaW1hZ2VGb3VuZCA9IGZhbHNlOwogICAgICAgICAgICAgIGZvciAoY29uc3QgaXRlbSBvZiBjbGlwYm9hcmRJdGVtcykgewogICAgICAgICAgICAgICAgY29uc3QgaW1hZ2VUeXBlID0gaXRlbS50eXBlcy5maW5kKHR5cGUgPT4gdHlwZS5zdGFydHNXaXRoKCdpbWFnZS8nKSk7CiAgICAgICAgICAgICAgICBpZiAoaW1hZ2VUeXBlKSB7CiAgICAgICAgICAgICAgICAgIGNvbnN0IGJsb2IgPSBhd2FpdCBpdGVtLmdldFR5cGUoaW1hZ2VUeXBlKTsKICAgICAgICAgICAgICAgICAgaGFuZGxlTWFwSW1hZ2VVcGxvYWQoYmxvYik7CiAgICAgICAgICAgICAgICAgIGltYWdlRm91bmQgPSB0cnVlOwogICAgICAgICAgICAgICAgICBzaG93VG9hc3QoJ+2BtOumveuztOuTnCDsnbTrr7jsp4Drpbwg7ISx6rO17KCB7Jy866GcIOqwgOyguOyZlOyKteuLiOuLpC4nLCAnc3VjY2VzcycpOwogICAgICAgICAgICAgICAgICBicmVhazsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgaWYgKCFpbWFnZUZvdW5kKSB7CiAgICAgICAgICAgICAgICBzaG93VG9hc3QoJ+2BtOumveuztOuTnOyXkCDrs7XsgqzrkJwg7J2066+47KeA6rCAIOyXhuyKteuLiOuLpC4nLCAnd2FybicpOwogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgICBzaG93VG9hc3QoJ0N0cmwrViDtgqTrpbwg64iM65+sIOy6oeyymCDsnbTrr7jsp4Drpbwg67aZ7Jes64Sj7Jy87IS47JqULicsICdpbmZvJyk7CiAgICAgICAgICAgIH0KICAgICAgICAgIH0gY2F0Y2ggKGVycikgewogICAgICAgICAgICBzaG93VG9hc3QoJ+2BtOumveuztOuTnCDqtoztlZzsnbQg7ZWE7JqU7ZWp64uI64ukLiDsp4Drj4Trpbwg67O17IKs7ZWcIO2bhCBDdHJsICsgVuulvCDriIzrn6zso7zshLjsmpQuJywgJ2luZm8nKTsKICAgICAgICAgIH0KICAgICAgICB9KTsKICAgICAgfQogICAgICBjb25zdCBmaWxlSW5wdXQgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbWFwLWZpbGUtaW5wdXQnKTsKICAgICAgaWYgKGZpbGVJbnB1dCkgewogICAgICAgIGZpbGVJbnB1dC5hZGRFdmVudExpc3RlbmVyKCdjaGFuZ2UnLCAoZSkgPT4gewogICAgICAgICAgaWYgKGUudGFyZ2V0LmZpbGVzICYmIGUudGFyZ2V0LmZpbGVzLmxlbmd0aCA+IDApIHsKICAgICAgICAgICAgaGFuZGxlTWFwSW1hZ2VVcGxvYWQoZS50YXJnZXQuZmlsZXNbMF0pOwogICAgICAgICAgfQogICAgICAgIH0pOwogICAgICB9CiAgICAgIGNvbnN0IHJlc3RvcmVCdG4gPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXJlc3RvcmUtb25saW5lLW1hcCcpOwogICAgICBpZiAocmVzdG9yZUJ0bikgewogICAgICAgIHJlc3RvcmVCdG4uYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiB7CiAgICAgICAgICByYXdVcGxvYWRlZEltYWdlID0gbnVsbDsKICAgICAgICAgIG1hcFBsYW5lLmdlb21ldHJ5LmRpc3Bvc2UoKTsKICAgICAgICAgIG1hcFBsYW5lLmdlb21ldHJ5ID0gbmV3IFRIUkVFLlBsYW5lR2VvbWV0cnkoODcuNSwgODcuNSk7CiAgICAgICAgICBsb2FkT25saW5lTWFwVGlsZXMoY3VycmVudEdlby5sYXQsIGN1cnJlbnRHZW8ubG9uLCBjdXJyZW50R2VvLnpvb20sIGN1cnJlbnRHZW8ucHJvdmlkZXIpOwogICAgICAgIH0pOwogICAgICB9CiAgICAgIGNvbnN0IGxvZ29CdG4gPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXNob3ctbG9nby1zY3JlZW4nKTsKICAgICAgaWYgKGxvZ29CdG4pIHsKICAgICAgICBsb2dvQnRuLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgICAgYXBwbHlMb2dvU2NyZWVuVG9NYXAoKTsKICAgICAgICAgIHNob3dUb2FzdCgn6riw67O4IOyKpO2KnOuUlOyYpCDroZzqs6Ag7ZmU66m07Jy866GcIOuzteq3gO2WiOyKteuLiOuLpC4nLCAnaW5mbycpOwogICAgICAgIH0pOwogICAgICB9CiAgICB9CiAgICBmdW5jdGlvbiBjcmVhdGVUZXh0U3ByaXRlKHRleHQsIGNvbG9yID0gJyMwNTk2NjknLCBmb250U2l6ZSA9IDM4KSB7CiAgICAgIGlmICghdGV4dCB8fCB0ZXh0LnRyaW0oKSA9PT0gJycpIHJldHVybiBudWxsOwogICAgICBjb25zdCBjYW52YXMgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdjYW52YXMnKTsKICAgICAgY2FudmFzLndpZHRoID0gNTEyOwogICAgICBjYW52YXMuaGVpZ2h0ID0gMTI4OwogICAgICBjb25zdCBjdHggPSBjYW52YXMuZ2V0Q29udGV4dCgnMmQnKTsKICAgICAgY3R4LmZpbGxTdHlsZSA9ICdyZ2JhKDI1NSwgMjU1LCAyNTUsIDAuOTYpJzsKICAgICAgY3R4LmJlZ2luUGF0aCgpOwogICAgICBjdHgucm91bmRSZWN0KDE2LCAxNiwgNDgwLCA5NiwgMjQpOwogICAgICBjdHguZmlsbCgpOwogICAgICBjdHgubGluZVdpZHRoID0gNjsKICAgICAgY3R4LnN0cm9rZVN0eWxlID0gY29sb3I7CiAgICAgIGN0eC5zdHJva2UoKTsKICAgICAgY3R4LmZvbnQgPSBgYm9sZCAke2ZvbnRTaXplfXB4IHNhbnMtc2VyaWZgOwogICAgICBjdHguZmlsbFN0eWxlID0gJyMwZjE3MmEnOwogICAgICBjdHgudGV4dEFsaWduID0gJ2NlbnRlcic7CiAgICAgIGN0eC50ZXh0QmFzZWxpbmUgPSAnbWlkZGxlJzsKICAgICAgY3R4LmZpbGxUZXh0KHRleHQsIDI1NiwgNjQpOwogICAgICBjb25zdCB0ZXh0dXJlID0gbmV3IFRIUkVFLkNhbnZhc1RleHR1cmUoY2FudmFzKTsKICAgICAgY29uc3Qgc3ByaXRlTWF0ZXJpYWwgPSBuZXcgVEhSRUUuU3ByaXRlTWF0ZXJpYWwoewogICAgICAgIG1hcDogdGV4dHVyZSwKICAgICAgICB0cmFuc3BhcmVudDogdHJ1ZSwKICAgICAgICBkZXB0aFRlc3Q6IGZhbHNlCiAgICAgIH0pOwogICAgICBjb25zdCBzcHJpdGUgPSBuZXcgVEhSRUUuU3ByaXRlKHNwcml0ZU1hdGVyaWFsKTsKICAgICAgY29uc3QgYmFzZVNjYWxlID0gZm9udFNpemUgLyAzODsKICAgICAgc3ByaXRlLnNjYWxlLnNldCg0ICogYmFzZVNjYWxlLCAxICogYmFzZVNjYWxlLCAxKTsKICAgICAgcmV0dXJuIHNwcml0ZTsKICAgIH0KICAgIGZ1bmN0aW9uIGluaXRUaHJlZVNjZW5lKCkgewogICAgICBjb25zdCBjb250YWluZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndmlld3BvcnQtY29udGFpbmVyJyk7CiAgICAgIGNvbnN0IHdpZHRoID0gY29udGFpbmVyLmNsaWVudFdpZHRoOwogICAgICBjb25zdCBoZWlnaHQgPSBjb250YWluZXIuY2xpZW50SGVpZ2h0OwogICAgICBzY2VuZSA9IG5ldyBUSFJFRS5TY2VuZSgpOwogICAgICBzY2VuZS5iYWNrZ3JvdW5kID0gbmV3IFRIUkVFLkNvbG9yKCcjZjFmNWY5Jyk7CiAgICAgIGNhbWVyYSA9IG5ldyBUSFJFRS5QZXJzcGVjdGl2ZUNhbWVyYSg0NSwgd2lkdGggLyBoZWlnaHQsIDAuMSwgMTAwMCk7CiAgICAgIGNhbWVyYS5wb3NpdGlvbi5zZXQoMCwgNzIsIDg1KTsKICAgICAgcmVuZGVyZXIgPSBuZXcgVEhSRUUuV2ViR0xSZW5kZXJlcih7IGFudGlhbGlhczogdHJ1ZSwgcHJlc2VydmVEcmF3aW5nQnVmZmVyOiB0cnVlIH0pOwogICAgICByZW5kZXJlci5zZXRTaXplKHdpZHRoLCBoZWlnaHQpOwogICAgICByZW5kZXJlci5zZXRQaXhlbFJhdGlvKE1hdGgubWluKHdpbmRvdy5kZXZpY2VQaXhlbFJhdGlvLCAyKSk7CiAgICAgIHJlbmRlcmVyLm91dHB1dEVuY29kaW5nID0gVEhSRUUuc1JHQkVuY29kaW5nOwogICAgICByZW5kZXJlci5zaGFkb3dNYXAuZW5hYmxlZCA9IGZhbHNlOwogICAgICBjb250YWluZXIuYXBwZW5kQ2hpbGQocmVuZGVyZXIuZG9tRWxlbWVudCk7CiAgICAgIGNvbnRyb2xzID0gbmV3IFRIUkVFLk9yYml0Q29udHJvbHMoY2FtZXJhLCByZW5kZXJlci5kb21FbGVtZW50KTsKICAgICAgY29udHJvbHMuZW5hYmxlRGFtcGluZyA9IGZhbHNlOwogICAgICBjb250cm9scy5tYXhQb2xhckFuZ2xlID0gTWF0aC5QSSAvIDIgLSAwLjA1OwogICAgICBjb250cm9scy5taW5EaXN0YW5jZSA9IDU7CiAgICAgIGNvbnRyb2xzLm1heERpc3RhbmNlID0gMjUwOwogICAgICBjb250cm9scy50YXJnZXQuc2V0KDAsIDAsIDApOwogICAgICBjb250cm9scy50b3VjaGVzID0gewogICAgICAgIE9ORTogVEhSRUUuVE9VQ0guUk9UQVRFLAogICAgICAgIFRXTzogVEhSRUUuVE9VQ0guRE9MTFlfUEFOCiAgICAgIH07CiAgICAgIGNvbnN0IGFtYmllbnRMaWdodCA9IG5ldyBUSFJFRS5BbWJpZW50TGlnaHQoMHhmZmZmZmYsIDAuODUpOwogICAgICBzY2VuZS5hZGQoYW1iaWVudExpZ2h0KTsKICAgICAgZGlyTGlnaHQgPSBuZXcgVEhSRUUuRGlyZWN0aW9uYWxMaWdodCgweGZmZmZmZiwgMC40NSk7CiAgICAgIGRpckxpZ2h0LnBvc2l0aW9uLnNldCgzNSwgNjUsIDMwKTsKICAgICAgZGlyTGlnaHQuY2FzdFNoYWRvdyA9IGZhbHNlOwogICAgICBzY2VuZS5hZGQoZGlyTGlnaHQpOwogICAgICBjb25zdCBwbGFuZUdlbyA9IG5ldyBUSFJFRS5QbGFuZUdlb21ldHJ5KDg3LjUsIDg3LjUpOwogICAgICBjb25zdCBwbGFuZU1hdCA9IG5ldyBUSFJFRS5NZXNoQmFzaWNNYXRlcmlhbCh7CiAgICAgICAgc2lkZTogVEhSRUUuRG91YmxlU2lkZQogICAgICB9KTsKICAgICAgbWFwUGxhbmUgPSBuZXcgVEhSRUUuTWVzaChwbGFuZUdlbywgcGxhbmVNYXQpOwogICAgICBtYXBQbGFuZS5yb3RhdGlvbi54ID0gLU1hdGguUEkgLyAyOwogICAgICBzY2VuZS5hZGQobWFwUGxhbmUpOwogICAgICBncmlkSGVscGVyID0gbmV3IFRIUkVFLkdyaWRIZWxwZXIoMTIwLCA2MCwgMHhkMWQ1ZGIsIDB4OTRhM2I4KTsKICAgICAgZ3JpZEhlbHBlci5wb3NpdGlvbi55ID0gMC4wMTsKICAgICAgaWYgKGdyaWRIZWxwZXIubWF0ZXJpYWwpIHsKICAgICAgICBncmlkSGVscGVyLm1hdGVyaWFsLm9wYWNpdHkgPSAwLjQ7CiAgICAgICAgZ3JpZEhlbHBlci5tYXRlcmlhbC50cmFuc3BhcmVudCA9IHRydWU7CiAgICAgIH0KICAgICAgc2NlbmUuYWRkKGdyaWRIZWxwZXIpOwogICAgICB3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigncmVzaXplJywgb25XaW5kb3dSZXNpemUpOwogICAgICBjb250YWluZXIuYWRkRXZlbnRMaXN0ZW5lcigncG9pbnRlcmRvd24nLCBvblBvaW50ZXJEb3duKTsKICAgICAgY29udGFpbmVyLmFkZEV2ZW50TGlzdGVuZXIoJ3BvaW50ZXJtb3ZlJywgb25Qb2ludGVyTW92ZSk7CiAgICAgIHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdwb2ludGVydXAnLCBvblBvaW50ZXJVcCk7CiAgICAgIGFwcGx5TG9nb1NjcmVlblRvTWFwKCk7CiAgICAgIHVwZGF0ZU9iamVjdExpc3RVSSgpOwogICAgfQogICAgZnVuY3Rpb24gYnVpbGRGcmVlaGFuZEZsYXRSaWJib25NZXNoKHBvaW50cywgY29sb3JIZXgsIHJpYmJvbldpZHRoID0gMC41KSB7CiAgICAgIGlmICghcG9pbnRzIHx8IHBvaW50cy5sZW5ndGggPCAyKSByZXR1cm4gbnVsbDsKICAgICAgY29uc3QgY3VydmUgPSBuZXcgVEhSRUUuQ2F0bXVsbFJvbUN1cnZlMyhwb2ludHMsIGZhbHNlLCAnY2VudHJpcGV0YWwnLCAwLjUpOwogICAgICBjb25zdCBzYW1wbGVDb3VudCA9IE1hdGgubWluKE1hdGgubWF4KHBvaW50cy5sZW5ndGggKiA4LCAzMCksIDIwMCk7CiAgICAgIGNvbnN0IHNhbXBsZWRQb2ludHMgPSBjdXJ2ZS5nZXRQb2ludHMoc2FtcGxlQ291bnQpOwogICAgICBjb25zdCBwb3NpdGlvbnMgPSBbXTsKICAgICAgY29uc3QgaW5kaWNlcyA9IFtdOwogICAgICBjb25zdCBoYWxmV2lkdGggPSBNYXRoLm1heCgwLjEsIHJpYmJvbldpZHRoICogMC40KTsKICAgICAgY29uc3QgZ3JvdW5kWSA9IDAuMDY7CiAgICAgIGZvciAobGV0IGkgPSAwOyBpIDwgc2FtcGxlZFBvaW50cy5sZW5ndGg7IGkrKykgewogICAgICAgIGNvbnN0IHB0ID0gc2FtcGxlZFBvaW50c1tpXTsKICAgICAgICBsZXQgdGFuZ2VudCA9IG5ldyBUSFJFRS5WZWN0b3IzKCk7CiAgICAgICAgaWYgKGkgPCBzYW1wbGVkUG9pbnRzLmxlbmd0aCAtIDEpIHsKICAgICAgICAgIHRhbmdlbnQuc3ViVmVjdG9ycyhzYW1wbGVkUG9pbnRzW2kgKyAxXSwgcHQpLm5vcm1hbGl6ZSgpOwogICAgICAgIH0gZWxzZSB7CiAgICAgICAgICB0YW5nZW50LnN1YlZlY3RvcnMocHQsIHNhbXBsZWRQb2ludHNbaSAtIDFdKS5ub3JtYWxpemUoKTsKICAgICAgICB9CiAgICAgICAgY29uc3Qgbm9ybWFsID0gbmV3IFRIUkVFLlZlY3RvcjMoLXRhbmdlbnQueiwgMCwgdGFuZ2VudC54KS5ub3JtYWxpemUoKTsKICAgICAgICBjb25zdCBwTGVmdCA9IG5ldyBUSFJFRS5WZWN0b3IzKAogICAgICAgICAgcHQueCArIG5vcm1hbC54ICogaGFsZldpZHRoLAogICAgICAgICAgZ3JvdW5kWSwKICAgICAgICAgIHB0LnogKyBub3JtYWwueiAqIGhhbGZXaWR0aAogICAgICAgICk7CiAgICAgICAgY29uc3QgcFJpZ2h0ID0gbmV3IFRIUkVFLlZlY3RvcjMoCiAgICAgICAgICBwdC54IC0gbm9ybWFsLnggKiBoYWxmV2lkdGgsCiAgICAgICAgICBncm91bmRZLAogICAgICAgICAgcHQueiAtIG5vcm1hbC56ICogaGFsZldpZHRoCiAgICAgICAgKTsKICAgICAgICBwb3NpdGlvbnMucHVzaChwTGVmdC54LCBwTGVmdC55LCBwTGVmdC56KTsKICAgICAgICBwb3NpdGlvbnMucHVzaChwUmlnaHQueCwgcFJpZ2h0LnksIHBSaWdodC56KTsKICAgICAgICBpZiAoaSA8IHNhbXBsZWRQb2ludHMubGVuZ3RoIC0gMSkgewogICAgICAgICAgY29uc3QgYmFzZSA9IGkgKiAyOwogICAgICAgICAgaW5kaWNlcy5wdXNoKGJhc2UsIGJhc2UgKyAxLCBiYXNlICsgMik7CiAgICAgICAgICBpbmRpY2VzLnB1c2goYmFzZSArIDEsIGJhc2UgKyAzLCBiYXNlICsgMik7CiAgICAgICAgfQogICAgICB9CiAgICAgIGNvbnN0IGdlbyA9IG5ldyBUSFJFRS5CdWZmZXJHZW9tZXRyeSgpOwogICAgICBnZW8uc2V0QXR0cmlidXRlKCdwb3NpdGlvbicsIG5ldyBUSFJFRS5GbG9hdDMyQnVmZmVyQXR0cmlidXRlKHBvc2l0aW9ucywgMykpOwogICAgICBnZW8uc2V0SW5kZXgoaW5kaWNlcyk7CiAgICAgIGdlby5jb21wdXRlVmVydGV4Tm9ybWFscygpOwogICAgICBjb25zdCBtYXQgPSBuZXcgVEhSRUUuTWVzaEJhc2ljTWF0ZXJpYWwoewogICAgICAgIGNvbG9yOiBjb2xvckhleCwKICAgICAgICBzaWRlOiBUSFJFRS5Eb3VibGVTaWRlLAogICAgICAgIHRyYW5zcGFyZW50OiB0cnVlLAogICAgICAgIG9wYWNpdHk6IDAuOTUKICAgICAgfSk7CiAgICAgIHJldHVybiBuZXcgVEhSRUUuTWVzaChnZW8sIG1hdCk7CiAgICB9CiAgICBmdW5jdGlvbiBidWlsZDNET2JqZWN0KHR5cGUsIGNvbG9ySGV4LCBoZWlnaHQgPSA0LCB3aWR0aCA9IDEsIGV4dHJhID0ge30pIHsKICAgICAgY29uc3QgZ3JvdXAgPSBuZXcgVEhSRUUuR3JvdXAoKTsKICAgICAgbGV0IG1haW5NZXNoOwogICAgICBpZiAodHlwZSA9PT0gJ3BpbicpIHsKICAgICAgICBjb25zdCBzcGhlcmVHZW8gPSBuZXcgVEhSRUUuU3BoZXJlR2VvbWV0cnkod2lkdGggKiAwLjgsIDIwLCAyMCk7CiAgICAgICAgY29uc3Qgc3BoZXJlTWF0ID0gbmV3IFRIUkVFLk1lc2hTdGFuZGFyZE1hdGVyaWFsKHsgY29sb3I6IGNvbG9ySGV4LCByb3VnaG5lc3M6IDAuMywgbWV0YWxuZXNzOiAwLjIgfSk7CiAgICAgICAgY29uc3Qgc3BoZXJlID0gbmV3IFRIUkVFLk1lc2goc3BoZXJlR2VvLCBzcGhlcmVNYXQpOwogICAgICAgIHNwaGVyZS5wb3NpdGlvbi55ID0gaGVpZ2h0ICsgMC41OwogICAgICAgIGdyb3VwLmFkZChzcGhlcmUpOwogICAgICAgIGNvbnN0IGNvbmVHZW8gPSBuZXcgVEhSRUUuQ29uZUdlb21ldHJ5KHdpZHRoICogMC40LCBoZWlnaHQsIDE2KTsKICAgICAgICBjb25lR2VvLnJvdGF0ZVgoTWF0aC5QSSk7CiAgICAgICAgY29uc3QgY29uZU1hdCA9IG5ldyBUSFJFRS5NZXNoU3RhbmRhcmRNYXRlcmlhbCh7IGNvbG9yOiBjb2xvckhleCwgcm91Z2huZXNzOiAwLjMsIG1ldGFsbmVzczogMC4yIH0pOwogICAgICAgIGNvbnN0IGNvbmUgPSBuZXcgVEhSRUUuTWVzaChjb25lR2VvLCBjb25lTWF0KTsKICAgICAgICBjb25lLnBvc2l0aW9uLnkgPSBoZWlnaHQgLyAyOwogICAgICAgIGdyb3VwLmFkZChjb25lKTsKICAgICAgICBtYWluTWVzaCA9IHNwaGVyZTsKICAgICAgfSBlbHNlIGlmICh0eXBlID09PSAnZnJlZWhhbmQnKSB7CiAgICAgICAgY29uc3QgcG9pbnRzID0gZXh0cmEucG9pbnRzIHx8IFsKICAgICAgICAgIG5ldyBUSFJFRS5WZWN0b3IzKC00LCAwLjA2LCAwKSwKICAgICAgICAgIG5ldyBUSFJFRS5WZWN0b3IzKDAsIDAuMDYsIDMpLAogICAgICAgICAgbmV3IFRIUkVFLlZlY3RvcjMoNCwgMC4wNiwgLTEpCiAgICAgICAgXTsKICAgICAgICBjb25zdCByaWJib25XaWR0aCA9IE1hdGgubWF4KDAuMywgd2lkdGggKiAwLjYpOwogICAgICAgIG1haW5NZXNoID0gYnVpbGRGcmVlaGFuZEZsYXRSaWJib25NZXNoKHBvaW50cywgY29sb3JIZXgsIHJpYmJvbldpZHRoKTsKICAgICAgICBpZiAobWFpbk1lc2gpIHsKICAgICAgICAgIGdyb3VwLmFkZChtYWluTWVzaCk7CiAgICAgICAgfSBlbHNlIHsKICAgICAgICAgIGNvbnN0IGZhbGxiYWNrID0gbmV3IFRIUkVFLk1lc2gobmV3IFRIUkVFLlBsYW5lR2VvbWV0cnkoMSwgMC40KSwgbmV3IFRIUkVFLk1lc2hCYXNpY01hdGVyaWFsKHsgY29sb3I6IGNvbG9ySGV4LCBzaWRlOiBUSFJFRS5Eb3VibGVTaWRlIH0pKTsKICAgICAgICAgIGZhbGxiYWNrLnJvdGF0aW9uLnggPSAtTWF0aC5QSSAvIDI7CiAgICAgICAgICBmYWxsYmFjay5wb3NpdGlvbi55ID0gMC4wNjsKICAgICAgICAgIGdyb3VwLmFkZChmYWxsYmFjayk7CiAgICAgICAgICBtYWluTWVzaCA9IGZhbGxiYWNrOwogICAgICAgIH0KICAgICAgfSBlbHNlIGlmICh0eXBlID09PSAnYnVpbGRpbmcnKSB7CiAgICAgICAgY29uc3QgYm94R2VvID0gbmV3IFRIUkVFLkJveEdlb21ldHJ5KHdpZHRoICogMywgaGVpZ2h0LCB3aWR0aCAqIDMpOwogICAgICAgIGNvbnN0IGJveE1hdCA9IG5ldyBUSFJFRS5NZXNoU3RhbmRhcmRNYXRlcmlhbCh7CiAgICAgICAgICBjb2xvcjogY29sb3JIZXgsCiAgICAgICAgICByb3VnaG5lc3M6IDAuMzUsCiAgICAgICAgICBtZXRhbG5lc3M6IDAuMgogICAgICAgIH0pOwogICAgICAgIGNvbnN0IGJveCA9IG5ldyBUSFJFRS5NZXNoKGJveEdlbywgYm94TWF0KTsKICAgICAgICBib3gucG9zaXRpb24ueSA9IGhlaWdodCAvIDI7CiAgICAgICAgZ3JvdXAuYWRkKGJveCk7CiAgICAgICAgbWFpbk1lc2ggPSBib3g7CiAgICAgIH0gZWxzZSBpZiAodHlwZSA9PT0gJ2N5bGluZGVyJykgewogICAgICAgIGNvbnN0IGN5bEdlbyA9IG5ldyBUSFJFRS5DeWxpbmRlckdlb21ldHJ5KHdpZHRoICogMS4yLCB3aWR0aCAqIDEuNSwgaGVpZ2h0LCAyNCk7CiAgICAgICAgY29uc3QgY3lsTWF0ID0gbmV3IFRIUkVFLk1lc2hTdGFuZGFyZE1hdGVyaWFsKHsgY29sb3I6IGNvbG9ySGV4LCByb3VnaG5lc3M6IDAuMywgbWV0YWxuZXNzOiAwLjMgfSk7CiAgICAgICAgY29uc3QgY3lsaW5kZXIgPSBuZXcgVEhSRUUuTWVzaChjeWxHZW8sIGN5bE1hdCk7CiAgICAgICAgY3lsaW5kZXIucG9zaXRpb24ueSA9IGhlaWdodCAvIDI7CiAgICAgICAgZ3JvdXAuYWRkKGN5bGluZGVyKTsKICAgICAgICBtYWluTWVzaCA9IGN5bGluZGVyOwogICAgICB9IGVsc2UgaWYgKHR5cGUgPT09ICdiYWRnZScpIHsKICAgICAgICBjb25zdCBwb2xlR2VvID0gbmV3IFRIUkVFLkN5bGluZGVyR2VvbWV0cnkoMC4xLCAwLjEsIGhlaWdodCwgMTIpOwogICAgICAgIGNvbnN0IHBvbGVNYXQgPSBuZXcgVEhSRUUuTWVzaFN0YW5kYXJkTWF0ZXJpYWwoeyBjb2xvcjogMHg2NDc0OGIsIG1ldGFsbmVzczogMC44IH0pOwogICAgICAgIGNvbnN0IHBvbGUgPSBuZXcgVEhSRUUuTWVzaChwb2xlR2VvLCBwb2xlTWF0KTsKICAgICAgICBwb2xlLnBvc2l0aW9uLnkgPSBoZWlnaHQgLyAyOwogICAgICAgIGdyb3VwLmFkZChwb2xlKTsKICAgICAgICBjb25zdCBmbGFnR2VvID0gbmV3IFRIUkVFLkJveEdlb21ldHJ5KHdpZHRoICogMiwgMSwgMC4xKTsKICAgICAgICBjb25zdCBmbGFnTWF0ID0gbmV3IFRIUkVFLk1lc2hTdGFuZGFyZE1hdGVyaWFsKHsgY29sb3I6IGNvbG9ySGV4IH0pOwogICAgICAgIGNvbnN0IGZsYWcgPSBuZXcgVEhSRUUuTWVzaChmbGFnR2VvLCBmbGFnTWF0KTsKICAgICAgICBmbGFnLnBvc2l0aW9uLnNldCh3aWR0aCwgaGVpZ2h0LCAwKTsKICAgICAgICBncm91cC5hZGQoZmxhZyk7CiAgICAgICAgbWFpbk1lc2ggPSBmbGFnOwogICAgICB9IGVsc2UgaWYgKHR5cGUgPT09ICdsaW5lJykgewogICAgICAgIGNvbnN0IGxpbmVMZW5ndGggPSB3aWR0aCAqIDY7CiAgICAgICAgY29uc3QgbGluZVRoaWNrbmVzcyA9IE1hdGgubWF4KDAuMiwgd2lkdGggKiAwLjcpOwogICAgICAgIGNvbnN0IGxpbmVHZW8gPSBuZXcgVEhSRUUuUGxhbmVHZW9tZXRyeShsaW5lTGVuZ3RoLCBsaW5lVGhpY2tuZXNzKTsKICAgICAgICBsaW5lR2VvLnJvdGF0ZVgoLU1hdGguUEkgLyAyKTsKICAgICAgICBjb25zdCBsaW5lTWF0ID0gbmV3IFRIUkVFLk1lc2hCYXNpY01hdGVyaWFsKHsKICAgICAgICAgIGNvbG9yOiBjb2xvckhleCwKICAgICAgICAgIHNpZGU6IFRIUkVFLkRvdWJsZVNpZGUsCiAgICAgICAgICB0cmFuc3BhcmVudDogdHJ1ZSwKICAgICAgICAgIG9wYWNpdHk6IDAuOTUKICAgICAgICB9KTsKICAgICAgICBjb25zdCBsaW5lTWVzaCA9IG5ldyBUSFJFRS5NZXNoKGxpbmVHZW8sIGxpbmVNYXQpOwogICAgICAgIGxpbmVNZXNoLnBvc2l0aW9uLnkgPSAwLjA2OwogICAgICAgIGdyb3VwLmFkZChsaW5lTWVzaCk7CiAgICAgICAgbWFpbk1lc2ggPSBsaW5lTWVzaDsKICAgICAgfSBlbHNlIGlmICh0eXBlID09PSAnY2lyY2xlJykgewogICAgICAgIGNvbnN0IG91dGVyUmFkaXVzID0gd2lkdGggKiAyLjU7CiAgICAgICAgY29uc3QgYm9yZGVyVGhpY2tuZXNzID0gTWF0aC5tYXgoMC4yLCB3aWR0aCAqIDAuMTIpOwogICAgICAgIGNvbnN0IGlubmVyUmFkaXVzID0gTWF0aC5tYXgoMC4xLCBvdXRlclJhZGl1cyAtIGJvcmRlclRoaWNrbmVzcyk7CiAgICAgICAgY29uc3QgcmluZ0dlbyA9IG5ldyBUSFJFRS5SaW5nR2VvbWV0cnkoaW5uZXJSYWRpdXMsIG91dGVyUmFkaXVzLCA2NCk7CiAgICAgICAgcmluZ0dlby5yb3RhdGVYKC1NYXRoLlBJIC8gMik7CiAgICAgICAgY29uc3QgcmluZ01hdCA9IG5ldyBUSFJFRS5NZXNoQmFzaWNNYXRlcmlhbCh7CiAgICAgICAgICBjb2xvcjogY29sb3JIZXgsCiAgICAgICAgICBzaWRlOiBUSFJFRS5Eb3VibGVTaWRlLAogICAgICAgICAgdHJhbnNwYXJlbnQ6IHRydWUsCiAgICAgICAgICBvcGFjaXR5OiAwLjk1CiAgICAgICAgfSk7CiAgICAgICAgY29uc3QgcmluZ01lc2ggPSBuZXcgVEhSRUUuTWVzaChyaW5nR2VvLCByaW5nTWF0KTsKICAgICAgICByaW5nTWVzaC5wb3NpdGlvbi55ID0gMC4wNjsKICAgICAgICBncm91cC5hZGQocmluZ01lc2gpOwogICAgICAgIG1haW5NZXNoID0gcmluZ01lc2g7CiAgICAgIH0gZWxzZSBpZiAodHlwZSA9PT0gJ3JlY3QnKSB7CiAgICAgICAgY29uc3Qgc2hhcGUgPSBuZXcgVEhSRUUuU2hhcGUoKTsKICAgICAgICBjb25zdCBodyA9ICh3aWR0aCAqIDQpIC8gMjsKICAgICAgICBjb25zdCBoZCA9ICh3aWR0aCAqIDMpIC8gMjsKICAgICAgICBjb25zdCBib3JkZXJUaGlja25lc3MgPSBNYXRoLm1heCgwLjIsIHdpZHRoICogMC4xMik7CiAgICAgICAgc2hhcGUubW92ZVRvKC1odywgLWhkKTsKICAgICAgICBzaGFwZS5saW5lVG8oaHcsIC1oZCk7CiAgICAgICAgc2hhcGUubGluZVRvKGh3LCBoZCk7CiAgICAgICAgc2hhcGUubGluZVRvKC1odywgaGQpOwogICAgICAgIHNoYXBlLmNsb3NlUGF0aCgpOwogICAgICAgIGNvbnN0IGlubmVySG9sZSA9IG5ldyBUSFJFRS5QYXRoKCk7CiAgICAgICAgaW5uZXJIb2xlLm1vdmVUbygtKGh3IC0gYm9yZGVyVGhpY2tuZXNzKSwgLShoZCAtIGJvcmRlclRoaWNrbmVzcykpOwogICAgICAgIGlubmVySG9sZS5saW5lVG8oKGh3IC0gYm9yZGVyVGhpY2tuZXNzKSwgLShoZCAtIGJvcmRlclRoaWNrbmVzcykpOwogICAgICAgIGlubmVySG9sZS5saW5lVG8oKGh3IC0gYm9yZGVyVGhpY2tuZXNzKSwgKGhkIC0gYm9yZGVyVGhpY2tuZXNzKSk7CiAgICAgICAgaW5uZXJIb2xlLmxpbmVUbygtKGh3IC0gYm9yZGVyVGhpY2tuZXNzKSwgKGhkIC0gYm9yZGVyVGhpY2tuZXNzKSk7CiAgICAgICAgaW5uZXJIb2xlLmNsb3NlUGF0aCgpOwogICAgICAgIHNoYXBlLmhvbGVzLnB1c2goaW5uZXJIb2xlKTsKICAgICAgICBjb25zdCBmbGF0RnJhbWVHZW8gPSBuZXcgVEhSRUUuU2hhcGVHZW9tZXRyeShzaGFwZSk7CiAgICAgICAgZmxhdEZyYW1lR2VvLnJvdGF0ZVgoLU1hdGguUEkgLyAyKTsKICAgICAgICBjb25zdCBmcmFtZU1hdCA9IG5ldyBUSFJFRS5NZXNoQmFzaWNNYXRlcmlhbCh7CiAgICAgICAgICBjb2xvcjogY29sb3JIZXgsCiAgICAgICAgICBzaWRlOiBUSFJFRS5Eb3VibGVTaWRlLAogICAgICAgICAgdHJhbnNwYXJlbnQ6IHRydWUsCiAgICAgICAgICBvcGFjaXR5OiAwLjk1CiAgICAgICAgfSk7CiAgICAgICAgY29uc3QgZnJhbWVNZXNoID0gbmV3IFRIUkVFLk1lc2goZmxhdEZyYW1lR2VvLCBmcmFtZU1hdCk7CiAgICAgICAgZnJhbWVNZXNoLnBvc2l0aW9uLnkgPSAwLjA2OwogICAgICAgIGdyb3VwLmFkZChmcmFtZU1lc2gpOwogICAgICAgIG1haW5NZXNoID0gZnJhbWVNZXNoOwogICAgICB9CiAgICAgIHJldHVybiB7IGdyb3VwLCBtYWluTWVzaCB9OwogICAgfQogICAgZnVuY3Rpb24gYWRkT2JqZWN0VG9NYXAocG9zLCBvcHRpb25zID0ge30pIHsKICAgICAgY29uc3QgdHlwZSA9IG9wdGlvbnMudHlwZSB8fCBhY3RpdmVQcmVzZXQ7CiAgICAgIGNvbnN0IGxhYmVsID0gb3B0aW9ucy5sYWJlbCAhPT0gdW5kZWZpbmVkID8gb3B0aW9ucy5sYWJlbCA6IChkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5wdXQtbmV3LWxhYmVsJykudmFsdWUgfHwgJycpOwogICAgICBjb25zdCBjb2xvciA9IG9wdGlvbnMuY29sb3IgfHwgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2lucHV0LW5ldy1jb2xvcicpLnZhbHVlIHx8ICcjMDU5NjY5JzsKICAgICAgY29uc3QgaGVpZ2h0ID0gb3B0aW9ucy5oZWlnaHQgIT09IHVuZGVmaW5lZCA/IG9wdGlvbnMuaGVpZ2h0IDogNC4wOwogICAgICBjb25zdCB3aWR0aCA9IG9wdGlvbnMud2lkdGggIT09IHVuZGVmaW5lZCA/IG9wdGlvbnMud2lkdGggOiAxLjI7CiAgICAgIGNvbnN0IGZvbnRTaXplID0gb3B0aW9ucy5mb250U2l6ZSB8fCBwYXJzZUludChkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5wdXQtbmV3LWZvbnQtc2l6ZScpLnZhbHVlIHx8IDM4KTsKICAgICAgY29uc3Qgcm90YXRpb25ZID0gb3B0aW9ucy5yb3RhdGlvblkgfHwgMDsKICAgICAgY29uc3QgeyBncm91cCwgbWFpbk1lc2ggfSA9IGJ1aWxkM0RPYmplY3QodHlwZSwgY29sb3IsIGhlaWdodCwgd2lkdGgsIHsgcG9pbnRzOiBvcHRpb25zLnBvaW50cyB9KTsKICAgICAgZ3JvdXAucG9zaXRpb24uc2V0KHBvcy54LCAwLCBwb3Mueik7CiAgICAgIGdyb3VwLnJvdGF0aW9uLnkgPSByb3RhdGlvblk7CiAgICAgIGxldCBsYWJlbFNwcml0ZSA9IG51bGw7CiAgICAgIGlmIChsYWJlbCAmJiBsYWJlbC50cmltKCkgIT09ICcnKSB7CiAgICAgICAgbGFiZWxTcHJpdGUgPSBjcmVhdGVUZXh0U3ByaXRlKGxhYmVsLCBjb2xvciwgZm9udFNpemUpOwogICAgICAgIGlmIChsYWJlbFNwcml0ZSkgewogICAgICAgICAgY29uc3Qgc3ByaXRlT2Zmc2V0ID0gKHR5cGUgPT09ICdwaW4nKSA/IDIuMiA6ICh0eXBlID09PSAnbGluZScgfHwgdHlwZSA9PT0gJ2ZyZWVoYW5kJyB8fCB0eXBlID09PSAnY2lyY2xlJyB8fCB0eXBlID09PSAncmVjdCcgPyAxLjUgOiAxLjgpOwogICAgICAgICAgbGFiZWxTcHJpdGUucG9zaXRpb24ueSA9IGhlaWdodCArIHNwcml0ZU9mZnNldDsKICAgICAgICAgIGdyb3VwLmFkZChsYWJlbFNwcml0ZSk7CiAgICAgICAgfQogICAgICB9CiAgICAgIGNvbnN0IGl0ZW1EYXRhID0gewogICAgICAgIGlkOiBuZXh0T2JqZWN0SWQrKywKICAgICAgICB0eXBlLAogICAgICAgIGxhYmVsLAogICAgICAgIGNvbG9yLAogICAgICAgIGhlaWdodCwKICAgICAgICB3aWR0aCwKICAgICAgICBmb250U2l6ZSwKICAgICAgICByb3RhdGlvblksCiAgICAgICAgcG9pbnRzOiBvcHRpb25zLnBvaW50cyA/IG9wdGlvbnMucG9pbnRzLm1hcChwID0+IHAuY2xvbmUoKSkgOiBudWxsLAogICAgICAgIGdyb3VwLAogICAgICAgIG1haW5NZXNoLAogICAgICAgIHNwcml0ZTogbGFiZWxTcHJpdGUKICAgICAgfTsKICAgICAgZ3JvdXAudXNlckRhdGEgPSB7IGlkOiBpdGVtRGF0YS5pZCB9OwogICAgICBtYWluTWVzaC51c2VyRGF0YSA9IHsgaWQ6IGl0ZW1EYXRhLmlkIH07CiAgICAgIHNjZW5lLmFkZChncm91cCk7CiAgICAgIHNjZW5lT2JqZWN0cy5wdXNoKGl0ZW1EYXRhKTsKICAgICAgdXBkYXRlT2JqZWN0TGlzdFVJKCk7CiAgICAgIHNlbGVjdE9iamVjdChpdGVtRGF0YSk7CiAgICAgIHNob3dUb2FzdChgJyR7bGFiZWwgfHwgdHlwZX0nIOyYpOu4jOygne2KuOqwgCDstpTqsIDrkJjsl4jsirXri4jri6QuYCwgJ3N1Y2Nlc3MnKTsKICAgICAgcmV0dXJuIGl0ZW1EYXRhOwogICAgfQogICAgZnVuY3Rpb24gZ2V0UG9pbnRlclBvcyhlKSB7CiAgICAgIGNvbnN0IHJlY3QgPSByZW5kZXJlci5kb21FbGVtZW50LmdldEJvdW5kaW5nQ2xpZW50UmVjdCgpOwogICAgICBjb25zdCBjbGllbnRYID0gZS5jbGllbnRYICE9PSB1bmRlZmluZWQgPyBlLmNsaWVudFggOiAoZS50b3VjaGVzICYmIGUudG91Y2hlc1swXSA/IGUudG91Y2hlc1swXS5jbGllbnRYIDogMCk7CiAgICAgIGNvbnN0IGNsaWVudFkgPSBlLmNsaWVudFkgIT09IHVuZGVmaW5lZCA/IGUuY2xpZW50WSA6IChlLnRvdWNoZXMgJiYgZS50b3VjaGVzWzBdID8gZS50b3VjaGVzWzBdLmNsaWVudFkgOiAwKTsKICAgICAgcmV0dXJuIHsKICAgICAgICB4OiAoKGNsaWVudFggLSByZWN0LmxlZnQpIC8gcmVjdC53aWR0aCkgKiAyIC0gMSwKICAgICAgICB5OiAtKChjbGllbnRZIC0gcmVjdC50b3ApIC8gcmVjdC5oZWlnaHQpICogMiArIDEKICAgICAgfTsKICAgIH0KICAgIGZ1bmN0aW9uIGdldE1hcEludGVyc2VjdGlvblBvaW50KHBvcykgewogICAgICBtb3VzZS54ID0gcG9zLng7CiAgICAgIG1vdXNlLnkgPSBwb3MueTsKICAgICAgcmF5Y2FzdGVyLnNldEZyb21DYW1lcmEobW91c2UsIGNhbWVyYSk7CiAgICAgIGNvbnN0IGludGVyc2VjdHMgPSByYXljYXN0ZXIuaW50ZXJzZWN0T2JqZWN0KG1hcFBsYW5lKTsKICAgICAgaWYgKGludGVyc2VjdHMubGVuZ3RoID4gMCkgcmV0dXJuIGludGVyc2VjdHNbMF0ucG9pbnQ7CiAgICAgIHJldHVybiBudWxsOwogICAgfQogICAgZnVuY3Rpb24gb25Qb2ludGVyRG93bihlKSB7CiAgICAgIGlmIChlLmJ1dHRvbiAhPT0gdW5kZWZpbmVkICYmIGUuYnV0dG9uICE9PSAwKSByZXR1cm47CiAgICAgIGNvbnN0IGNsaWVudFggPSBlLmNsaWVudFggIT09IHVuZGVmaW5lZCA/IGUuY2xpZW50WCA6IChlLnRvdWNoZXMgJiYgZS50b3VjaGVzWzBdID8gZS50b3VjaGVzWzBdLmNsaWVudFggOiAwKTsKICAgICAgY29uc3QgY2xpZW50WSA9IGUuY2xpZW50WSAhPT0gdW5kZWZpbmVkID8gZS5jbGllbnRZIDogKGUudG91Y2hlcyAmJiBlLnRvdWNoZXNbMF0gPyBlLnRvdWNoZXNbMF0uY2xpZW50WSA6IDApOwogICAgICBtb3VzZURvd25Qb3MgPSB7IHg6IGNsaWVudFgsIHk6IGNsaWVudFkgfTsKICAgICAgaGFzTW92ZWRNb3VzZSA9IGZhbHNlOwogICAgICBjb25zdCBwb3MgPSBnZXRQb2ludGVyUG9zKGUpOwogICAgICBtb3VzZS54ID0gcG9zLng7CiAgICAgIG1vdXNlLnkgPSBwb3MueTsKICAgICAgcmF5Y2FzdGVyLnNldEZyb21DYW1lcmEobW91c2UsIGNhbWVyYSk7CiAgICAgIGlmIChhY3RpdmVQcmVzZXQgPT09ICdmcmVlaGFuZCcpIHsKICAgICAgICBjb25zdCBoaXRQb2ludCA9IGdldE1hcEludGVyc2VjdGlvblBvaW50KHBvcyk7CiAgICAgICAgaWYgKGhpdFBvaW50KSB7CiAgICAgICAgICBpc0RyYXdpbmdGcmVlaGFuZCA9IHRydWU7CiAgICAgICAgICBjb250cm9scy5lbmFibGVkID0gZmFsc2U7CiAgICAgICAgICBmcmVlaGFuZFJhd1BvaW50cyA9IFtuZXcgVEhSRUUuVmVjdG9yMyhoaXRQb2ludC54LCAwLjA2LCBoaXRQb2ludC56KV07CiAgICAgICAgICBjb25zdCBwcmV2aWV3TWF0ID0gbmV3IFRIUkVFLk1lc2hCYXNpY01hdGVyaWFsKHsKICAgICAgICAgICAgY29sb3I6IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnB1dC1uZXctY29sb3InKS52YWx1ZSB8fCAnI2Y1OWUwYicsCiAgICAgICAgICAgIHNpZGU6IFRIUkVFLkRvdWJsZVNpZGUKICAgICAgICAgIH0pOwogICAgICAgICAgY29uc3QgcHJldmlld0dlbyA9IG5ldyBUSFJFRS5DaXJjbGVHZW9tZXRyeSgwLjMsIDE2KTsKICAgICAgICAgIHByZXZpZXdHZW8ucm90YXRlWCgtTWF0aC5QSSAvIDIpOwogICAgICAgICAgYWN0aXZlRHJhd2luZ01lc2ggPSBuZXcgVEhSRUUuTWVzaChwcmV2aWV3R2VvLCBwcmV2aWV3TWF0KTsKICAgICAgICAgIGFjdGl2ZURyYXdpbmdNZXNoLnBvc2l0aW9uLnNldChoaXRQb2ludC54LCAwLjA2LCBoaXRQb2ludC56KTsKICAgICAgICAgIHNjZW5lLmFkZChhY3RpdmVEcmF3aW5nTWVzaCk7CiAgICAgICAgICByZXR1cm47CiAgICAgICAgfQogICAgICB9CiAgICAgIGNvbnN0IGludGVyYWN0aXZlTWVzaGVzID0gW107CiAgICAgIHNjZW5lT2JqZWN0cy5mb3JFYWNoKG9iaiA9PiB7CiAgICAgICAgb2JqLmdyb3VwLnRyYXZlcnNlKGNoaWxkID0+IHsKICAgICAgICAgIGlmIChjaGlsZC5pc01lc2ggJiYgY2hpbGQubmFtZSAhPT0gJ1NlbGVjdGlvblJpbmcnKSB7CiAgICAgICAgICAgIGludGVyYWN0aXZlTWVzaGVzLnB1c2goY2hpbGQpOwogICAgICAgICAgfQogICAgICAgIH0pOwogICAgICB9KTsKICAgICAgY29uc3Qgb2JqSW50ZXJzZWN0cyA9IHJheWNhc3Rlci5pbnRlcnNlY3RPYmplY3RzKGludGVyYWN0aXZlTWVzaGVzLCBmYWxzZSk7CiAgICAgIGlmIChvYmpJbnRlcnNlY3RzLmxlbmd0aCA+IDApIHsKICAgICAgICBsZXQgaGl0ID0gb2JqSW50ZXJzZWN0c1swXS5vYmplY3Q7CiAgICAgICAgd2hpbGUgKGhpdCAmJiAoIWhpdC51c2VyRGF0YSB8fCAhaGl0LnVzZXJEYXRhLmlkKSAmJiBoaXQucGFyZW50KSB7CiAgICAgICAgICBoaXQgPSBoaXQucGFyZW50OwogICAgICAgIH0KICAgICAgICBpZiAoaGl0ICYmIGhpdC51c2VyRGF0YSAmJiBoaXQudXNlckRhdGEuaWQpIHsKICAgICAgICAgIGNvbnN0IHRhcmdldCA9IHNjZW5lT2JqZWN0cy5maW5kKG8gPT4gby5pZCA9PT0gaGl0LnVzZXJEYXRhLmlkKTsKICAgICAgICAgIGlmICh0YXJnZXQpIHsKICAgICAgICAgICAgaXNEcmFnZ2luZ09iamVjdCA9IHRydWU7CiAgICAgICAgICAgIGRyYWdnZWRPYmplY3QgPSB0YXJnZXQ7CiAgICAgICAgICAgIGNvbnRyb2xzLmVuYWJsZWQgPSBmYWxzZTsKICAgICAgICAgICAgaWYgKHJheWNhc3Rlci5yYXkuaW50ZXJzZWN0UGxhbmUodmlydHVhbEdyb3VuZFBsYW5lLCBwbGFuZUludGVyc2VjdGlvblBvaW50KSkgewogICAgICAgICAgICAgIGRyYWdPZmZzZXQueCA9IHBsYW5lSW50ZXJzZWN0aW9uUG9pbnQueCAtIHRhcmdldC5ncm91cC5wb3NpdGlvbi54OwogICAgICAgICAgICAgIGRyYWdPZmZzZXQueiA9IHBsYW5lSW50ZXJzZWN0aW9uUG9pbnQueiAtIHRhcmdldC5ncm91cC5wb3NpdGlvbi56OwogICAgICAgICAgICB9CiAgICAgICAgICAgIHNlbGVjdE9iamVjdCh0YXJnZXQpOwogICAgICAgICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndmlld3BvcnQtY29udGFpbmVyJykuc3R5bGUuY3Vyc29yID0gJ2dyYWJiaW5nJzsKICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgfQogICAgICAgIH0KICAgICAgfQogICAgfQogICAgZnVuY3Rpb24gb25Qb2ludGVyTW92ZShlKSB7CiAgICAgIGNvbnN0IGNsaWVudFggPSBlLmNsaWVudFggIT09IHVuZGVmaW5lZCA/IGUuY2xpZW50WCA6IChlLnRvdWNoZXMgJiYgZS50b3VjaGVzWzBdID8gZS50b3VjaGVzWzBdLmNsaWVudFggOiAwKTsKICAgICAgY29uc3QgY2xpZW50WSA9IGUuY2xpZW50WSAhPT0gdW5kZWZpbmVkID8gZS5jbGllbnRZIDogKGUudG91Y2hlcyAmJiBlLnRvdWNoZXNbMF0gPyBlLnRvdWNoZXNbMF0uY2xpZW50WSA6IDApOwogICAgICBjb25zdCBkaWZmWCA9IE1hdGguYWJzKGNsaWVudFggLSBtb3VzZURvd25Qb3MueCk7CiAgICAgIGNvbnN0IGRpZmZZID0gTWF0aC5hYnMoY2xpZW50WSAtIG1vdXNlRG93blBvcy55KTsKICAgICAgaWYgKGRpZmZYID4gNSB8fCBkaWZmWSA+IDUpIHsKICAgICAgICBoYXNNb3ZlZE1vdXNlID0gdHJ1ZTsKICAgICAgfQogICAgICBjb25zdCBwb3MgPSBnZXRQb2ludGVyUG9zKGUpOwogICAgICBpZiAoaXNEcmF3aW5nRnJlZWhhbmQpIHsKICAgICAgICBjb25zdCBoaXRQb2ludCA9IGdldE1hcEludGVyc2VjdGlvblBvaW50KHBvcyk7CiAgICAgICAgaWYgKGhpdFBvaW50KSB7CiAgICAgICAgICBjb25zdCBsYXN0UHQgPSBmcmVlaGFuZFJhd1BvaW50c1tmcmVlaGFuZFJhd1BvaW50cy5sZW5ndGggLSAxXTsKICAgICAgICAgIGlmICghbGFzdFB0IHx8IGxhc3RQdC5kaXN0YW5jZVRvKGhpdFBvaW50KSA+IDAuNCkgewogICAgICAgICAgICBmcmVlaGFuZFJhd1BvaW50cy5wdXNoKG5ldyBUSFJFRS5WZWN0b3IzKGhpdFBvaW50LngsIDAuMDYsIGhpdFBvaW50LnopKTsKICAgICAgICAgICAgaWYgKGZyZWVoYW5kUmF3UG9pbnRzLmxlbmd0aCA+PSAyKSB7CiAgICAgICAgICAgICAgaWYgKGFjdGl2ZURyYXdpbmdNZXNoKSBzY2VuZS5yZW1vdmUoYWN0aXZlRHJhd2luZ01lc2gpOwogICAgICAgICAgICAgIGNvbnN0IGNvbG9yID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2lucHV0LW5ldy1jb2xvcicpLnZhbHVlIHx8ICcjZjU5ZTBiJzsKICAgICAgICAgICAgICBhY3RpdmVEcmF3aW5nTWVzaCA9IGJ1aWxkRnJlZWhhbmRGbGF0UmliYm9uTWVzaChmcmVlaGFuZFJhd1BvaW50cywgY29sb3IsIDAuNik7CiAgICAgICAgICAgICAgaWYgKGFjdGl2ZURyYXdpbmdNZXNoKSBzY2VuZS5hZGQoYWN0aXZlRHJhd2luZ01lc2gpOwogICAgICAgICAgICB9CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIHJldHVybjsKICAgICAgfQogICAgICBpZiAoaXNEcmFnZ2luZ09iamVjdCAmJiBkcmFnZ2VkT2JqZWN0KSB7CiAgICAgICAgbW91c2UueCA9IHBvcy54OwogICAgICAgIG1vdXNlLnkgPSBwb3MueTsKICAgICAgICByYXljYXN0ZXIuc2V0RnJvbUNhbWVyYShtb3VzZSwgY2FtZXJhKTsKICAgICAgICBpZiAocmF5Y2FzdGVyLnJheS5pbnRlcnNlY3RQbGFuZSh2aXJ0dWFsR3JvdW5kUGxhbmUsIHBsYW5lSW50ZXJzZWN0aW9uUG9pbnQpKSB7CiAgICAgICAgICBjb25zdCBuZXdYID0gcGxhbmVJbnRlcnNlY3Rpb25Qb2ludC54IC0gZHJhZ09mZnNldC54OwogICAgICAgICAgY29uc3QgbmV3WiA9IHBsYW5lSW50ZXJzZWN0aW9uUG9pbnQueiAtIGRyYWdPZmZzZXQuejsKICAgICAgICAgIGRyYWdnZWRPYmplY3QuZ3JvdXAucG9zaXRpb24ueCA9IG5ld1g7CiAgICAgICAgICBkcmFnZ2VkT2JqZWN0Lmdyb3VwLnBvc2l0aW9uLnogPSBuZXdaOwogICAgICAgICAgY29uc3QgaW5wdXRYID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtcG9zLXgnKTsKICAgICAgICAgIGNvbnN0IGlucHV0WiA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LXBvcy16Jyk7CiAgICAgICAgICBpZiAoaW5wdXRYKSBpbnB1dFgudmFsdWUgPSBuZXdYLnRvRml4ZWQoMSk7CiAgICAgICAgICBpZiAoaW5wdXRaKSBpbnB1dFoudmFsdWUgPSBuZXdaLnRvRml4ZWQoMSk7CiAgICAgICAgfQogICAgICB9CiAgICB9CiAgICBmdW5jdGlvbiBvblBvaW50ZXJVcChlKSB7CiAgICAgIGlmIChpc0RyYXdpbmdGcmVlaGFuZCkgewogICAgICAgIGlzRHJhd2luZ0ZyZWVoYW5kID0gZmFsc2U7CiAgICAgICAgY29udHJvbHMuZW5hYmxlZCA9IHRydWU7CiAgICAgICAgaWYgKGFjdGl2ZURyYXdpbmdNZXNoKSB7CiAgICAgICAgICBzY2VuZS5yZW1vdmUoYWN0aXZlRHJhd2luZ01lc2gpOwogICAgICAgICAgYWN0aXZlRHJhd2luZ01lc2ggPSBudWxsOwogICAgICAgIH0KICAgICAgICBpZiAoZnJlZWhhbmRSYXdQb2ludHMubGVuZ3RoID49IDIpIHsKICAgICAgICAgIGNvbnN0IGxhYmVsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2lucHV0LW5ldy1sYWJlbCcpLnZhbHVlIHx8ICfsnpDsnKAg6rK966Gc7ISgJzsKICAgICAgICAgIGNvbnN0IGNvbG9yID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2lucHV0LW5ldy1jb2xvcicpLnZhbHVlIHx8ICcjZjU5ZTBiJzsKICAgICAgICAgIGNvbnN0IGZvbnRTaXplID0gcGFyc2VJbnQoZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2lucHV0LW5ldy1mb250LXNpemUnKS52YWx1ZSB8fCAzOCk7CiAgICAgICAgICBhZGRPYmplY3RUb01hcCh7IHg6IDAsIHo6IDAgfSwgewogICAgICAgICAgICB0eXBlOiAnZnJlZWhhbmQnLAogICAgICAgICAgICBsYWJlbCwKICAgICAgICAgICAgY29sb3IsCiAgICAgICAgICAgIGhlaWdodDogMSwKICAgICAgICAgICAgd2lkdGg6IDEuNSwKICAgICAgICAgICAgZm9udFNpemUsCiAgICAgICAgICAgIHBvaW50czogZnJlZWhhbmRSYXdQb2ludHMKICAgICAgICAgIH0pOwogICAgICAgICAgc2hvd1RvYXN0KCfsnpDsnKAg6rOh7ISgIOqyveuhnOyEoOydtCDsg53shLHrkJjsl4jsirXri4jri6QuJywgJ3N1Y2Nlc3MnKTsKICAgICAgICB9IGVsc2UgewogICAgICAgICAgc2hvd1RvYXN0KCfshKDsnYQg6re466as66Ck66m0IOuTnOuemOq3uO2VmOyEuOyalC4nLCAnaW5mbycpOwogICAgICAgIH0KICAgICAgICBmcmVlaGFuZFJhd1BvaW50cyA9IFtdOwogICAgICAgIHJldHVybjsKICAgICAgfQogICAgICBpZiAoaXNEcmFnZ2luZ09iamVjdCkgewogICAgICAgIGlzRHJhZ2dpbmdPYmplY3QgPSBmYWxzZTsKICAgICAgICBkcmFnZ2VkT2JqZWN0ID0gbnVsbDsKICAgICAgICBjb250cm9scy5lbmFibGVkID0gdHJ1ZTsKICAgICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndmlld3BvcnQtY29udGFpbmVyJykuc3R5bGUuY3Vyc29yID0gJyc7CiAgICAgICAgaWYgKGhhc01vdmVkTW91c2UpIHsKICAgICAgICAgIHNob3dUb2FzdCgn7Jik67iM7KCd7Yq4IOychOy5mOqwgCDsnbTrj5nrkJjsl4jsirXri4jri6QuJyk7CiAgICAgICAgICByZXR1cm47CiAgICAgICAgfQogICAgICB9CiAgICAgIGlmICghaGFzTW92ZWRNb3VzZSkgewogICAgICAgIGNvbnN0IHBvcyA9IGdldFBvaW50ZXJQb3MoZSk7CiAgICAgICAgbW91c2UueCA9IHBvcy54OwogICAgICAgIG1vdXNlLnkgPSBwb3MueTsKICAgICAgICByYXljYXN0ZXIuc2V0RnJvbUNhbWVyYShtb3VzZSwgY2FtZXJhKTsKICAgICAgICBjb25zdCBpbnRlcmFjdGl2ZU1lc2hlcyA9IFtdOwogICAgICAgIHNjZW5lT2JqZWN0cy5mb3JFYWNoKG9iaiA9PiB7CiAgICAgICAgICBvYmouZ3JvdXAudHJhdmVyc2UoY2hpbGQgPT4gewogICAgICAgICAgICBpZiAoY2hpbGQuaXNNZXNoICYmIGNoaWxkLm5hbWUgIT09ICdTZWxlY3Rpb25SaW5nJykgewogICAgICAgICAgICAgIGludGVyYWN0aXZlTWVzaGVzLnB1c2goY2hpbGQpOwogICAgICAgICAgICB9CiAgICAgICAgICB9KTsKICAgICAgICB9KTsKICAgICAgICBjb25zdCBvYmpJbnRlcnNlY3RzID0gcmF5Y2FzdGVyLmludGVyc2VjdE9iamVjdHMoaW50ZXJhY3RpdmVNZXNoZXMsIGZhbHNlKTsKICAgICAgICBpZiAob2JqSW50ZXJzZWN0cy5sZW5ndGggPiAwKSB7CiAgICAgICAgICBsZXQgaGl0ID0gb2JqSW50ZXJzZWN0c1swXS5vYmplY3Q7CiAgICAgICAgICB3aGlsZSAoaGl0ICYmICghaGl0LnVzZXJEYXRhIHx8ICFoaXQudXNlckRhdGEuaWQpICYmIGhpdC5wYXJlbnQpIHsKICAgICAgICAgICAgaGl0ID0gaGl0LnBhcmVudDsKICAgICAgICAgIH0KICAgICAgICAgIGlmIChoaXQgJiYgaGl0LnVzZXJEYXRhICYmIGhpdC51c2VyRGF0YS5pZCkgewogICAgICAgICAgICBjb25zdCB0YXJnZXQgPSBzY2VuZU9iamVjdHMuZmluZChvID0+IG8uaWQgPT09IGhpdC51c2VyRGF0YS5pZCk7CiAgICAgICAgICAgIGlmICh0YXJnZXQpIHsKICAgICAgICAgICAgICBzZWxlY3RPYmplY3QodGFyZ2V0KTsKICAgICAgICAgICAgICByZXR1cm47CiAgICAgICAgICAgIH0KICAgICAgICAgIH0KICAgICAgICB9CiAgICAgICAgY29uc3QgcGxhbmVJbnRlcnNlY3RzID0gcmF5Y2FzdGVyLmludGVyc2VjdE9iamVjdChtYXBQbGFuZSk7CiAgICAgICAgaWYgKHBsYW5lSW50ZXJzZWN0cy5sZW5ndGggPiAwKSB7CiAgICAgICAgICBjb25zdCBwb2ludCA9IHBsYW5lSW50ZXJzZWN0c1swXS5wb2ludDsKICAgICAgICAgIGlmIChhY3RpdmVQcmVzZXQgIT09ICdmcmVlaGFuZCcgJiYgYWN0aXZlUHJlc2V0ICE9PSAnc2VsZWN0JykgewogICAgICAgICAgICBhZGRPYmplY3RUb01hcCh7IHg6IHBvaW50LngsIHo6IHBvaW50LnogfSk7CiAgICAgICAgICB9IGVsc2UgaWYgKGFjdGl2ZVByZXNldCA9PT0gJ3NlbGVjdCcpIHsKICAgICAgICAgICAgZGVzZWxlY3RPYmplY3QoKTsKICAgICAgICAgIH0KICAgICAgICB9IGVsc2UgewogICAgICAgICAgZGVzZWxlY3RPYmplY3QoKTsKICAgICAgICB9CiAgICAgIH0KICAgIH0KICAgIGZ1bmN0aW9uIGRlc2VsZWN0T2JqZWN0KCkgewogICAgICBpZiAoc2VsZWN0ZWRPYmplY3QpIHsKICAgICAgICBjb25zdCByaW5nID0gc2VsZWN0ZWRPYmplY3QuZ3JvdXAuZ2V0T2JqZWN0QnlOYW1lKCdTZWxlY3Rpb25SaW5nJyk7CiAgICAgICAgaWYgKHJpbmcpIHsKICAgICAgICAgIHNlbGVjdGVkT2JqZWN0Lmdyb3VwLnJlbW92ZShyaW5nKTsKICAgICAgICAgIHJpbmcuZ2VvbWV0cnkuZGlzcG9zZSgpOwogICAgICAgICAgcmluZy5tYXRlcmlhbC5kaXNwb3NlKCk7CiAgICAgICAgfQogICAgICAgIHNlbGVjdGVkT2JqZWN0ID0gbnVsbDsKICAgICAgfQogICAgICBjb25zdCBpbnNwZWN0b3IgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdG9yLXBhbmVsJyk7CiAgICAgIGlmIChpbnNwZWN0b3IpIGluc3BlY3Rvci5jbGFzc0xpc3QuYWRkKCd0cmFuc2xhdGUteC1bMTE1JV0nKTsKICAgICAgdXBkYXRlT2JqZWN0TGlzdFNlbGVjdGlvbigpOwogICAgfQogICAgZnVuY3Rpb24gc2VsZWN0T2JqZWN0KGl0ZW1EYXRhKSB7CiAgICAgIGRlc2VsZWN0T2JqZWN0KCk7CiAgICAgIHNlbGVjdGVkT2JqZWN0ID0gaXRlbURhdGE7CiAgICAgIGNvbnN0IHJpbmdSYWRpdXMgPSBNYXRoLm1heChpdGVtRGF0YS53aWR0aCAqIDEuNSwgMS4yKTsKICAgICAgY29uc3QgcmluZ0dlbyA9IG5ldyBUSFJFRS5SaW5nR2VvbWV0cnkocmluZ1JhZGl1cywgcmluZ1JhZGl1cyArIDAuMzUsIDMyKTsKICAgICAgY29uc3QgcmluZ01hdCA9IG5ldyBUSFJFRS5NZXNoQmFzaWNNYXRlcmlhbCh7IGNvbG9yOiAweDA1OTY2OSwgc2lkZTogVEhSRUUuRG91YmxlU2lkZSB9KTsKICAgICAgY29uc3QgcmluZyA9IG5ldyBUSFJFRS5NZXNoKHJpbmdHZW8sIHJpbmdNYXQpOwogICAgICByaW5nLnJvdGF0aW9uLnggPSAtTWF0aC5QSSAvIDI7CiAgICAgIHJpbmcucG9zaXRpb24ueSA9IDAuMDg7CiAgICAgIHJpbmcubmFtZSA9ICdTZWxlY3Rpb25SaW5nJzsKICAgICAgaXRlbURhdGEuZ3JvdXAuYWRkKHJpbmcpOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1sYWJlbCcpLnZhbHVlID0gaXRlbURhdGEubGFiZWwgfHwgJyc7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LWZvbnRzaXplJykudmFsdWUgPSBpdGVtRGF0YS5mb250U2l6ZSB8fCAzODsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtZm9udHNpemUtdmFsJykudGV4dENvbnRlbnQgPSBgJHtpdGVtRGF0YS5mb250U2l6ZSB8fCAzOH1weGA7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LWNvbG9yJykudmFsdWUgPSBpdGVtRGF0YS5jb2xvcjsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtaGVpZ2h0JykudmFsdWUgPSBpdGVtRGF0YS5oZWlnaHQ7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LWhlaWdodC12YWwnKS50ZXh0Q29udGVudCA9IGl0ZW1EYXRhLmhlaWdodC50b0ZpeGVkKDEpOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC13aWR0aCcpLnZhbHVlID0gaXRlbURhdGEud2lkdGg7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LXdpZHRoLXZhbCcpLnRleHRDb250ZW50ID0gaXRlbURhdGEud2lkdGgudG9GaXhlZCgxKTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3Qtcm90JykudmFsdWUgPSBNYXRoLnJvdW5kKFRIUkVFLk1hdGhVdGlscy5yYWRUb0RlZyhpdGVtRGF0YS5yb3RhdGlvblkpKTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3Qtcm90LXZhbCcpLnRleHRDb250ZW50ID0gYCR7TWF0aC5yb3VuZChUSFJFRS5NYXRoVXRpbHMucmFkVG9EZWcoaXRlbURhdGEucm90YXRpb25ZKSl9wrBgOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1wb3MteCcpLnZhbHVlID0gaXRlbURhdGEuZ3JvdXAucG9zaXRpb24ueC50b0ZpeGVkKDEpOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1wb3MteicpLnZhbHVlID0gaXRlbURhdGEuZ3JvdXAucG9zaXRpb24uei50b0ZpeGVkKDEpOwogICAgICBjb25zdCBpbnNwZWN0b3IgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdG9yLXBhbmVsJyk7CiAgICAgIGluc3BlY3Rvci5jbGFzc0xpc3QucmVtb3ZlKCd0cmFuc2xhdGUteC1bMTE1JV0nKTsKICAgICAgdXBkYXRlT2JqZWN0TGlzdFNlbGVjdGlvbigpOwogICAgfQogICAgZnVuY3Rpb24gcmVidWlsZFNlbGVjdGVkT2JqZWN0TWVzaCgpIHsKICAgICAgaWYgKCFzZWxlY3RlZE9iamVjdCkgcmV0dXJuOwogICAgICBjb25zdCBwb3MgPSBzZWxlY3RlZE9iamVjdC5ncm91cC5wb3NpdGlvbi5jbG9uZSgpOwogICAgICBjb25zdCB7IGlkLCB0eXBlLCBsYWJlbCwgY29sb3IsIGhlaWdodCwgd2lkdGgsIGZvbnRTaXplLCByb3RhdGlvblksIHBvaW50cyB9ID0gc2VsZWN0ZWRPYmplY3Q7CiAgICAgIHNjZW5lLnJlbW92ZShzZWxlY3RlZE9iamVjdC5ncm91cCk7CiAgICAgIGNvbnN0IHsgZ3JvdXAsIG1haW5NZXNoIH0gPSBidWlsZDNET2JqZWN0KHR5cGUsIGNvbG9yLCBoZWlnaHQsIHdpZHRoLCB7IHBvaW50cyB9KTsKICAgICAgZ3JvdXAucG9zaXRpb24uY29weShwb3MpOwogICAgICBncm91cC5yb3RhdGlvbi55ID0gcm90YXRpb25ZOwogICAgICBsZXQgbGFiZWxTcHJpdGUgPSBudWxsOwogICAgICBpZiAobGFiZWwgJiYgbGFiZWwudHJpbSgpICE9PSAnJykgewogICAgICAgIGxhYmVsU3ByaXRlID0gY3JlYXRlVGV4dFNwcml0ZShsYWJlbCwgY29sb3IsIGZvbnRTaXplIHx8IDM4KTsKICAgICAgICBpZiAobGFiZWxTcHJpdGUpIHsKICAgICAgICAgIGNvbnN0IHNwcml0ZU9mZnNldCA9ICh0eXBlID09PSAncGluJykgPyAyLjIgOiAodHlwZSA9PT0gJ2xpbmUnIHx8IHR5cGUgPT09ICdmcmVlaGFuZCcgfHwgdHlwZSA9PT0gJ2NpcmNsZScgfHwgdHlwZSA9PT0gJ3JlY3QnID8gMS41IDogMS44KTsKICAgICAgICAgIGxhYmVsU3ByaXRlLnBvc2l0aW9uLnkgPSBoZWlnaHQgKyBzcHJpdGVPZmZzZXQ7CiAgICAgICAgICBncm91cC5hZGQobGFiZWxTcHJpdGUpOwogICAgICAgIH0KICAgICAgfQogICAgICBncm91cC51c2VyRGF0YSA9IHsgaWQgfTsKICAgICAgbWFpbk1lc2gudXNlckRhdGEgPSB7IGlkIH07CiAgICAgIHNlbGVjdGVkT2JqZWN0Lmdyb3VwID0gZ3JvdXA7CiAgICAgIHNlbGVjdGVkT2JqZWN0Lm1haW5NZXNoID0gbWFpbk1lc2g7CiAgICAgIHNlbGVjdGVkT2JqZWN0LnNwcml0ZSA9IGxhYmVsU3ByaXRlOwogICAgICBzY2VuZS5hZGQoZ3JvdXApOwogICAgICBjb25zdCByaW5nUmFkaXVzID0gTWF0aC5tYXgod2lkdGggKiAxLjUsIDEuMik7CiAgICAgIGNvbnN0IHJpbmdHZW8gPSBuZXcgVEhSRUUuUmluZ0dlb21ldHJ5KHJpbmdSYWRpdXMsIHJpbmdSYWRpdXMgKyAwLjM1LCAzMik7CiAgICAgIGNvbnN0IHJpbmdNYXQgPSBuZXcgVEhSRUUuTWVzaEJhc2ljTWF0ZXJpYWwoeyBjb2xvcjogMHgwNTk2NjksIHNpZGU6IFRIUkVFLkRvdWJsZVNpZGUgfSk7CiAgICAgIGNvbnN0IHJpbmcgPSBuZXcgVEhSRUUuTWVzaChyaW5nR2VvLCByaW5nTWF0KTsKICAgICAgcmluZy5yb3RhdGlvbi54ID0gLU1hdGguUEkgLyAyOwogICAgICByaW5nLnBvc2l0aW9uLnkgPSAwLjA4OwogICAgICByaW5nLm5hbWUgPSAnU2VsZWN0aW9uUmluZyc7CiAgICAgIGdyb3VwLmFkZChyaW5nKTsKICAgICAgdXBkYXRlT2JqZWN0TGlzdFVJKCk7CiAgICB9CiAgICBmdW5jdGlvbiB1cGRhdGVPYmplY3RMaXN0VUkoKSB7CiAgICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvYmotbGlzdC1jb250YWluZXInKTsKICAgICAgY29uc3QgY291bnRFbCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvYmotY291bnQnKTsKICAgICAgY291bnRFbC50ZXh0Q29udGVudCA9IHNjZW5lT2JqZWN0cy5sZW5ndGg7CiAgICAgIGlmIChzY2VuZU9iamVjdHMubGVuZ3RoID09PSAwKSB7CiAgICAgICAgY29udGFpbmVyLmlubmVySFRNTCA9IGA8ZGl2IGNsYXNzPSJ0ZXh0LWNlbnRlciBweS02IHRleHQtc2xhdGUtNDAwIHRleHQteHMiPuuwsOy5mOuQnCDsmKTruIzsoJ3tirjqsIAg7JeG7Iq164uI64ukLjwvZGl2PmA7CiAgICAgICAgcmV0dXJuOwogICAgICB9CiAgICAgIGNvbnRhaW5lci5pbm5lckhUTUwgPSAnJzsKICAgICAgc2NlbmVPYmplY3RzLmZvckVhY2goaXRlbSA9PiB7CiAgICAgICAgY29uc3QgZGl2ID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7CiAgICAgICAgZGl2LmNsYXNzTmFtZSA9IGBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcC0yIHJvdW5kZWQteGwgYm9yZGVyIGN1cnNvci1wb2ludGVyIHRyYW5zaXRpb24gJHsKICAgICAgICAgIHNlbGVjdGVkT2JqZWN0ICYmIHNlbGVjdGVkT2JqZWN0LmlkID09PSBpdGVtLmlkCiAgICAgICAgICAgID8gJ2JnLWVtZXJhbGQtNTAgYm9yZGVyLWVtZXJhbGQtNDAwIHRleHQtZW1lcmFsZC05MDAgc2hhZG93LXNtJwogICAgICAgICAgICA6ICdiZy13aGl0ZSBib3JkZXItc2xhdGUtMjAwIHRleHQtc2xhdGUtNzAwIGhvdmVyOmJvcmRlci1zbGF0ZS0zMDAgc2hhZG93LXNtJwogICAgICAgIH1gOwogICAgICAgIGxldCBpY29uQ2xhc3MgPSAnZmEtbG9jYXRpb24tZG90JzsKICAgICAgICBpZiAoaXRlbS50eXBlID09PSAnYnVpbGRpbmcnKSBpY29uQ2xhc3MgPSAnZmEtY2l0eSc7CiAgICAgICAgaWYgKGl0ZW0udHlwZSA9PT0gJ2N5bGluZGVyJykgaWNvbkNsYXNzID0gJ2ZhLW1vbnVtZW50JzsKICAgICAgICBpZiAoaXRlbS50eXBlID09PSAnYmFkZ2UnKSBpY29uQ2xhc3MgPSAnZmEtdGFnJzsKICAgICAgICBpZiAoaXRlbS50eXBlID09PSAnZnJlZWhhbmQnKSBpY29uQ2xhc3MgPSAnZmEtc2lnbmF0dXJlJzsKICAgICAgICBpZiAoaXRlbS50eXBlID09PSAnbGluZScpIGljb25DbGFzcyA9ICdmYS1hcnJvd3MtbGVmdC1yaWdodCc7CiAgICAgICAgaWYgKGl0ZW0udHlwZSA9PT0gJ2NpcmNsZScpIGljb25DbGFzcyA9ICdmYS1jaXJjbGUtZG90JzsKICAgICAgICBpZiAoaXRlbS50eXBlID09PSAncmVjdCcpIGljb25DbGFzcyA9ICdmYS1zcXVhcmUnOwogICAgICAgIGRpdi5pbm5lckhUTUwgPSBgCiAgICAgICAgICA8ZGl2IGNsYXNzPSJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiB0cnVuY2F0ZSI+CiAgICAgICAgICAgIDxzcGFuIGNsYXNzPSJ3LTMgaC0zIHJvdW5kZWQtZnVsbCBmbGV4LXNocmluay0wIHNoYWRvdy1zbSIgc3R5bGU9ImJhY2tncm91bmQtY29sb3I6ICR7aXRlbS5jb2xvcn07Ij48L3NwYW4+CiAgICAgICAgICAgIDxpIGNsYXNzPSJmYS1zb2xpZCAke2ljb25DbGFzc30gdGV4dC1zbGF0ZS00MDAgdGV4dC14cyI+PC9pPgogICAgICAgICAgICA8c3BhbiBjbGFzcz0idHJ1bmNhdGUgZm9udC1zZW1pYm9sZCB0ZXh0LXhzIj4ke2l0ZW0ubGFiZWwgfHwgYCgke2l0ZW0udHlwZX0pYH08L3NwYW4+CiAgICAgICAgICA8L2Rpdj4KICAgICAgICAgIDxidXR0b24gY2xhc3M9ImRlbGV0ZS1idG4gdGV4dC1zbGF0ZS00MDAgaG92ZXI6dGV4dC1yb3NlLTYwMCBweC0xIHB5LTAuNSIgdGl0bGU9IuyCreygnCI+CiAgICAgICAgICAgIDxpIGNsYXNzPSJmYS1zb2xpZCBmYS10cmFzaC1jYW4gdGV4dC1bMTFweF0iPjwvaT4KICAgICAgICAgIDwvYnV0dG9uPgogICAgICAgIGA7CiAgICAgICAgZGl2LmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKGUpID0+IHsKICAgICAgICAgIGlmIChlLnRhcmdldC5jbG9zZXN0KCcuZGVsZXRlLWJ0bicpKSB7CiAgICAgICAgICAgIGRlbGV0ZU9iamVjdChpdGVtLmlkKTsKICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAgfQogICAgICAgICAgc2VsZWN0T2JqZWN0KGl0ZW0pOwogICAgICAgIH0pOwogICAgICAgIGNvbnRhaW5lci5hcHBlbmRDaGlsZChkaXYpOwogICAgICB9KTsKICAgIH0KICAgIGZ1bmN0aW9uIHVwZGF0ZU9iamVjdExpc3RTZWxlY3Rpb24oKSB7CiAgICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdvYmotbGlzdC1jb250YWluZXInKTsKICAgICAgaWYgKCFjb250YWluZXIpIHJldHVybjsKICAgICAgY29uc3QgY2hpbGROb2RlcyA9IGNvbnRhaW5lci5jaGlsZHJlbjsKICAgICAgc2NlbmVPYmplY3RzLmZvckVhY2goKGl0ZW0sIGlkeCkgPT4gewogICAgICAgIGNvbnN0IGRpdiA9IGNoaWxkTm9kZXNbaWR4XTsKICAgICAgICBpZiAoIWRpdikgcmV0dXJuOwogICAgICAgIGlmIChzZWxlY3RlZE9iamVjdCAmJiBzZWxlY3RlZE9iamVjdC5pZCA9PT0gaXRlbS5pZCkgewogICAgICAgICAgZGl2LmNsYXNzTmFtZSA9ICdmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gcC0yIHJvdW5kZWQteGwgYm9yZGVyIGN1cnNvci1wb2ludGVyIHRyYW5zaXRpb24gYmctZW1lcmFsZC01MCBib3JkZXItZW1lcmFsZC00MDAgdGV4dC1lbWVyYWxkLTkwMCBzaGFkb3ctc20nOwogICAgICAgIH0gZWxzZSB7CiAgICAgICAgICBkaXYuY2xhc3NOYW1lID0gJ2ZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBwLTIgcm91bmRlZC14bCBib3JkZXIgY3Vyc29yLXBvaW50ZXIgdHJhbnNpdGlvbiBiZy13aGl0ZSBib3JkZXItc2xhdGUtMjAwIHRleHQtc2xhdGUtNzAwIGhvdmVyOmJvcmRlci1zbGF0ZS0zMDAgc2hhZG93LXNtJzsKICAgICAgICB9CiAgICAgIH0pOwogICAgfQogICAgZnVuY3Rpb24gZGVsZXRlT2JqZWN0KGlkKSB7CiAgICAgIGNvbnN0IGluZGV4ID0gc2NlbmVPYmplY3RzLmZpbmRJbmRleChvID0+IG8uaWQgPT09IGlkKTsKICAgICAgaWYgKGluZGV4ID09PSAtMSkgcmV0dXJuOwogICAgICBjb25zdCBpdGVtID0gc2NlbmVPYmplY3RzW2luZGV4XTsKICAgICAgaWYgKHNlbGVjdGVkT2JqZWN0ICYmIHNlbGVjdGVkT2JqZWN0LmlkID09PSBpZCkgewogICAgICAgIGRlc2VsZWN0T2JqZWN0KCk7CiAgICAgIH0KICAgICAgc2NlbmUucmVtb3ZlKGl0ZW0uZ3JvdXApOwogICAgICBpdGVtLmdyb3VwLnRyYXZlcnNlKGNoaWxkID0+IHsKICAgICAgICBpZiAoY2hpbGQuZ2VvbWV0cnkpIGNoaWxkLmdlb21ldHJ5LmRpc3Bvc2UoKTsKICAgICAgICBpZiAoY2hpbGQubWF0ZXJpYWwpIHsKICAgICAgICAgIGlmIChBcnJheS5pc0FycmF5KGNoaWxkLm1hdGVyaWFsKSkgY2hpbGQubWF0ZXJpYWwuZm9yRWFjaChtID0+IG0uZGlzcG9zZSgpKTsKICAgICAgICAgIGVsc2UgY2hpbGQubWF0ZXJpYWwuZGlzcG9zZSgpOwogICAgICAgIH0KICAgICAgfSk7CiAgICAgIHNjZW5lT2JqZWN0cy5zcGxpY2UoaW5kZXgsIDEpOwogICAgICB1cGRhdGVPYmplY3RMaXN0VUkoKTsKICAgIH0KICAgIGFzeW5jIGZ1bmN0aW9uIHNlYXJjaExvY2F0aW9uKHF1ZXJ5KSB7CiAgICAgIGlmICghcXVlcnkgfHwgcXVlcnkudHJpbSgpID09PSAnJykgcmV0dXJuOwogICAgICBjb25zdCBzdGF0dXNUYWcgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnc2VhcmNoLXN0YXR1cy10YWcnKTsKICAgICAgY29uc3QgcmVzdWx0c0NvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdzZWFyY2gtcmVzdWx0cy1saXN0Jyk7CiAgICAgIHN0YXR1c1RhZy50ZXh0Q29udGVudCA9ICfqsoDsg4kg7KSRLi4uJzsKICAgICAgc3RhdHVzVGFnLmNsYXNzTmFtZSA9ICd0ZXh0LVsxMHB4XSB0ZXh0LWFtYmVyLTYwMCBmb250LXNlbWlib2xkJzsKICAgICAgcmVzdWx0c0NvbnRhaW5lci5jbGFzc0xpc3QucmVtb3ZlKCdoaWRkZW4nKTsKICAgICAgcmVzdWx0c0NvbnRhaW5lci5pbm5lckhUTUwgPSAnPGRpdiBjbGFzcz0idGV4dC1jZW50ZXIgcHktMiB0ZXh0LXNsYXRlLTQwMCB0ZXh0LXhzIj7snqXshozrpbwg6rKA7IOJ7ZWY6rOgIOyeiOyKteuLiOuLpC4uLjwvZGl2Pic7CiAgICAgIHRyeSB7CiAgICAgICAgY29uc3QgdXJsID0gYGh0dHBzOi8vbm9taW5hdGltLm9wZW5zdHJlZXRtYXAub3JnL3NlYXJjaD9mb3JtYXQ9anNvbiZxPSR7ZW5jb2RlVVJJQ29tcG9uZW50KHF1ZXJ5KX0mbGltaXQ9NSZhZGRyZXNzZGV0YWlscz0xYDsKICAgICAgICBjb25zdCByZXMgPSBhd2FpdCBmZXRjaCh1cmwsIHsKICAgICAgICAgIGhlYWRlcnM6IHsgJ0FjY2VwdC1MYW5ndWFnZSc6ICdrbyxlbicgfQogICAgICAgIH0pOwogICAgICAgIGNvbnN0IGRhdGEgPSBhd2FpdCByZXMuanNvbigpOwogICAgICAgIGlmICghZGF0YSB8fCBkYXRhLmxlbmd0aCA9PT0gMCkgewogICAgICAgICAgcmVzdWx0c0NvbnRhaW5lci5pbm5lckhUTUwgPSAnPGRpdiBjbGFzcz0idGV4dC1jZW50ZXIgcHktMiB0ZXh0LXNsYXRlLTQwMCB0ZXh0LXhzIj7qsoDsg4kg6rKw6rO86rCAIOyXhuyKteuLiOuLpC48L2Rpdj4nOwogICAgICAgICAgc3RhdHVzVGFnLnRleHRDb250ZW50ID0gJ+qysOqzvCDsl4bsnYwnOwogICAgICAgICAgc3RhdHVzVGFnLmNsYXNzTmFtZSA9ICd0ZXh0LVsxMHB4XSB0ZXh0LXJvc2UtNjAwIGZvbnQtc2VtaWJvbGQnOwogICAgICAgICAgcmV0dXJuOwogICAgICAgIH0KICAgICAgICByZXN1bHRzQ29udGFpbmVyLmlubmVySFRNTCA9ICcnOwogICAgICAgIGRhdGEuZm9yRWFjaChpdGVtID0+IHsKICAgICAgICAgIGNvbnN0IGJ0biA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2J1dHRvbicpOwogICAgICAgICAgYnRuLmNsYXNzTmFtZSA9ICd3LWZ1bGwgdGV4dC1sZWZ0IHAtMiByb3VuZGVkLWxnIGJnLXNsYXRlLTUwIGhvdmVyOmJnLWVtZXJhbGQtNTAgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgaG92ZXI6Ym9yZGVyLWVtZXJhbGQtMzAwIHRleHQteHMgdGV4dC1zbGF0ZS03MDAgdHJhbnNpdGlvbiBmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0yJzsKICAgICAgICAgIGJ0bi5pbm5lckhUTUwgPSBgCiAgICAgICAgICAgIDxpIGNsYXNzPSJmYS1zb2xpZCBmYS1sb2NhdGlvbi1kb3QgdGV4dC1lbWVyYWxkLTYwMCBtdC0wLjUiPjwvaT4KICAgICAgICAgICAgPGRpdiBjbGFzcz0idHJ1bmNhdGUgZmxleC0xIj4KICAgICAgICAgICAgICA8cCBjbGFzcz0iZm9udC1ib2xkIHRleHQtc2xhdGUtOTAwIHRydW5jYXRlIj4ke2l0ZW0uZGlzcGxheV9uYW1lLnNwbGl0KCcsJylbMF19PC9wPgogICAgICAgICAgICAgIDxwIGNsYXNzPSJ0ZXh0LVsxMHB4XSB0ZXh0LXNsYXRlLTUwMCB0cnVuY2F0ZSI+JHtpdGVtLmRpc3BsYXlfbmFtZX08L3A+CiAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgYDsKICAgICAgICAgIGJ0bi5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICAgICAgY29uc3QgbGF0ID0gcGFyc2VGbG9hdChpdGVtLmxhdCk7CiAgICAgICAgICAgIGNvbnN0IGxvbiA9IHBhcnNlRmxvYXQoaXRlbS5sb24pOwogICAgICAgICAgICBjb25zdCBzaG9ydE5hbWUgPSBpdGVtLmRpc3BsYXlfbmFtZS5zcGxpdCgnLCcpWzBdOwogICAgICAgICAgICBjdXJyZW50R2VvLmxhdCA9IGxhdDsKICAgICAgICAgICAgY3VycmVudEdlby5sb24gPSBsb247CiAgICAgICAgICAgIGN1cnJlbnRHZW8ubmFtZSA9IHNob3J0TmFtZTsKICAgICAgICAgICAgcmVzdWx0c0NvbnRhaW5lci5jbGFzc0xpc3QuYWRkKCdoaWRkZW4nKTsKICAgICAgICAgICAgc3RhdHVzVGFnLnRleHRDb250ZW50ID0gJ+uhnOuTnCDsmYTro4wnOwogICAgICAgICAgICBzdGF0dXNUYWcuY2xhc3NOYW1lID0gJ3RleHQtWzEwcHhdIHRleHQtZW1lcmFsZC02MDAgZm9udC1zZW1pYm9sZCc7CiAgICAgICAgICAgIGxvYWRPbmxpbmVNYXBUaWxlcyhsYXQsIGxvbiwgY3VycmVudEdlby56b29tLCBjdXJyZW50R2VvLnByb3ZpZGVyKTsKICAgICAgICAgIH0pOwogICAgICAgICAgcmVzdWx0c0NvbnRhaW5lci5hcHBlbmRDaGlsZChidG4pOwogICAgICAgIH0pOwogICAgICAgIHN0YXR1c1RhZy50ZXh0Q29udGVudCA9IGAke2RhdGEubGVuZ3RofeqwnCDrsJzqsqxgOwogICAgICAgIHN0YXR1c1RhZy5jbGFzc05hbWUgPSAndGV4dC1bMTBweF0gdGV4dC1lbWVyYWxkLTYwMCBmb250LXNlbWlib2xkJzsKICAgICAgfSBjYXRjaCAoZXJyKSB7CiAgICAgICAgcmVzdWx0c0NvbnRhaW5lci5pbm5lckhUTUwgPSAnPGRpdiBjbGFzcz0idGV4dC1jZW50ZXIgcHktMiB0ZXh0LXJvc2UtNTAwIHRleHQteHMiPuqygOyDiSDspJEg7Jik66WY6rCAIOuwnOyDne2WiOyKteuLiOuLpC48L2Rpdj4nOwogICAgICAgIHN0YXR1c1RhZy50ZXh0Q29udGVudCA9ICfsmKTrpZgnOwogICAgICAgIHN0YXR1c1RhZy5jbGFzc05hbWUgPSAndGV4dC1bMTBweF0gdGV4dC1yb3NlLTYwMCBmb250LXNlbWlib2xkJzsKICAgICAgfQogICAgfQogICAgZnVuY3Rpb24gc2V0dXBET01FdmVudHMoKSB7CiAgICAgIGNvbnN0IHRhYkxpdmUgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndGFiLWJ0bi1saXZlbWFwJyk7CiAgICAgIGNvbnN0IHRhYkFkZCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd0YWItYnRuLWFkZCcpOwogICAgICBjb25zdCB0YWJNYXAgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndGFiLWJ0bi1tYXAnKTsKICAgICAgY29uc3QgY29udGVudExpdmUgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndGFiLWNvbnRlbnQtbGl2ZW1hcCcpOwogICAgICBjb25zdCBjb250ZW50QWRkID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RhYi1jb250ZW50LWFkZCcpOwogICAgICBjb25zdCBjb250ZW50TWFwID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3RhYi1jb250ZW50LW1hcCcpOwogICAgICBmdW5jdGlvbiBzd2l0Y2hUYWIoYWN0aXZlQnRuLCBhY3RpdmVDb250ZW50KSB7CiAgICAgICAgW3RhYkxpdmUsIHRhYkFkZCwgdGFiTWFwXS5mb3JFYWNoKGIgPT4gewogICAgICAgICAgYi5jbGFzc05hbWUgPSAnZmxleC0xIHB5LTEuNSB0ZXh0LWNlbnRlciByb3VuZGVkLWxnIHRleHQtc2xhdGUtNjAwIGhvdmVyOnRleHQtc2xhdGUtOTAwIHRyYW5zaXRpb24nOwogICAgICAgIH0pOwogICAgICAgIFtjb250ZW50TGl2ZSwgY29udGVudEFkZCwgY29udGVudE1hcF0uZm9yRWFjaChjID0+IGMuY2xhc3NMaXN0LmFkZCgnaGlkZGVuJykpOwogICAgICAgIGFjdGl2ZUJ0bi5jbGFzc05hbWUgPSAnZmxleC0xIHB5LTEuNSB0ZXh0LWNlbnRlciByb3VuZGVkLWxnIGJnLXdoaXRlIHRleHQtZW1lcmFsZC03MDAgZm9udC1ib2xkIHNoYWRvdy1zbSB0cmFuc2l0aW9uJzsKICAgICAgICBhY3RpdmVDb250ZW50LmNsYXNzTGlzdC5yZW1vdmUoJ2hpZGRlbicpOwogICAgICB9CiAgICAgIHRhYkxpdmUuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiBzd2l0Y2hUYWIodGFiTGl2ZSwgY29udGVudExpdmUpKTsKICAgICAgdGFiQWRkLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gc3dpdGNoVGFiKHRhYkFkZCwgY29udGVudEFkZCkpOwogICAgICB0YWJNYXAuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiBzd2l0Y2hUYWIodGFiTWFwLCBjb250ZW50TWFwKSk7CiAgICAgIGNvbnN0IHNlYXJjaElucHV0ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2lucHV0LW1hcC1zZWFyY2gnKTsKICAgICAgY29uc3Qgc2VhcmNoQnRuID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi1zZWFyY2gtbWFwJyk7CiAgICAgIHNlYXJjaEJ0bi5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHNlYXJjaExvY2F0aW9uKHNlYXJjaElucHV0LnZhbHVlKSk7CiAgICAgIHNlYXJjaElucHV0LmFkZEV2ZW50TGlzdGVuZXIoJ2tleWRvd24nLCAoZSkgPT4gewogICAgICAgIGlmIChlLmtleSA9PT0gJ0VudGVyJykgc2VhcmNoTG9jYXRpb24oc2VhcmNoSW5wdXQudmFsdWUpOwogICAgICB9KTsKICAgICAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnLnF1aWNrLWxvYy1idG4nKS5mb3JFYWNoKGJ0biA9PiB7CiAgICAgICAgYnRuLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgICAgY29uc3QgcXVlcnkgPSBidG4uZ2V0QXR0cmlidXRlKCdkYXRhLXF1ZXJ5Jyk7CiAgICAgICAgICBzZWFyY2hJbnB1dC52YWx1ZSA9IHF1ZXJ5OwogICAgICAgICAgc2VhcmNoTG9jYXRpb24ocXVlcnkpOwogICAgICAgIH0pOwogICAgICB9KTsKICAgICAgY29uc3Qgc3R5bGVCdXR0b25zID0gWwogICAgICAgIHsgaWQ6ICdidG4tc3R5bGUtZXNyaS1zYXQnLCBwcm92aWRlcjogJ2Vzcmlfc2F0JyB9LAogICAgICAgIHsgaWQ6ICdidG4tc3R5bGUtc2F0LWh5YnJpZCcsIHByb3ZpZGVyOiAnc2F0X2h5YnJpZCcgfSwKICAgICAgICB7IGlkOiAnYnRuLXN0eWxlLW9zbS1ob3QnLCBwcm92aWRlcjogJ29zbV9ob3QnIH0sCiAgICAgICAgeyBpZDogJ2J0bi1zdHlsZS1vc20tZGUnLCBwcm92aWRlcjogJ29zbV9kZScgfQogICAgICBdOwogICAgICBmdW5jdGlvbiBzZXRUaWxlUHJvdmlkZXIocHJvdmlkZXIpIHsKICAgICAgICBjdXJyZW50R2VvLnByb3ZpZGVyID0gcHJvdmlkZXI7CiAgICAgICAgc3R5bGVCdXR0b25zLmZvckVhY2goaXRlbSA9PiB7CiAgICAgICAgICBjb25zdCBidG4gPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZChpdGVtLmlkKTsKICAgICAgICAgIGlmICghYnRuKSByZXR1cm47CiAgICAgICAgICBpZiAoaXRlbS5wcm92aWRlciA9PT0gcHJvdmlkZXIpIHsKICAgICAgICAgICAgYnRuLmNsYXNzTmFtZSA9ICd0aWxlLXN0eWxlLWJ0biBweS0xLjUgcHgtMiByb3VuZGVkLWxnIGJvcmRlci0yIGJvcmRlci1lbWVyYWxkLTUwMCBiZy1lbWVyYWxkLTUwIHRleHQtZW1lcmFsZC04MDAgdGV4dC1bMTFweF0gZm9udC1zZW1pYm9sZCB0ZXh0LWNlbnRlciB0cmFuc2l0aW9uJzsKICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgIGJ0bi5jbGFzc05hbWUgPSAndGlsZS1zdHlsZS1idG4gcHktMS41IHB4LTIgcm91bmRlZC1sZyBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCBiZy13aGl0ZSB0ZXh0LXNsYXRlLTcwMCB0ZXh0LVsxMXB4XSBmb250LW1lZGl1bSB0ZXh0LWNlbnRlciBob3ZlcjpiZy1zbGF0ZS01MCB0cmFuc2l0aW9uJzsKICAgICAgICAgIH0KICAgICAgICB9KTsKICAgICAgICBsb2FkT25saW5lTWFwVGlsZXMoY3VycmVudEdlby5sYXQsIGN1cnJlbnRHZW8ubG9uLCBjdXJyZW50R2VvLnpvb20sIGN1cnJlbnRHZW8ucHJvdmlkZXIpOwogICAgICB9CiAgICAgIHN0eWxlQnV0dG9ucy5mb3JFYWNoKGl0ZW0gPT4gewogICAgICAgIGNvbnN0IGJ0biA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGl0ZW0uaWQpOwogICAgICAgIGlmIChidG4pIHsKICAgICAgICAgIGJ0bi5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHNldFRpbGVQcm92aWRlcihpdGVtLnByb3ZpZGVyKSk7CiAgICAgICAgfQogICAgICB9KTsKICAgICAgY29uc3QgcmFuZ2Vab29tID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3JhbmdlLWxpdmUtem9vbScpOwogICAgICBjb25zdCBsYWJlbFpvb20gPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbGFiZWwtbGl2ZS16b29tJyk7CiAgICAgIHJhbmdlWm9vbS5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiB7CiAgICAgICAgY29uc3QgeiA9IHBhcnNlSW50KGUudGFyZ2V0LnZhbHVlKTsKICAgICAgICBjdXJyZW50R2VvLnpvb20gPSB6OwogICAgICAgIGxldCBkZXNjID0gJ+uPmS/rj4TroZwg64uo7JyEJzsKICAgICAgICBpZiAoeiA8PSAxNCkgZGVzYyA9ICfrj4Tsi5wv6rWsIOuLqOychCc7CiAgICAgICAgaWYgKHogPj0gMTcpIGRlc2MgPSAn6rOo66qpL+qxtOusvCDri6jsnIQnOwogICAgICAgIGxhYmVsWm9vbS50ZXh0Q29udGVudCA9IGAke3p9ICgke2Rlc2N9KWA7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXJlbG9hZC10aWxlcycpLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgIGxvYWRPbmxpbmVNYXBUaWxlcyhjdXJyZW50R2VvLmxhdCwgY3VycmVudEdlby5sb24sIGN1cnJlbnRHZW8uem9vbSwgY3VycmVudEdlby5wcm92aWRlcik7CiAgICAgIH0pOwogICAgICBjb25zdCBzaWRlYmFyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ21haW4tc2lkZWJhcicpOwogICAgICBjb25zdCBidG5Ub2dnbGVTaWRlYmFyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi10b2dnbGUtc2lkZWJhcicpOwogICAgICBsZXQgaXNTaWRlYmFyT3BlbiA9IHRydWU7CiAgICAgIGJ0blRvZ2dsZVNpZGViYXIuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiB7CiAgICAgICAgaXNTaWRlYmFyT3BlbiA9ICFpc1NpZGViYXJPcGVuOwogICAgICAgIGlmIChpc1NpZGViYXJPcGVuKSB7CiAgICAgICAgICBzaWRlYmFyLmNsYXNzTGlzdC5yZW1vdmUoJy10cmFuc2xhdGUteC1bMTE1JV0nKTsKICAgICAgICAgIGJ0blRvZ2dsZVNpZGViYXIuY2xhc3NMaXN0LnJlbW92ZSgnYmctZW1lcmFsZC02MDAnLCAndGV4dC13aGl0ZScpOwogICAgICAgIH0gZWxzZSB7CiAgICAgICAgICBzaWRlYmFyLmNsYXNzTGlzdC5hZGQoJy10cmFuc2xhdGUteC1bMTE1JV0nKTsKICAgICAgICAgIGJ0blRvZ2dsZVNpZGViYXIuY2xhc3NMaXN0LmFkZCgnYmctZW1lcmFsZC02MDAnLCAndGV4dC13aGl0ZScpOwogICAgICAgICAgc2hvd1RvYXN0KCfrj4Tqtawg7Yyo64SQ7J20IOygke2YlOyKteuLiOuLpC4nKTsKICAgICAgICB9CiAgICAgIH0pOwogICAgICBjb25zdCBndWlkZU1vZGFsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2d1aWRlLW1vZGFsJyk7CiAgICAgIGNvbnN0IGJ0bk9wZW5HdWlkZSA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tb3Blbi1ndWlkZScpOwogICAgICBjb25zdCBidG5DbG9zZUd1aWRlID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi1jbG9zZS1ndWlkZScpOwogICAgICBjb25zdCBidG5HdWlkZUNvbmZpcm0gPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLWd1aWRlLWNvbmZpcm0nKTsKICAgICAgY29uc3QgcXVpY2tHdWlkZVRyaWdnZXIgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXF1aWNrLWd1aWRlLXRyaWdnZXInKTsKICAgICAgZnVuY3Rpb24gb3Blbkd1aWRlTW9kYWwoKSB7CiAgICAgICAgaWYgKCFndWlkZU1vZGFsKSByZXR1cm47CiAgICAgICAgZ3VpZGVNb2RhbC5jbGFzc0xpc3QucmVtb3ZlKCdvcGFjaXR5LTAnLCAncG9pbnRlci1ldmVudHMtbm9uZScpOwogICAgICAgIGd1aWRlTW9kYWwuY2xhc3NMaXN0LmFkZCgnb3BhY2l0eS0xMDAnKTsKICAgICAgfQogICAgICBmdW5jdGlvbiBjbG9zZUd1aWRlTW9kYWwoKSB7CiAgICAgICAgaWYgKCFndWlkZU1vZGFsKSByZXR1cm47CiAgICAgICAgZ3VpZGVNb2RhbC5jbGFzc0xpc3QucmVtb3ZlKCdvcGFjaXR5LTEwMCcpOwogICAgICAgIGd1aWRlTW9kYWwuY2xhc3NMaXN0LmFkZCgnb3BhY2l0eS0wJywgJ3BvaW50ZXItZXZlbnRzLW5vbmUnKTsKICAgICAgfQogICAgICBpZiAoYnRuT3Blbkd1aWRlKSBidG5PcGVuR3VpZGUuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCBvcGVuR3VpZGVNb2RhbCk7CiAgICAgIGlmIChxdWlja0d1aWRlVHJpZ2dlcikgcXVpY2tHdWlkZVRyaWdnZXIuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCBvcGVuR3VpZGVNb2RhbCk7CiAgICAgIGlmIChidG5DbG9zZUd1aWRlKSBidG5DbG9zZUd1aWRlLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgY2xvc2VHdWlkZU1vZGFsKTsKICAgICAgaWYgKGJ0bkd1aWRlQ29uZmlybSkgYnRuR3VpZGVDb25maXJtLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgY2xvc2VHdWlkZU1vZGFsKTsKICAgICAgaWYgKGd1aWRlTW9kYWwpIHsKICAgICAgICBndWlkZU1vZGFsLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKGUpID0+IHsKICAgICAgICAgIGlmIChlLnRhcmdldCA9PT0gZ3VpZGVNb2RhbCkgY2xvc2VHdWlkZU1vZGFsKCk7CiAgICAgICAgfSk7CiAgICAgIH0KICAgICAgY29uc3QgcHJlc2V0QnV0dG9ucyA9IGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJy5vYmotcHJlc2V0LWJ0bicpOwogICAgICBwcmVzZXRCdXR0b25zLmZvckVhY2goYnRuID0+IHsKICAgICAgICBidG4uYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiB7CiAgICAgICAgICBwcmVzZXRCdXR0b25zLmZvckVhY2goYiA9PiB7CiAgICAgICAgICAgIGIuY2xhc3NMaXN0LnJlbW92ZSgnYm9yZGVyLTInLCAnYm9yZGVyLWVtZXJhbGQtNTAwJywgJ2JnLWVtZXJhbGQtNTAvODAnLCAndGV4dC1lbWVyYWxkLTk1MCcpOwogICAgICAgICAgICBiLmNsYXNzTGlzdC5hZGQoJ2JvcmRlcicsICdib3JkZXItc2xhdGUtMjAwJywgJ2JnLXdoaXRlJywgJ3RleHQtc2xhdGUtNzAwJyk7CiAgICAgICAgICB9KTsKICAgICAgICAgIGJ0bi5jbGFzc0xpc3QucmVtb3ZlKCdib3JkZXInLCAnYm9yZGVyLXNsYXRlLTIwMCcsICdiZy13aGl0ZScsICd0ZXh0LXNsYXRlLTcwMCcpOwogICAgICAgICAgYnRuLmNsYXNzTGlzdC5hZGQoJ2JvcmRlci0yJywgJ2JvcmRlci1lbWVyYWxkLTUwMCcsICdiZy1lbWVyYWxkLTUwLzgwJywgJ3RleHQtZW1lcmFsZC05NTAnKTsKICAgICAgICAgIGFjdGl2ZVByZXNldCA9IGJ0bi5nZXRBdHRyaWJ1dGUoJ2RhdGEtdHlwZScpOwogICAgICAgIH0pOwogICAgICB9KTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi1jbG9zZS1pbnNwZWN0b3InKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsIGRlc2VsZWN0T2JqZWN0KTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtbGFiZWwnKS5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiB7CiAgICAgICAgaWYgKCFzZWxlY3RlZE9iamVjdCkgcmV0dXJuOwogICAgICAgIHNlbGVjdGVkT2JqZWN0LmxhYmVsID0gZS50YXJnZXQudmFsdWU7CiAgICAgICAgaWYgKHNlbGVjdGVkT2JqZWN0LnNwcml0ZSkgewogICAgICAgICAgc2VsZWN0ZWRPYmplY3QuZ3JvdXAucmVtb3ZlKHNlbGVjdGVkT2JqZWN0LnNwcml0ZSk7CiAgICAgICAgICBzZWxlY3RlZE9iamVjdC5zcHJpdGUuZ2VvbWV0cnkuZGlzcG9zZSgpOwogICAgICAgICAgc2VsZWN0ZWRPYmplY3Quc3ByaXRlLm1hdGVyaWFsLmRpc3Bvc2UoKTsKICAgICAgICAgIHNlbGVjdGVkT2JqZWN0LnNwcml0ZSA9IG51bGw7CiAgICAgICAgfQogICAgICAgIGlmIChzZWxlY3RlZE9iamVjdC5sYWJlbCAmJiBzZWxlY3RlZE9iamVjdC5sYWJlbC50cmltKCkgIT09ICcnKSB7CiAgICAgICAgICBzZWxlY3RlZE9iamVjdC5zcHJpdGUgPSBjcmVhdGVUZXh0U3ByaXRlKHNlbGVjdGVkT2JqZWN0LmxhYmVsLCBzZWxlY3RlZE9iamVjdC5jb2xvciwgc2VsZWN0ZWRPYmplY3QuZm9udFNpemUgfHwgMzgpOwogICAgICAgICAgaWYgKHNlbGVjdGVkT2JqZWN0LnNwcml0ZSkgewogICAgICAgICAgICBjb25zdCBzcHJpdGVPZmZzZXQgPSAoc2VsZWN0ZWRPYmplY3QudHlwZSA9PT0gJ3BpbicpID8gMi4yIDogMS44OwogICAgICAgICAgICBzZWxlY3RlZE9iamVjdC5zcHJpdGUucG9zaXRpb24ueSA9IHNlbGVjdGVkT2JqZWN0LmhlaWdodCArIHNwcml0ZU9mZnNldDsKICAgICAgICAgICAgc2VsZWN0ZWRPYmplY3QuZ3JvdXAuYWRkKHNlbGVjdGVkT2JqZWN0LnNwcml0ZSk7CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIHVwZGF0ZU9iamVjdExpc3RVSSgpOwogICAgICB9KTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtZm9udHNpemUnKS5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiB7CiAgICAgICAgaWYgKCFzZWxlY3RlZE9iamVjdCkgcmV0dXJuOwogICAgICAgIGNvbnN0IHNpemUgPSBwYXJzZUludChlLnRhcmdldC52YWx1ZSk7CiAgICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtZm9udHNpemUtdmFsJykudGV4dENvbnRlbnQgPSBgJHtzaXplfXB4YDsKICAgICAgICBzZWxlY3RlZE9iamVjdC5mb250U2l6ZSA9IHNpemU7CiAgICAgICAgaWYgKHNlbGVjdGVkT2JqZWN0LnNwcml0ZSkgewogICAgICAgICAgc2VsZWN0ZWRPYmplY3QuZ3JvdXAucmVtb3ZlKHNlbGVjdGVkT2JqZWN0LnNwcml0ZSk7CiAgICAgICAgICBzZWxlY3RlZE9iamVjdC5zcHJpdGUuZ2VvbWV0cnkuZGlzcG9zZSgpOwogICAgICAgICAgc2VsZWN0ZWRPYmplY3Quc3ByaXRlLm1hdGVyaWFsLmRpc3Bvc2UoKTsKICAgICAgICAgIHNlbGVjdGVkT2JqZWN0LnNwcml0ZSA9IG51bGw7CiAgICAgICAgfQogICAgICAgIGlmIChzZWxlY3RlZE9iamVjdC5sYWJlbCAmJiBzZWxlY3RlZE9iamVjdC5sYWJlbC50cmltKCkgIT09ICcnKSB7CiAgICAgICAgICBzZWxlY3RlZE9iamVjdC5zcHJpdGUgPSBjcmVhdGVUZXh0U3ByaXRlKHNlbGVjdGVkT2JqZWN0LmxhYmVsLCBzZWxlY3RlZE9iamVjdC5jb2xvciwgc2l6ZSk7CiAgICAgICAgICBpZiAoc2VsZWN0ZWRPYmplY3Quc3ByaXRlKSB7CiAgICAgICAgICAgIGNvbnN0IHNwcml0ZU9mZnNldCA9IChzZWxlY3RlZE9iamVjdC50eXBlID09PSAncGluJykgPyAyLjIgOiAxLjg7CiAgICAgICAgICAgIHNlbGVjdGVkT2JqZWN0LnNwcml0ZS5wb3NpdGlvbi55ID0gc2VsZWN0ZWRPYmplY3QuaGVpZ2h0ICsgc3ByaXRlT2Zmc2V0OwogICAgICAgICAgICBzZWxlY3RlZE9iamVjdC5ncm91cC5hZGQoc2VsZWN0ZWRPYmplY3Quc3ByaXRlKTsKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1jb2xvcicpLmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0JywgKGUpID0+IHsKICAgICAgICBpZiAoIXNlbGVjdGVkT2JqZWN0KSByZXR1cm47CiAgICAgICAgc2VsZWN0ZWRPYmplY3QuY29sb3IgPSBlLnRhcmdldC52YWx1ZTsKICAgICAgICByZWJ1aWxkU2VsZWN0ZWRPYmplY3RNZXNoKCk7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1oZWlnaHQnKS5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiB7CiAgICAgICAgaWYgKCFzZWxlY3RlZE9iamVjdCkgcmV0dXJuOwogICAgICAgIHNlbGVjdGVkT2JqZWN0LmhlaWdodCA9IHBhcnNlRmxvYXQoZS50YXJnZXQudmFsdWUpOwogICAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LWhlaWdodC12YWwnKS50ZXh0Q29udGVudCA9IHNlbGVjdGVkT2JqZWN0LmhlaWdodC50b0ZpeGVkKDEpOwogICAgICAgIHJlYnVpbGRTZWxlY3RlZE9iamVjdE1lc2goKTsKICAgICAgfSk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LXdpZHRoJykuYWRkRXZlbnRMaXN0ZW5lcignaW5wdXQnLCAoZSkgPT4gewogICAgICAgIGlmICghc2VsZWN0ZWRPYmplY3QpIHJldHVybjsKICAgICAgICBzZWxlY3RlZE9iamVjdC53aWR0aCA9IHBhcnNlRmxvYXQoZS50YXJnZXQudmFsdWUpOwogICAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LXdpZHRoLXZhbCcpLnRleHRDb250ZW50ID0gc2VsZWN0ZWRPYmplY3Qud2lkdGgudG9GaXhlZCgxKTsKICAgICAgICByZWJ1aWxkU2VsZWN0ZWRPYmplY3RNZXNoKCk7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1yb3QnKS5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiB7CiAgICAgICAgaWYgKCFzZWxlY3RlZE9iamVjdCkgcmV0dXJuOwogICAgICAgIGNvbnN0IGRlZyA9IHBhcnNlRmxvYXQoZS50YXJnZXQudmFsdWUpOwogICAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LXJvdC12YWwnKS50ZXh0Q29udGVudCA9IGAke2RlZ33CsGA7CiAgICAgICAgc2VsZWN0ZWRPYmplY3Qucm90YXRpb25ZID0gVEhSRUUuTWF0aFV0aWxzLmRlZ1RvUmFkKGRlZyk7CiAgICAgICAgc2VsZWN0ZWRPYmplY3QuZ3JvdXAucm90YXRpb24ueSA9IHNlbGVjdGVkT2JqZWN0LnJvdGF0aW9uWTsKICAgICAgfSk7CiAgICAgIGZ1bmN0aW9uIHJvdGF0ZVNlbGVjdGVkT2JqZWN0QnkoZGVsdGFEZWcpIHsKICAgICAgICBpZiAoIXNlbGVjdGVkT2JqZWN0KSByZXR1cm47CiAgICAgICAgbGV0IGN1cnJlbnREZWcgPSBNYXRoLnJvdW5kKFRIUkVFLk1hdGhVdGlscy5yYWRUb0RlZyhzZWxlY3RlZE9iamVjdC5yb3RhdGlvblkpKTsKICAgICAgICBsZXQgbmV4dERlZyA9IChjdXJyZW50RGVnICsgZGVsdGFEZWcpICUgMzYwOwogICAgICAgIGlmIChuZXh0RGVnIDwgMCkgbmV4dERlZyArPSAzNjA7CiAgICAgICAgc2VsZWN0ZWRPYmplY3Qucm90YXRpb25ZID0gVEhSRUUuTWF0aFV0aWxzLmRlZ1RvUmFkKG5leHREZWcpOwogICAgICAgIHNlbGVjdGVkT2JqZWN0Lmdyb3VwLnJvdGF0aW9uLnkgPSBzZWxlY3RlZE9iamVjdC5yb3RhdGlvblk7CiAgICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3Qtcm90JykudmFsdWUgPSBuZXh0RGVnOwogICAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdpbnNwZWN0LXJvdC12YWwnKS50ZXh0Q29udGVudCA9IGAke25leHREZWd9wrBgOwogICAgICB9CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tb2JqLXJvdC1jY3cnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHJvdGF0ZVNlbGVjdGVkT2JqZWN0QnkoLTQ1KSk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tb2JqLXJvdC1jdycpLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gcm90YXRlU2VsZWN0ZWRPYmplY3RCeSg0NSkpOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLW9iai1yb3QtcmVzZXQnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBpZiAoIXNlbGVjdGVkT2JqZWN0KSByZXR1cm47CiAgICAgICAgc2VsZWN0ZWRPYmplY3Qucm90YXRpb25ZID0gMDsKICAgICAgICBzZWxlY3RlZE9iamVjdC5ncm91cC5yb3RhdGlvbi55ID0gMDsKICAgICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1yb3QnKS52YWx1ZSA9IDA7CiAgICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3Qtcm90LXZhbCcpLnRleHRDb250ZW50ID0gYDDCsGA7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnaW5zcGVjdC1wb3MteCcpLmFkZEV2ZW50TGlzdGVuZXIoJ2NoYW5nZScsIChlKSA9PiB7CiAgICAgICAgaWYgKCFzZWxlY3RlZE9iamVjdCkgcmV0dXJuOwogICAgICAgIHNlbGVjdGVkT2JqZWN0Lmdyb3VwLnBvc2l0aW9uLnggPSBwYXJzZUZsb2F0KGUudGFyZ2V0LnZhbHVlKSB8fCAwOwogICAgICB9KTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2luc3BlY3QtcG9zLXonKS5hZGRFdmVudExpc3RlbmVyKCdjaGFuZ2UnLCAoZSkgPT4gewogICAgICAgIGlmICghc2VsZWN0ZWRPYmplY3QpIHJldHVybjsKICAgICAgICBzZWxlY3RlZE9iamVjdC5ncm91cC5wb3NpdGlvbi56ID0gcGFyc2VGbG9hdChlLnRhcmdldC52YWx1ZSkgfHwgMDsKICAgICAgfSk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tZHVwbGljYXRlLW9iaicpLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgIGlmICghc2VsZWN0ZWRPYmplY3QpIHJldHVybjsKICAgICAgICBhZGRPYmplY3RUb01hcCgKICAgICAgICAgIHsgeDogc2VsZWN0ZWRPYmplY3QuZ3JvdXAucG9zaXRpb24ueCArIDIsIHo6IHNlbGVjdGVkT2JqZWN0Lmdyb3VwLnBvc2l0aW9uLnogKyAyIH0sCiAgICAgICAgICB7CiAgICAgICAgICAgIHR5cGU6IHNlbGVjdGVkT2JqZWN0LnR5cGUsCiAgICAgICAgICAgIGxhYmVsOiBgJHtzZWxlY3RlZE9iamVjdC5sYWJlbH0gKOuzteyCrOuzuClgLAogICAgICAgICAgICBjb2xvcjogc2VsZWN0ZWRPYmplY3QuY29sb3IsCiAgICAgICAgICAgIGhlaWdodDogc2VsZWN0ZWRPYmplY3QuaGVpZ2h0LAogICAgICAgICAgICB3aWR0aDogc2VsZWN0ZWRPYmplY3Qud2lkdGgsCiAgICAgICAgICAgIGZvbnRTaXplOiBzZWxlY3RlZE9iamVjdC5mb250U2l6ZSB8fCAzOCwKICAgICAgICAgICAgcm90YXRpb25ZOiBzZWxlY3RlZE9iamVjdC5yb3RhdGlvblkKICAgICAgICAgIH0KICAgICAgICApOwogICAgICB9KTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi1kZWxldGUtb2JqJykuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiB7CiAgICAgICAgaWYgKHNlbGVjdGVkT2JqZWN0KSBkZWxldGVPYmplY3Qoc2VsZWN0ZWRPYmplY3QuaWQpOwogICAgICB9KTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi1jbGVhci1hbGwnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBpZiAoc2NlbmVPYmplY3RzLmxlbmd0aCA9PT0gMCkgcmV0dXJuOwogICAgICAgIHdoaWxlIChzY2VuZU9iamVjdHMubGVuZ3RoID4gMCkgewogICAgICAgICAgZGVsZXRlT2JqZWN0KHNjZW5lT2JqZWN0c1swXS5pZCk7CiAgICAgICAgfQogICAgICAgIHNob3dUb2FzdCgn66qo65OgIOyYpOu4jOygne2KuOqwgCDsgq3soJzrkJjsl4jsirXri4jri6QuJyk7CiAgICAgIH0pOwogICAgICB3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcigna2V5ZG93bicsIChlKSA9PiB7CiAgICAgICAgaWYgKGUudGFyZ2V0LnRhZ05hbWUgPT09ICdJTlBVVCcgfHwgZS50YXJnZXQudGFnTmFtZSA9PT0gJ1RFWFRBUkVBJykgcmV0dXJuOwogICAgICAgIGlmIChlLmtleSA9PT0gJ0RlbGV0ZScgfHwgZS5rZXkgPT09ICdEZWwnKSB7CiAgICAgICAgICBpZiAoc2VsZWN0ZWRPYmplY3QpIHsKICAgICAgICAgICAgY29uc3QgdGFyZ2V0TmFtZSA9IHNlbGVjdGVkT2JqZWN0LmxhYmVsIHx8IHNlbGVjdGVkT2JqZWN0LnR5cGU7CiAgICAgICAgICAgIGRlbGV0ZU9iamVjdChzZWxlY3RlZE9iamVjdC5pZCk7CiAgICAgICAgICAgIHNob3dUb2FzdChgJyR7dGFyZ2V0TmFtZX0nIOyYpOu4jOygne2KuOqwgCDsgq3soJzrkJjsl4jsirXri4jri6QuYCwgJ2luZm8nKTsKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgIH0pOwogICAgICBjb25zdCByYW5nZUNvbnRyYXN0ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3JhbmdlLW1hcC1jb250cmFzdCcpOwogICAgICBjb25zdCBsYWJlbENvbnRyYXN0ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2xhYmVsLW1hcC1jb250cmFzdCcpOwogICAgICByYW5nZUNvbnRyYXN0LmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0JywgKGUpID0+IHsKICAgICAgICBsYWJlbENvbnRyYXN0LnRleHRDb250ZW50ID0gYCR7ZS50YXJnZXQudmFsdWV9JWA7CiAgICAgICAgcmVuZGVyUHJvY2Vzc2VkTGl2ZVRleHR1cmUoKTsKICAgICAgfSk7CiAgICAgIGNvbnN0IHJhbmdlQnJpZ2h0bmVzcyA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdyYW5nZS1tYXAtYnJpZ2h0bmVzcycpOwogICAgICBjb25zdCBsYWJlbEJyaWdodG5lc3MgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbGFiZWwtbWFwLWJyaWdodG5lc3MnKTsKICAgICAgcmFuZ2VCcmlnaHRuZXNzLmFkZEV2ZW50TGlzdGVuZXIoJ2lucHV0JywgKGUpID0+IHsKICAgICAgICBsYWJlbEJyaWdodG5lc3MudGV4dENvbnRlbnQgPSBgJHtlLnRhcmdldC52YWx1ZX0lYDsKICAgICAgICByZW5kZXJQcm9jZXNzZWRMaXZlVGV4dHVyZSgpOwogICAgICB9KTsKICAgICAgY29uc3QgcmFuZ2VNYXBSb3QgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncmFuZ2UtbWFwLXJvdCcpOwogICAgICBjb25zdCBsYWJlbE1hcFJvdCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdsYWJlbC1tYXAtcm90Jyk7CiAgICAgIGZ1bmN0aW9uIHNldE1hcFJvdGF0aW9uRGVnKGRlZykgewogICAgICAgIGRlZyA9IChkZWcgJSAzNjAgKyAzNjApICUgMzYwOwogICAgICAgIG1hcFBsYW5lLnJvdGF0aW9uLnogPSBUSFJFRS5NYXRoVXRpbHMuZGVnVG9SYWQoZGVnKTsKICAgICAgICByYW5nZU1hcFJvdC52YWx1ZSA9IGRlZzsKICAgICAgICBsYWJlbE1hcFJvdC50ZXh0Q29udGVudCA9IGAke2RlZ33CsGA7CiAgICAgIH0KICAgICAgcmFuZ2VNYXBSb3QuYWRkRXZlbnRMaXN0ZW5lcignaW5wdXQnLCAoZSkgPT4gc2V0TWFwUm90YXRpb25EZWcocGFyc2VJbnQoZS50YXJnZXQudmFsdWUpKSk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tbWFwLXJvdC1jY3cnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBzZXRNYXBSb3RhdGlvbkRlZyhwYXJzZUludChyYW5nZU1hcFJvdC52YWx1ZSB8fCAwKSAtIDkwKTsKICAgICAgICBzaG93VG9hc3QoJ+yngOuPhOqwgCAtOTDCsCDtmozsoITrkJjsl4jsirXri4jri6QuJyk7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLW1hcC1yb3QtY3cnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBzZXRNYXBSb3RhdGlvbkRlZyhwYXJzZUludChyYW5nZU1hcFJvdC52YWx1ZSB8fCAwKSArIDkwKTsKICAgICAgICBzaG93VG9hc3QoJ+yngOuPhOqwgCArOTDCsCDtmozsoITrkJjsl4jsirXri4jri6QuJyk7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLW1hcC1yb3QtcmVzZXQnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBzZXRNYXBSb3RhdGlvbkRlZygwKTsKICAgICAgICBzaG93VG9hc3QoJ+yngOuPhCDtmozsoITqsIHsnbQgMMKw66GcIOy0iOq4sO2ZlOuQmOyXiOyKteuLiOuLpC4nKTsKICAgICAgfSk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdyYW5nZS1tYXAtc2NhbGUnKS5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiB7CiAgICAgICAgY29uc3Qgc2NhbGUgPSBlLnRhcmdldC52YWx1ZSAvIDcwOwogICAgICAgIG1hcFBsYW5lLnNjYWxlLnNldChzY2FsZSwgc2NhbGUsIHNjYWxlKTsKICAgICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbGFiZWwtbWFwLXNjYWxlJykudGV4dENvbnRlbnQgPSBgJHtNYXRoLnJvdW5kKGUudGFyZ2V0LnZhbHVlICogKDEwMCAvIDcwKSl9JWA7CiAgICAgIH0pOwogICAgICBjb25zdCBhcHBXcmFwcGVyID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2FwcC13cmFwcGVyJyk7CiAgICAgIGNvbnN0IHJhbmdlQ2FudmFzV2lkdGggPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncmFuZ2UtY2FudmFzLXdpZHRoJyk7CiAgICAgIGNvbnN0IGxhYmVsQ2FudmFzV2lkdGggPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnbGFiZWwtY2FudmFzLXdpZHRoJyk7CiAgICAgIGNvbnN0IGJ0blNjcmVlbldpZGUgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXNjcmVlbi13aWRlJyk7CiAgICAgIGNvbnN0IHNjcmVlbldpZHRoVGFnID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3NjcmVlbi13aWR0aC10YWcnKTsKICAgICAgbGV0IGN1cnJlbnRDYW52YXNXaWR0aCA9IDEwMDsKICAgICAgZnVuY3Rpb24gc2V0QXBwV2lkdGgocGVyY2VudCkgewogICAgICAgIGN1cnJlbnRDYW52YXNXaWR0aCA9IHBlcmNlbnQ7CiAgICAgICAgYXBwV3JhcHBlci5zdHlsZS53aWR0aCA9IGAke3BlcmNlbnR9JWA7CiAgICAgICAgcmFuZ2VDYW52YXNXaWR0aC52YWx1ZSA9IHBlcmNlbnQ7CiAgICAgICAgbGFiZWxDYW52YXNXaWR0aC50ZXh0Q29udGVudCA9IGAke3BlcmNlbnR9JWA7CiAgICAgICAgc2NyZWVuV2lkdGhUYWcudGV4dENvbnRlbnQgPSBg7ZmU66m0IO2PrTogJHtwZXJjZW50fSVgOwogICAgICAgIGlmIChwZXJjZW50ID4gMTAwKSB7CiAgICAgICAgICBidG5TY3JlZW5XaWRlLmNsYXNzTGlzdC5hZGQoJ2JnLWVtZXJhbGQtNjAwJywgJ3RleHQtd2hpdGUnKTsKICAgICAgICAgIGJ0blNjcmVlbldpZGUuY2xhc3NMaXN0LnJlbW92ZSgnYmctZW1lcmFsZC01MCcsICd0ZXh0LWVtZXJhbGQtNzAwJyk7CiAgICAgICAgfSBlbHNlIHsKICAgICAgICAgIGJ0blNjcmVlbldpZGUuY2xhc3NMaXN0LnJlbW92ZSgnYmctZW1lcmFsZC02MDAnLCAndGV4dC13aGl0ZScpOwogICAgICAgICAgYnRuU2NyZWVuV2lkZS5jbGFzc0xpc3QuYWRkKCdiZy1lbWVyYWxkLTUwJywgJ3RleHQtZW1lcmFsZC03MDAnKTsKICAgICAgICB9CiAgICAgICAgc2V0VGltZW91dChvbldpbmRvd1Jlc2l6ZSwgNTApOwogICAgICB9CiAgICAgIGJ0blNjcmVlbldpZGUuYWRkRXZlbnRMaXN0ZW5lcignY2xpY2snLCAoKSA9PiB7CiAgICAgICAgaWYgKGN1cnJlbnRDYW52YXNXaWR0aCA9PT0gMTAwKSB7CiAgICAgICAgICBzZXRBcHBXaWR0aCgxNzUpOwogICAgICAgICAgc2hvd1RvYXN0KCftmZTrqbQg6rCA66Gc7Y+t7J20IDE3NSUg7JmA7J2065OcIOuqqOuTnOuhnCDtmZXsnqXrkJjsl4jsirXri4jri6QuJywgJ3N1Y2Nlc3MnKTsKICAgICAgICB9IGVsc2UgewogICAgICAgICAgc2V0QXBwV2lkdGgoMTAwKTsKICAgICAgICAgIHNob3dUb2FzdCgn7ZmU66m0IOqwgOuhnO2PreydtCDquLDrs7ggMTAwJeuhnCDrs7Xsm5DrkJjsl4jsirXri4jri6QuJyk7CiAgICAgICAgfQogICAgICB9KTsKICAgICAgcmFuZ2VDYW52YXNXaWR0aC5hZGRFdmVudExpc3RlbmVyKCdpbnB1dCcsIChlKSA9PiBzZXRBcHBXaWR0aChwYXJzZUludChlLnRhcmdldC52YWx1ZSkpKTsKICAgICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi12aWV3LWlzbycpLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgIGNvbnRyb2xzLnRhcmdldC5zZXQoMCwgMCwgMCk7CiAgICAgICAgY2FtZXJhLnBvc2l0aW9uLnNldCg1NSwgNTUsIDU1KTsKICAgICAgICBjb250cm9scy51cGRhdGUoKTsKICAgICAgfSk7CiAgICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tdmlldy10b3AnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBjb250cm9scy50YXJnZXQuc2V0KDAsIDAsIDApOwogICAgICAgIGNhbWVyYS5wb3NpdGlvbi5zZXQoMCwgOTUsIDAuMSk7CiAgICAgICAgY29udHJvbHMudXBkYXRlKCk7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXJlc2V0LWNhbScpLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgIGNvbnRyb2xzLnRhcmdldC5zZXQoMCwgMCwgMCk7CiAgICAgICAgY2FtZXJhLnBvc2l0aW9uLnNldCgwLCA3MiwgODUpOwogICAgICAgIGNvbnRyb2xzLnVwZGF0ZSgpOwogICAgICB9KTsKICAgICAgY29uc3QgYnRuRnVsbHNjcmVlbiA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tZnVsbHNjcmVlbicpOwogICAgICBidG5GdWxsc2NyZWVuLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCkgPT4gewogICAgICAgIGlmICghZG9jdW1lbnQuZnVsbHNjcmVlbkVsZW1lbnQpIHsKICAgICAgICAgIGRvY3VtZW50LmRvY3VtZW50RWxlbWVudC5yZXF1ZXN0RnVsbHNjcmVlbigpLmNhdGNoKCgpID0+IHt9KTsKICAgICAgICAgIGJ0bkZ1bGxzY3JlZW4uaW5uZXJIVE1MID0gJzxpIGNsYXNzPSJmYS1zb2xpZCBmYS1jb21wcmVzcyI+PC9pPic7CiAgICAgICAgfSBlbHNlIHsKICAgICAgICAgIGlmIChkb2N1bWVudC5leGl0RnVsbHNjcmVlbikgewogICAgICAgICAgICBkb2N1bWVudC5leGl0RnVsbHNjcmVlbigpOwogICAgICAgICAgICBidG5GdWxsc2NyZWVuLmlubmVySFRNTCA9ICc8aSBjbGFzcz0iZmEtc29saWQgZmEtZXhwYW5kIj48L2k+JzsKICAgICAgICAgIH0KICAgICAgICB9CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndG9nZ2xlLWdyaWQnKS5hZGRFdmVudExpc3RlbmVyKCdjaGFuZ2UnLCAoZSkgPT4gewogICAgICAgIGdyaWRIZWxwZXIudmlzaWJsZSA9IGUudGFyZ2V0LmNoZWNrZWQ7CiAgICAgIH0pOwogICAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLXNjcmVlbnNob3QnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpID0+IHsKICAgICAgICBkZXNlbGVjdE9iamVjdCgpOwogICAgICAgIHJlbmRlcmVyLnJlbmRlcihzY2VuZSwgY2FtZXJhKTsKICAgICAgICBjb25zdCBkYXRhVVJMID0gcmVuZGVyZXIuZG9tRWxlbWVudC50b0RhdGFVUkwoJ2ltYWdlL3BuZycpOwogICAgICAgIGNvbnN0IGxpbmsgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdhJyk7CiAgICAgICAgbGluay5kb3dubG9hZCA9IGAzRC1MaXZlLU1hcC0ke2N1cnJlbnRHZW8ubmFtZX0tJHtEYXRlLm5vdygpfS5wbmdgOwogICAgICAgIGxpbmsuaHJlZiA9IGRhdGFVUkw7CiAgICAgICAgbGluay5jbGljaygpOwogICAgICAgIHNob3dUb2FzdCgn6rOg7ZmU7KeIIDNEIOyngOuPhCDsiqTtgazrprDsg7fsnbQg7KCA7J6l65CY7JeI7Iq164uI64ukLicsICdzdWNjZXNzJyk7CiAgICAgIH0pOwogICAgfQogICAgZnVuY3Rpb24gb25XaW5kb3dSZXNpemUoKSB7CiAgICAgIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd2aWV3cG9ydC1jb250YWluZXInKTsKICAgICAgaWYgKCFjb250YWluZXIgfHwgIXJlbmRlcmVyIHx8ICFjYW1lcmEpIHJldHVybjsKICAgICAgY29uc3QgdyA9IGNvbnRhaW5lci5jbGllbnRXaWR0aDsKICAgICAgY29uc3QgaCA9IGNvbnRhaW5lci5jbGllbnRIZWlnaHQ7CiAgICAgIGNhbWVyYS5hc3BlY3QgPSB3IC8gaDsKICAgICAgY2FtZXJhLnVwZGF0ZVByb2plY3Rpb25NYXRyaXgoKTsKICAgICAgcmVuZGVyZXIuc2V0U2l6ZSh3LCBoKTsKICAgIH0KICAgIGZ1bmN0aW9uIGFuaW1hdGUoKSB7CiAgICAgIHJlcXVlc3RBbmltYXRpb25GcmFtZShhbmltYXRlKTsKICAgICAgY29udHJvbHMudXBkYXRlKCk7CiAgICAgIGNvbnN0IHRpbWUgPSBwZXJmb3JtYW5jZS5ub3coKSAqIDAuMDAyOwogICAgICBzY2VuZU9iamVjdHMuZm9yRWFjaCgob2JqLCBpZHgpID0+IHsKICAgICAgICBpZiAob2JqLnNwcml0ZSkgewogICAgICAgICAgY29uc3QgYm91bmNlID0gTWF0aC5zaW4odGltZSArIGlkeCkgKiAwLjEyOwogICAgICAgICAgY29uc3QgYmFzZUhlaWdodCA9IG9iai5oZWlnaHQgKyAob2JqLnR5cGUgPT09ICdwaW4nID8gMi4yIDogMS44KTsKICAgICAgICAgIG9iai5zcHJpdGUucG9zaXRpb24ueSA9IGJhc2VIZWlnaHQgKyBib3VuY2U7CiAgICAgICAgfQogICAgICB9KTsKICAgICAgcmVuZGVyZXIucmVuZGVyKHNjZW5lLCBjYW1lcmEpOwogICAgfQogICAgd2luZG93Lm9ubG9hZCA9IGZ1bmN0aW9uKCkgewogICAgICBpbml0VGhyZWVTY2VuZSgpOwogICAgICBzZXR1cERPTUV2ZW50cygpOwogICAgICBzZXR1cENsaXBib2FyZFBhc3RlKCk7CiAgICAgIGFuaW1hdGUoKTsKICAgIH07";
+  try {
+    var _bin = atob(_d);
+    var _bytes = new Uint8Array(_bin.length);
+    for (var i = 0; i < _bin.length; i++) { _bytes[i] = _bin.charCodeAt(i); }
+    var _src = new TextDecoder('utf-8').decode(_bytes);
+    (0, eval)(_src);
+  } catch(err) {
+    console.error("Execution error:", err);
+  }
+})();
+</script>
 </body>
 </html>
