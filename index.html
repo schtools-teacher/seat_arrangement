@@ -333,6 +333,34 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
         }
 
+        /* 상단바 새 창 열기 링크 버튼 */
+        .btn-top-open-newtab {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 0 0.65rem;
+            height: 31px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #2563eb;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 5px;
+            text-decoration: none;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .btn-top-open-newtab:hover {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+        }
+
         /* ── 좌측 사이드바 명단 입력 카드 ── */
         .sidebar-roster-box {
             background: #f8fafc;
@@ -1158,6 +1186,14 @@
                         <option value="row-front-female">앞줄 여 / 뒷줄 남</option>
                     </optgroup>
                 </select>
+            </div>
+            <!-- 우측 끝: 새 창에서 크게 열기 바로가기 -->
+            <div class="ctrl-item" style="margin-left: auto;">
+                <label style="visibility:hidden; height:13px;">새창</label>
+                <a href="https://schtools-teacher.github.io/seat_arrangement/" target="_blank" rel="noopener noreferrer"
+                    class="btn-top-open-newtab" title="새 창에서 크게 열기">
+                    <span>🔗 새 창에서 크게 열기</span>
+                </a>
             </div>
         </div>
     </header>
